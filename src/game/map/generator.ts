@@ -82,7 +82,8 @@ export function builderConfigFor(p: GenParams, setIndex = -1): BuilderConfig {
     sliderVelocity: p.sliderVelocity,
     tickDistance: p.sliderVelocity * p.beatMs * (p.bpm < 120 ? 0.5 : 1),
     jumpMinRadii: 2.25,
-    minGapMs: Math.max(p.beatMs / 4, 50),
+    // Times are rounded to 0.1 ms, so a quarter beat can come out 0.1 ms short.
+    minGapMs: Math.max(p.beatMs / 4 - 0.1, 50),
     set: setIndex,
   };
 }

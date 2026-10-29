@@ -3,7 +3,6 @@
 import { LEVEL_LIMITS, SUCCESS_BAND } from '../../shared/catalog';
 
 const round05 = (x: number) => Math.round(x * 20) / 20;
-const clampLevel = (x: number) => Math.min(LEVEL_LIMITS.max, Math.max(LEVEL_LIMITS.min, x));
 
 export interface StaircaseStep {
   played: number;
@@ -18,13 +17,21 @@ export class Staircase {
   /** The level of each set, as played. */
   readonly history: number[] = [];
 
-  constructor(start: number) {
-    this.level = clampLevel(round05(start));
+  constructor(
+    start: number,
+    /** The level past which the module's map no longer changes. */
+    readonly max: number = LEVEL_LIMITS.max,
+  ) {
+    this.level = this.clamp(round05(start));
+  }
+
+  private clamp(x: number): number {
+    return Math.min(this.max, Math.max(LEVEL_LIMITS.min, x));
   }
 
   /** Start level for a player whose saved level is `saved`. */
-  static startFor(saved: number | undefined, fallback: number): Staircase {
-    return new Staircase(Math.max(LEVEL_LIMITS.min, (saved ?? fallback) - 0.5));
+  static startFor(saved: number | undefined, fallback: number, max: number = LEVEL_LIMITS.max): Staircase {
+    return new Staircase(Math.max(LEVEL_LIMITS.min, (saved ?? fallback) - 0.5), max);
   }
 
   /** Record a set with success share p and move the level. */
@@ -44,7 +51,7 @@ export class Staircase {
       if (this.lastDir !== 0 && dir !== this.lastDir) this.step = Math.max(0.25, this.step / 2);
       this.lastDir = dir;
     }
-    this.level = clampLevel(round05(this.level + dir * size * this.step));
+    this.level = this.clamp(round05(this.level + dir * size * this.step));
     return { played, next: this.level, direction: this.level > played ? 'up' : this.level < played ? 'down' : 'hold' };
   }
 

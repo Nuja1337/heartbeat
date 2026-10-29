@@ -9,7 +9,7 @@ import { Effects } from '../render/effects';
 import type { DisplayFlags } from '../render/effects';
 import { Renderer } from '../render/renderer';
 import type { OverlayKind, RenderState } from '../render/renderer';
-import { keyLabel } from '../render/strings';
+import { keyLabel, STRINGS } from '../render/strings';
 import { Clock } from './clock';
 import { InputHandler } from './input';
 import type { InputSink } from './input';
@@ -56,6 +56,11 @@ class Game implements GameHandle, InputSink {
   private countdownStart = 0;
   private everRaw = false;
   private penFirst = false;
+  /** Bumped whenever a pending lock should no longer start anything. */
+  private lockSeq = 0;
+  private relockFails = 0;
+  /** Raw input was given up for this play after the lock failed twice. */
+  private rawOff = false;
   private cursorStyle = '';
   private lengthMs = 0;
   private fpsAt = 0;
@@ -154,7 +159,17 @@ class Game implements GameHandle, InputSink {
 
   escape(ts: number): void {
     if (this.state === 'playing' || this.state === 'countdown') this.doPause(ts);
-    else if (this.state === 'paused' && !this.settings.input.rawInput) this.resume();
+    else if (this.state === 'needsClick' || this.state === 'locking') {
+      // Back to the pause menu, so Resume and Quit are there again.
+      this.lockSeq++;
+      this.state = 'paused';
+      this.input.unlock();
+      this.callbacks.onPause(true);
+    } else if (this.state === 'paused' && !this.rawWanted()) this.resume();
+  }
+
+  private rawWanted(): boolean {
+    return this.settings.input.rawInput && !this.penFirst && !this.rawOff;
   }
 
   lockLost(ts: number): void {
@@ -176,9 +191,15 @@ class Game implements GameHandle, InputSink {
     this.renderer.reset();
     this.syncCursor(ts);
     this.penFirst = this.input.penSeen;
-    if (this.settings.input.rawInput && !this.penFirst) {
+    if (this.rawWanted()) {
+      const seq = ++this.lockSeq;
       void this.input.lock().then((ok) => {
-        if (ok) this.everRaw = true;
+        if (!ok) return;
+        if (this.destroyed || this.finished || seq !== this.lockSeq || this.state === 'paused') {
+          this.input.unlock();
+          return;
+        }
+        this.everRaw = true;
       });
     }
   }
@@ -214,17 +235,28 @@ class Game implements GameHandle, InputSink {
     }
     if (this.state !== 'paused') return;
     this.callbacks.onPause(false);
-    if (this.settings.input.rawInput && !this.penFirst) this.beginLock();
+    if (this.rawWanted()) this.beginLock();
     else this.startCountdown();
   }
 
   /** Lock the pointer again, from a click, then count down. */
   private beginLock(): void {
     this.state = 'locking';
+    const seq = ++this.lockSeq;
     void this.input.lock().then((ok) => {
-      if (this.destroyed || this.finished) return;
+      // A lock that arrives after a destroy, a finish or an Esc is let go and starts nothing.
+      if (this.destroyed || this.finished || seq !== this.lockSeq) {
+        if (ok) this.input.unlock();
+        return;
+      }
       if (ok) {
         this.everRaw = true;
+        this.relockFails = 0;
+        this.startCountdown();
+      } else if (++this.relockFails >= 2) {
+        // Give up on raw input for this play and carry on with the system pointer.
+        this.rawOff = true;
+        this.fx.banner = Renderer.notice(STRINGS.rawOffTitle, STRINGS.rawOffSub, performance.now());
         this.startCountdown();
       } else {
         this.state = 'needsClick';
@@ -245,7 +277,8 @@ class Game implements GameHandle, InputSink {
   }
 
   quit(): void {
-    this.finish('quit');
+    // Quitting while the out of health banner shows still counts as a failed play.
+    this.finish(this.session.failed ? 'failed' : 'quit');
   }
 
   setSettings(s: Settings): void {
@@ -347,6 +380,7 @@ class Game implements GameHandle, InputSink {
       if (now - this.countdownStart >= COUNTDOWN_MS) {
         this.clock.resume(now);
         this.state = 'playing';
+        this.session.noteResume(this.clock.play(now));
         this.syncCursor(now);
       }
     }

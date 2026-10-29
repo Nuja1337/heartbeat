@@ -31,6 +31,8 @@ export interface RecordInput {
   press: PressInfo | null;
   comboBefore: number;
   afterPause: boolean;
+  /** The movement window starts no earlier than this, for example at the last resume from a pause. */
+  movementFrom?: number;
   cursor: CursorBuffer;
   slider: SliderStats | null;
   spinner: SpinnerStats | null;
@@ -59,6 +61,8 @@ export function movementMetrics(
 ): MovementMetrics {
   const none: MovementMetrics = { arriveMs: null, efficiency: null, corrections: null, peakSpeed: null };
   if (!(to > from) || cursor.size < 2) return none;
+  // A full buffer that no longer reaches back to the start of the window would give wrong values.
+  if (cursor.size >= cursor.capacity && cursor.tAt(0) > from + 1) return none;
   const a = cursor.positionAt(from, { x: 0, y: 0 });
   const b = cursor.positionAt(to, { x: 0, y: 0 });
   const i0 = cursor.lowerBound(from);
@@ -153,8 +157,8 @@ export function buildRecord(inp: RecordInput): HitRecord {
   }
   let movement: MovementMetrics = { arriveMs: null, efficiency: null, corrections: null, peakSpeed: null };
   if (press && inp.prev && f.gapMs !== null && obj.kind !== 'spinner') {
-    const prevEnd = obj.time - f.gapMs;
-    movement = movementMetrics(inp.cursor, prevEnd, press.t, obj.pos, obj.radius, obj.time);
+    const from = Math.max(obj.time - f.gapMs, inp.movementFrom ?? -Infinity);
+    movement = movementMetrics(inp.cursor, from, press.t, obj.pos, obj.radius, obj.time);
   }
   return {
     index: obj.index,

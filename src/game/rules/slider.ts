@@ -62,6 +62,9 @@ export function buildSliderGeometry(obj: SliderObject): SliderGeometry {
       times.push({ t: base, k: 2, x: at.x, y: at.y });
     }
   }
+  // Ticks that fall after the end check do not count, so a release just before the end is legal.
+  const endAt = endCheckTime(obj);
+  for (let i = times.length - 1; i >= 0; i--) if ((times[i] as { t: number; k: CheckKind }).k === 1 && (times[i] as { t: number }).t > endAt) times.splice(i, 1);
   times.sort((a, b) => a.t - b.t);
   const partsBeforeEnd = times.length;
   pointAt(flat, obj.repeats % 2 === 0 ? flat.length : 0, at);
@@ -176,6 +179,8 @@ export class SliderRun {
   ticksHit = 0;
   ticksTotalSeen = 0;
   endHit = false;
+  /** The end check has been made. Nothing after it counts against the player. */
+  endChecked = false;
   private trackedMs = 0;
   private sumDist = 0;
   private sumLag = 0;
@@ -211,7 +216,7 @@ export class SliderRun {
       if (now !== was) {
         this.tracking = now;
         if (now) this.started = true;
-        else {
+        else if (!this.endChecked) {
           this.breaks++;
           if (this.firstLossAt === null) this.firstLossAt = span > 0 ? Math.min(1, (t - o.time) / span) : 0;
         }
@@ -222,8 +227,10 @@ export class SliderRun {
         const hit = this.tracking;
         this.checkStatus[this.checkIdx] = hit ? 1 : 2;
         if (hit) this.partsHit++;
-        if (kind === 3) this.endHit = hit;
-        else {
+        if (kind === 3) {
+          this.endHit = hit;
+          this.endChecked = true;
+        } else {
           this.ticksTotalSeen++;
           if (hit) this.ticksHit++;
         }
@@ -231,7 +238,7 @@ export class SliderRun {
         this.checkIdx++;
       }
       const w = Math.min(TRACK_STEP_MS, o.endTime - t);
-      if (this.tracking) this.trackedMs += w;
+      if (this.endChecked ? this.endHit : this.tracking) this.trackedMs += w;
       ballDirection(g, t, this.dir);
       const ex = this.cur.x - this.ball.x;
       const ey = this.cur.y - this.ball.y;

@@ -1,7 +1,7 @@
 // Per-object features computed from the final map (the ObjectFeatures contract).
 
 import type { HitObject, Ms, ObjectFeatures, SliderObject, Vec2 } from '../../shared/types';
-import { flattenPath, sliderEndPoint } from './path';
+import { flattenPath, sliderEndPoint, tangentAt } from './path';
 import { angleDiff, dirDeg } from './placement';
 
 const tails = new WeakMap<SliderObject, Vec2>();
@@ -15,6 +15,21 @@ export function endPosition(o: HitObject): Vec2 {
     tails.set(o, t);
   }
   return t;
+}
+
+const exits = new WeakMap<SliderObject, number>();
+
+/** The direction a slider leaves in: its end tangent, turned around when it ends on a reversal. */
+export function exitDirection(o: SliderObject): number {
+  let d = exits.get(o);
+  if (d === undefined) {
+    const flat = flattenPath(o.pos, o.path);
+    const odd = o.repeats % 2 === 1;
+    const t = tangentAt(flat, odd ? 0 : flat.length, { x: 0, y: 0 });
+    d = dirDeg(odd ? -t.x : t.x, odd ? -t.y : t.y);
+    exits.set(o, d);
+  }
+  return d;
 }
 
 export function endTimeOf(o: HitObject): Ms {
@@ -60,8 +75,9 @@ export function extendFeatures(objects: readonly HitObject[], out: ObjectFeature
         f.spacing = d / (2 * o.radius);
         if (d >= 0.5 * o.radius) {
           f.direction = dirDeg(o.pos.x - e.x, o.pos.y - e.y);
-          const pf = out[i - 1];
-          if (pf && pf.direction !== null) f.turnAngle = Math.abs(angleDiff(pf.direction, f.direction));
+          // After a slider the previous movement is the one it leaves in, not the one into its head.
+          const before = prev.kind === 'slider' ? exitDirection(prev) : (out[i - 1]?.direction ?? null);
+          if (before !== null) f.turnAngle = Math.abs(angleDiff(before, f.direction));
         }
       }
     }

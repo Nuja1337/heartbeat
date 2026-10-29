@@ -173,6 +173,84 @@ describe('createGame', () => {
     handle.destroy();
   });
 
+  it('goes back to the pause menu on Escape while it waits for a click', async () => {
+    const { e, handle, pauses } = start({ settings: { rawInput: true }, mode: 'jumps' });
+    pointer(e, 'pointerdown', 640, 360, 1);
+    await new Promise((r) => setTimeout(r, 5));
+    e.run(500);
+    e.document.pointerLockElement = null;
+    e.document.dispatch('pointerlockchange');
+    const real = e.canvas.requestPointerLock as () => Promise<void>;
+    e.canvas.requestPointerLock = () => Promise.reject(new Error('blocked'));
+    handle.resume();
+    await new Promise((r) => setTimeout(r, 5));
+    e.run(50);
+    expect(pauses).toEqual([true, false]);
+    key(e, 'keydown', 'Escape');
+    expect(pauses).toEqual([true, false, true]);
+    // The menu works again.
+    e.canvas.requestPointerLock = real;
+    handle.resume();
+    await new Promise((r) => setTimeout(r, 5));
+    e.run(1100);
+    expect(pauses).toEqual([true, false, true, false]);
+    expect(e.document.pointerLockElement).toBe(e.canvas);
+    handle.destroy();
+  });
+
+  it('gives up on raw input after two failed locks and plays on', async () => {
+    const { e, handle, results, pauses } = start({ settings: { rawInput: true }, mode: 'jumps' });
+    pointer(e, 'pointerdown', 640, 360, 1);
+    await new Promise((r) => setTimeout(r, 5));
+    e.run(500);
+    e.document.pointerLockElement = null;
+    e.document.dispatch('pointerlockchange');
+    e.canvas.requestPointerLock = () => Promise.reject(new Error('blocked'));
+    handle.resume();
+    await new Promise((r) => setTimeout(r, 5));
+    pointer(e, 'pointerdown', 640, 360, 1);
+    await new Promise((r) => setTimeout(r, 5));
+    e.run(1200);
+    expect(pauses).toEqual([true, false]);
+    const before = e.now();
+    e.run(2000);
+    handle.quit();
+    expect(e.now() - before).toBeGreaterThan(1000);
+    expect(results[0]!.playedMs).toBeGreaterThan(2000);
+    // Absolute input from here on: movement events move the cursor again.
+    handle.destroy();
+  });
+
+  it('records a failed play when the player quits during the out of health banner', () => {
+    const { e, handle, results } = start({ mode: 'dynamic', length: 60 });
+    pointer(e, 'pointerdown', 600, 300, 1);
+    const state = () => (handle as unknown as { state: string }).state;
+    let guard = 0;
+    while (state() !== 'failing' && guard++ < 600) e.run(100);
+    expect(state()).toBe('failing');
+    handle.quit();
+    expect(results).toHaveLength(1);
+    expect(results[0]!.status).toBe('failed');
+  });
+
+  it('lets go of a lock that arrives after destroy', async () => {
+    const { e, handle } = start({ settings: { rawInput: true }, mode: 'jumps' });
+    let grant: () => void = () => undefined;
+    e.canvas.requestPointerLock = () =>
+      new Promise<void>((resolve) => {
+        grant = () => {
+          e.document.pointerLockElement = e.canvas;
+          e.document.dispatch('pointerlockchange');
+          resolve();
+        };
+      });
+    pointer(e, 'pointerdown', 640, 360, 1);
+    handle.destroy();
+    grant();
+    await new Promise((r) => setTimeout(r, 5));
+    expect(e.document.pointerLockElement).toBeNull();
+  });
+
   it('removes its listeners on destroy', () => {
     const { e, handle } = start();
     expect(e.window.count('keydown')).toBeGreaterThan(0);

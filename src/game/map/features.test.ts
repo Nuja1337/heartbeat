@@ -47,6 +47,22 @@ describe('features', () => {
     expect(f[2]!.turnAngle).toBeNull();
   });
 
+  it('measures the turn after a slider from the way it leaves', () => {
+    // The head is reached moving down, the slider runs right, and the next target is further right.
+    const slider = makeSlider(1, 2000, { x: 100, y: 300 }, [{ type: 'line', to: { x: 300, y: 300 } }], { spanMs: 400 });
+    const f = computeFeatures(makeMap([makeCircle(0, 1000, 100, 100), slider, makeCircle(2, 3000, 500, 300)]));
+    expect(f[1]!.direction).toBeCloseTo(90, 6);
+    expect(f[2]!.turnAngle).toBeCloseTo(0, 6);
+  });
+
+  it('turns the exit around when a slider ends on a reversal', () => {
+    const slider = makeSlider(1, 2000, { x: 300, y: 300 }, [{ type: 'line', to: { x: 500, y: 300 } }], { spanMs: 400, repeats: 1 });
+    // It ends back at its head, leaving to the left. The next target is straight on from there.
+    const f = computeFeatures(makeMap([makeCircle(0, 1000, 300, 100), slider, makeCircle(2, 3500, 100, 300)]));
+    expect(f[2]!.direction).toBeCloseTo(180, 6);
+    expect(f[2]!.turnAngle).toBeCloseTo(0, 6);
+  });
+
   it('numbers a run of equal short gaps', () => {
     const objs = [makeCircle(0, 1000, 100, 100), makeCircle(1, 2000, 300, 300)];
     for (let i = 0; i < 5; i++) objs.push(makeCircle(2 + i, 2400 + i * 80, 320 + i * 25, 300));

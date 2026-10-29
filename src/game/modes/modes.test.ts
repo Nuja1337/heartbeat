@@ -4,7 +4,7 @@ import type { HitObject, ModeId, ModuleId, SliderObject, SpinnerObject } from '.
 import { computeFeatures } from '../map/features';
 import { createRng } from '../map/rng';
 import { launchFor } from '../testing/fixtures';
-import { buildSet, isSuccess, successShare } from './modules';
+import { buildSet, isSuccess, maxLevelFor, paramsAtLevel, successShare } from './modules';
 import { setupPlay } from './runner';
 import { Staircase } from './staircase';
 
@@ -108,6 +108,32 @@ function measured(module: ModuleId, objects: HitObject[]): number {
   }
 }
 
+describe('level caps', () => {
+  it('stop where the map stops changing', () => {
+    const streams = maxLevelFor('streams');
+    expect(streams).toBeGreaterThan(11);
+    expect(streams).toBeLessThan(12.5);
+    const reading = maxLevelFor('reading');
+    expect(reading).toBeGreaterThan(12);
+    expect(reading).toBeLessThan(13.5);
+    for (const m of ['jumps', 'angles', 'tracking', 'spinning', 'precision', 'timing'] as const) expect(maxLevelFor(m)).toBe(15);
+    // Past the cap the settings are the same.
+    expect(Math.abs(paramsAtLevel('reading', 15).approachMs - paramsAtLevel('reading', maxLevelFor('reading')).approachMs)).toBeLessThanOrEqual(2);
+    const a = buildSet({ module: 'streams', level: streams, options: {}, set: 0, seed: 3, startTime: 2000, indexBase: 0, groupBase: 0 });
+    const b = buildSet({ module: 'streams', level: 15, options: {}, set: 0, seed: 3, startTime: 2000, indexBase: 0, groupBase: 0 });
+    const gap = (o: typeof a.objects) => o[2]!.time - o[1]!.time;
+    expect(Math.abs(gap(a.objects) - gap(b.objects))).toBeLessThan(0.5);
+  });
+
+  it('hold the staircase at the cap', () => {
+    const s = new Staircase(11, maxLevelFor('streams'));
+    for (let i = 0; i < 30; i++) s.update(1);
+    expect(s.level).toBe(maxLevelFor('streams'));
+    expect(s.finalLevel()).toBeLessThanOrEqual(maxLevelFor('streams'));
+    expect(Staircase.startFor(14, 3, 11.8).level).toBeLessThanOrEqual(11.8);
+  });
+});
+
 describe('module sets', () => {
   it('measure within 10 percent of the demand they are built for', () => {
     for (const module of MODULE_IDS) {
@@ -162,6 +188,28 @@ describe('module sets', () => {
     expect(near / moves).toBeGreaterThan(0.5);
   });
 
+  it('keep the chosen direction when Mirror flips the map', () => {
+    for (const octant of [0, 1, 2]) {
+      for (const mods of [[], ['mirror']] as const) {
+        let near = 0;
+        let moves = 0;
+        for (let seed = 1; seed <= 8; seed++) {
+          const launch = { ...launchFor(undefined, seed, 60, [...mods], 'jumps'), options: { distanceFocus: 'mixed' as const, directionFocus: octant } };
+          const map = setupPlay(launch).map;
+          const first = map.objects.filter((o) => o.set === 0);
+          const f = computeFeatures({ objects: first, durationMs: 1e5 });
+          for (const x of f) {
+            if (x.direction === null) continue;
+            moves++;
+            const d = Math.abs(((x.direction - octant * 45 + 540) % 360) - 180);
+            if (d <= 30) near++;
+          }
+        }
+        expect(near / moves, `octant ${octant} ${mods.join()}`).toBeGreaterThan(0.5);
+      }
+    }
+  });
+
   it('use only the shapes asked for', () => {
     const set = buildSet({ module: 'tracking', level: 4, options: { sliderFocus: 'straight' }, set: 0, seed: 3, startTime: 2000, indexBase: 0, groupBase: 0 });
     expect(set.objects.length).toBeGreaterThan(3);
@@ -207,6 +255,36 @@ describe('setupPlay', () => {
       expect(setup.map.durationMs).toBeGreaterThan(90000);
       expect(setup.map.durationMs).toBeLessThan(125000);
     }
+  });
+
+  it('keeps the first target of each Stamina and Warm-up chunk clear of the last one', () => {
+    for (const modeId of ['stamina', 'warmup'] as const) {
+      for (let seed = 1; seed <= 6; seed++) {
+        const setup = setupPlay({ ...launchFor(undefined, seed, 180, [], modeId), levels: { jumps: 5, streams: 6, tracking: 4, precision: 5 } });
+        const objs = setup.map.objects;
+        let boundaries = 0;
+        for (let i = 1; i < objs.length; i++) {
+          const a = objs[i - 1]!;
+          const b = objs[i]!;
+          const end = a.kind === 'circle' ? a.time : a.endTime;
+          if (b.time - end < 1000 || a.kind === 'slider') continue;
+          boundaries++;
+          const d = Math.hypot(a.pos.x - b.pos.x, a.pos.y - b.pos.y);
+          expect(d, `${modeId} ${seed} at ${i}`).toBeGreaterThanOrEqual(2.2 * Math.max(a.radius, b.radius));
+        }
+        expect(boundaries).toBeGreaterThan(3);
+      }
+    }
+  });
+
+  it('plays long streams in Stamina', () => {
+    let longest = 0;
+    for (let seed = 1; seed <= 4; seed++) {
+      const setup = setupPlay({ ...launchFor(undefined, seed, 180, [], 'stamina'), levels: { streams: 5 } });
+      const f = computeFeatures(setup.map);
+      for (const x of f) longest = Math.max(longest, x.runLength);
+    }
+    expect(longest).toBeGreaterThanOrEqual(13);
   });
 
   it('ignores mods a mode does not allow, and applies Mirror to sets', () => {

@@ -94,6 +94,30 @@ describe('Renderer', () => {
     }
   });
 
+  it('lets go of slider bodies as the sliders finish', () => {
+    const log: CallLog = { calls: 0, names: new Map() };
+    const renderer = setup(log);
+    const fx = new Effects();
+    let most = 0;
+    let sliders = 0;
+    const launch = { ...launchFor(DEFAULT_DIFFICULTY, 5, 60, [], 'tracking'), options: MODES.tracking.defaultOptions };
+    runHeadless({
+      launch,
+      model: PERFECT_PLAYER,
+      onFrame: (t, session) => {
+        sliders = session.map.objects.length;
+        renderer.render({
+          session, fx, settings: DEFAULT_SETTINGS, playT: t, now: t, cursorX: 500, cursorY: 300, drawCursor: false, overlay: 'none',
+          overlayT0: 0, startLabel: 'Z', raw: false, fps: null, showScore: false, level: 3, set: 0, lengthMs: 60000,
+        });
+        most = Math.max(most, renderer.bodyCount);
+      },
+    });
+    expect(sliders).toBeGreaterThan(10);
+    expect(most).toBeLessThanOrEqual(3);
+    expect(renderer.bodyCount).toBeLessThanOrEqual(2);
+  });
+
   it('shows the set banner', () => {
     const log: CallLog = { calls: 0, names: new Map() };
     const renderer = setup(log);

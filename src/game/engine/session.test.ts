@@ -5,9 +5,9 @@ import { launchFor, makeCircle, makeMap, makeSlider, makeSpinner } from '../test
 import { GameSession } from './session';
 import type { FeedbackEvent } from './session';
 
-function sessionFor(objects: HitObject[], opts: { health?: boolean; mods?: ('nofail' | 'onelife')[] } = {}) {
+function sessionFor(objects: HitObject[], opts: { health?: boolean; mods?: ('nofail' | 'onelife')[]; drain?: number } = {}) {
   const mods = opts.mods ?? [];
-  const base = makeMap(objects, { health: opts.health ? { ...healthRulesFor(5, mods), canFail: !mods.includes('nofail'), failOnFirstMiss: mods.includes('onelife') } : null });
+  const base = makeMap(objects, { health: opts.health ? { ...healthRulesFor(5, mods), drainPerSec: opts.drain ?? healthRulesFor(5, mods).drainPerSec, canFail: !mods.includes('nofail'), failOnFirstMiss: mods.includes('onelife') } : null });
   const map: PlayableMap = { ...base, mods: [], rate: 1 };
   const s = new GameSession({ map, launch: launchFor() });
   const events: FeedbackEvent[] = [];
@@ -125,6 +125,21 @@ describe('circles', () => {
     expect(byIndex[1]!.judgment).toBe('crisp');
   });
 
+  it('gives a skipped object no press, even after a stray press near it', () => {
+    const { s } = sessionFor([makeCircle(0, 1000, 100, 100), makeCircle(1, 1060, 400, 100)]);
+    run(s, 0, 999, 240, 100);
+    press(s, 1000, 240, 100); // near the first object, on neither
+    run(s, 1001, 1065, 400, 100);
+    press(s, 1070, 400, 100, 'key2');
+    const first = [...s.records].sort((a, b) => a.index - b.index)[0]!;
+    expect(first.missReason).toBe('skipped');
+    expect(first.hit).toBeNull();
+    expect(first.timingError).toBeNull();
+    expect(first.aimRadial).toBeNull();
+    expect(first.aimAlong).toBeNull();
+    expect(first.input).toBeNull();
+  });
+
   it('absorbs a press while an earlier object is still ahead', () => {
     const { s } = sessionFor([makeCircle(0, 1100, 100, 100), makeCircle(1, 1160, 400, 100)]);
     run(s, 0, 1049, 400, 100);
@@ -230,7 +245,56 @@ describe('health and fail', () => {
   });
 });
 
+describe('the end of a play', () => {
+  it('does not drain health after the last object is judged', () => {
+    const { s } = sessionFor([makeCircle(0, 1000, 100, 100), makeCircle(1, 1500, 100, 100)], { health: true, drain: 0.9 });
+    run(s, 0, 999, 100, 100);
+    press(s, 1000, 100, 100);
+    run(s, 1001, 1499, 100, 100);
+    press(s, 1500, 100, 100, 'key2');
+    const health = s.scoring.health;
+    expect(health).toBeGreaterThan(0.3);
+    run(s, 1501, 2600, 100, 100);
+    expect(s.failed).toBe(false);
+    expect(s.scoring.health).toBeCloseTo(health, 6);
+    expect(s.over).toBe(true);
+  });
+});
+
 describe('pauses', () => {
+  it('keeps a cursor jump across a pause out of the next object movement', () => {
+    const { s } = sessionFor([makeCircle(0, 1000, 150, 100), makeCircle(1, 3000, 400, 300)]);
+    run(s, 0, 999, 150, 100);
+    press(s, 1000, 150, 100);
+    run(s, 1001, 1999, 150, 100);
+    s.notePause(2000);
+    // After the pause the pointer is somewhere else, and it travels to the target.
+    s.noteResume(2000);
+    s.move(2000, { x: 700, y: 500 });
+    for (let t = 2001; t <= 2900; t++) {
+      const u = Math.min(1, (t - 2000) / 800);
+      const k = u * u * (3 - 2 * u);
+      s.move(t, { x: 700 + (400 - 700) * k, y: 500 + (300 - 500) * k });
+      s.advance(t);
+    }
+    run(s, 2901, 2999, 400, 300);
+    press(s, 3000, 400, 300, 'key2');
+    const rec = [...s.records].sort((a, b) => a.index - b.index)[1]!;
+    expect(rec.afterPause).toBe(true);
+    expect(rec.movement.efficiency!).toBeGreaterThan(0.95);
+  });
+
+  it('marks an object when the pause falls in the trip to it, even before its approach', () => {
+    const o = [makeCircle(0, 1000, 150, 100), { ...makeCircle(1, 3000, 400, 300), approachMs: 300 }];
+    const { s } = sessionFor(o);
+    run(s, 0, 999, 150, 100);
+    press(s, 1000, 150, 100);
+    run(s, 1001, 1500, 150, 100);
+    // The second object shows only from 2700, but the trip to it began at 1000.
+    s.notePause(1500);
+    expect(s.objs[1]!.afterPause).toBe(true);
+  });
+
   it('marks objects on screen when a pause starts', () => {
     const { s } = sessionFor([makeCircle(0, 1000, 100, 100), makeCircle(1, 3000, 100, 100), makeCircle(2, 9000, 100, 100)]);
     run(s, 0, 900, 100, 100);

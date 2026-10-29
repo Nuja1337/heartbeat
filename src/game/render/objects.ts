@@ -160,6 +160,11 @@ export class SpriteCache {
     return sprite;
   }
 
+  /** How many slider bodies are held. */
+  get bodyCount(): number {
+    return this.bodies.size;
+  }
+
   /** Forget the body bitmaps of sliders that are done. */
   dropBodiesBelow(index: number): void {
     for (const k of this.bodies.keys()) if (k < index) this.bodies.delete(k);

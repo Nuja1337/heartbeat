@@ -230,8 +230,9 @@ export class Layout {
     }
     for (let k = this.items.length - 1; k >= 0; k--) {
       const it = this.items[k] as Item;
-      if (it.time + this.maxSpan + 100 < appear) break;
+      // The object just before is always checked, however long ago it ended.
       const consecutive = k === this.items.length - 1 && !this.afterSpinner;
+      if (!consecutive && it.time + this.maxSpan + 100 < appear) break;
       if (!consecutive && appear > it.end + 100) continue;
       for (let i = 0; i < pts.length; i += 2) {
         if (this.distTo(it, pts[i] as number, pts[i + 1] as number) < near) return false;

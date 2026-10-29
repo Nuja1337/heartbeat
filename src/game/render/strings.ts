@@ -35,6 +35,8 @@ export const STRINGS = {
   startRaw: 'The pointer locks when you start. Esc pauses.',
   startAbsolute: 'Esc pauses.',
   clickToContinue: 'Click to continue',
+  rawOffTitle: 'Raw input is off',
+  rawOffSub: 'The pointer could not be locked, so this play uses the system pointer.',
   outOfHealth: 'Out of health',
   spinnerHint: 'Hold a key or button and circle the center',
   early: 'early',

@@ -1,6 +1,6 @@
 // Builds the map and set controller for a launch (PLAN section 8).
 
-import { DEFAULT_MODULE_LEVEL, MAP_FORMAT, MODES, MODULE_IDS } from '../../shared/catalog';
+import { DEFAULT_MODULE_LEVEL, MAP_FORMAT, MODES, MODULE_IDS, PLAYFIELD_CENTER } from '../../shared/catalog';
 import type {
   GeneratedMap,
   HitObject,
@@ -10,15 +10,17 @@ import type {
   MapSection,
   ModId,
   ModuleId,
+  ModuleOptions,
   Ms,
   PlayableMap,
+  Vec2,
 } from '../../shared/types';
 import type { SetController, SetEndInfo } from '../engine/session';
 import { generateDynamic } from '../map/generator';
 import { applyMods, applyModsToObjects, modsForMode, rateFor } from '../map/mods';
 import { hash32 } from '../map/rng';
 import { GENERATOR_VERSION } from '../version';
-import { buildSet, clampLevel, paramsAtLevel, successShare } from './modules';
+import { buildSet, clampLevel, maxLevelFor, paramsAtLevel, successShare } from './modules';
 import type { BuiltSet } from './modules';
 import { Staircase } from './staircase';
 
@@ -51,15 +53,33 @@ function shell(launch: LaunchRequest, objects: HitObject[], sections: MapSection
 
 const leadIn = (approachMs: number) => Math.max(2000, approachMs + 1200);
 
+/**
+ * Where the first target of the next chunk goes. It sits at least 2.3 radii from where the last chunk ended,
+ * so the jump between chunks follows the same rule as any other.
+ */
+function startAfter(from: Vec2, apart: number, radius: number): Vec2 {
+  const m = radius + 12;
+  const toCenter = (Math.atan2(PLAYFIELD_CENTER.y - from.y, PLAYFIELD_CENTER.x - from.x) * 180) / Math.PI;
+  for (const dist of [3.5 * apart, 5 * apart, 2.5 * apart]) {
+    for (const off of [0, 30, -30, 60, -60, 90, -90, 135, -135, 180]) {
+      const a = ((toCenter + off) * Math.PI) / 180;
+      const x = from.x + Math.cos(a) * dist;
+      const y = from.y + Math.sin(a) * dist;
+      if (x >= m && x <= 1000 - m && y >= m && y <= 625 - m) return { x, y };
+    }
+  }
+  return { x: from.x < 500 ? 800 : 200, y: from.y < 312 ? 450 : 170 };
+}
+
 /** Stamina and Warm-up: a fixed map made of chunks from other modules. */
 function buildFixed(launch: LaunchRequest, mods: ModId[]): PlayableMap {
   const levels = launch.levels;
   const lvl = (m: ModuleId, drop: number) => clampLevel((levels[m] ?? DEFAULT_MODULE_LEVEL) - drop);
-  type Chunk = { module: ModuleId; level: number; size: number };
+  type Chunk = { module: ModuleId; level: number; size: number; options?: ModuleOptions };
   const chunks: Chunk[] =
     launch.modeId === 'stamina'
       ? [
-          { module: 'streams', level: lvl('streams', 1), size: 20 },
+          { module: 'streams', level: lvl('streams', 1), size: 20, options: { streamLength: 'long' } },
           { module: 'jumps', level: lvl('jumps', 1), size: 8 },
         ]
       : [
@@ -73,16 +93,19 @@ function buildFixed(launch: LaunchRequest, mods: ModId[]): PlayableMap {
   let groupBase = 0;
   const lengthMs = launch.lengthSec * 1000;
   let t = 0;
+  let prev: { pos: Vec2; radius: number } | null = null;
   for (let k = 0; k < 400; k++) {
     const c = chunks[k % chunks.length] as Chunk;
     const approach = paramsAtLevel(c.module, c.level).approachMs;
     const start = k === 0 ? leadIn(approach) : t + 500 + approach;
     if (k > 0 && start >= lengthMs - 3000) break;
+    const radius = paramsAtLevel(c.module, c.level).radius;
     const built = buildSet({
       module: c.module,
       level: c.level,
-      options: MODES[c.module].defaultOptions,
+      options: { ...MODES[c.module].defaultOptions, ...c.options },
       set: -1,
+      startPos: prev ? startAfter(prev.pos, Math.max(radius, prev.radius), radius) : undefined,
       seed: hash32(launch.seed, 'chunk', k),
       startTime: start,
       indexBase: objects.length,
@@ -94,6 +117,7 @@ function buildFixed(launch: LaunchRequest, mods: ModId[]): PlayableMap {
     sections.push(built.section);
     groupBase += built.groupsUsed + 1;
     t = built.endTime;
+    prev = built.endPos ? { pos: built.endPos, radius } : null;
   }
   return shell(launch, applyModsToObjects(objects, mods), sections, mods);
 }
@@ -117,7 +141,7 @@ export class ModeRunner implements SetController {
     const chosen = launch.options.mixModules ?? (MODES.mix.defaultOptions.mixModules as ModuleId[]);
     const valid = chosen.filter((m, i) => MODULE_IDS.includes(m) && chosen.indexOf(m) === i).slice(0, 4);
     this.modules = mix ? (valid.length >= 2 ? valid : (MODES.mix.defaultOptions.mixModules as ModuleId[])) : [launch.modeId as ModuleId];
-    for (const m of this.modules) this.stairs.set(m, Staircase.startFor(launch.levels[m], DEFAULT_MODULE_LEVEL));
+    for (const m of this.modules) this.stairs.set(m, Staircase.startFor(launch.levels[m], DEFAULT_MODULE_LEVEL, maxLevelFor(m)));
     const first = this.build(0, 0);
     this.map = shell(launch, first.objects, [first.section], mods);
   }
@@ -132,10 +156,15 @@ export class ModeRunner implements SetController {
     this.playedLevel.set(set, level);
     this.lastSet = set;
     const approach = paramsAtLevel(module, level).approachMs;
+    const options = { ...MODES[module].defaultOptions, ...this.launch.options };
+    // The set is built first and mirrored after, so a direction the player picked is flipped in advance.
+    if (this.mods.includes('mirror') && typeof options.directionFocus === 'number') {
+      options.directionFocus = (4 - options.directionFocus + 8) % 8;
+    }
     const spec = {
       module,
       level,
-      options: { ...MODES[module].defaultOptions, ...this.launch.options },
+      options,
       set,
       seed: hash32(this.launch.seed, set, Math.round(level * 20)),
       startTime: set === 0 ? leadIn(approach) : startTime + SET_REST_MS + approach,

@@ -125,16 +125,18 @@ export const PATTERN_KINDS: PatternKind[] = [
 export function patternWeights(p: GenParams, intensity: number): Record<PatternKind, number> {
   const c = p.complexity;
   const slider = 0.35 * p.sliders * (1.5 - intensity);
+  // Triangles, squares, stars and doubles sit on half beats, so they thin out as density falls.
+  const halfBeat = 0.2 + (0.8 * (p.density - 1)) / 9;
   return {
     jump: 3,
     backforth: 0.6 + 0.25 * c,
-    triangle: c >= 3 ? 0.25 * c : 0,
-    square: c >= 4 ? 0.2 * c : 0,
-    star: c >= 6 ? 0.12 * c : 0,
+    triangle: c >= 3 ? 0.25 * c * halfBeat : 0,
+    square: c >= 4 ? 0.2 * c * halfBeat : 0,
+    star: c >= 6 ? 0.12 * c * halfBeat : 0,
     flow: Math.max(0.6, 3 - 0.2 * c),
     stream: 0.35 * p.streams * (0.5 + intensity),
     burst: 0.25 * p.streams,
-    doubles: c >= 5 ? 0.1 * c : 0,
+    doubles: c >= 5 ? 0.1 * c * halfBeat : 0,
     slider: slider * 0.75,
     sliderchain: slider * 0.25,
     single: 0,

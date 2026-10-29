@@ -58,6 +58,15 @@ describe('movementMetrics', () => {
     expect(m.corrections!).toBeGreaterThanOrEqual(1);
   });
 
+  it('reports nothing when the buffer no longer reaches back to the window', () => {
+    const buf = new CursorBuffer(64);
+    for (let t = 0; t <= 200; t++) buf.push(t, 100 + t, 100);
+    const m = movementMetrics(buf, 10, 190, { x: 290, y: 100 }, 40, 190);
+    expect(m).toEqual({ arriveMs: null, efficiency: null, corrections: null, peakSpeed: null });
+    // A window inside what was kept still works.
+    expect(movementMetrics(buf, 160, 190, { x: 290, y: 100 }, 40, 190).efficiency).not.toBeNull();
+  });
+
   it('reports nothing for an empty window', () => {
     const buf = new CursorBuffer(16);
     expect(movementMetrics(buf, 0, 100, { x: 0, y: 0 }, 10, 100).efficiency).toBeNull();

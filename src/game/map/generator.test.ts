@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_DIFFICULTY, LEVEL_PRESETS, PLAYFIELD, PLAYFIELD_CENTER } from '../../shared/catalog';
 import type { DifficultySettings, GeneratedMap, HitObject, SliderObject } from '../../shared/types';
 import { launchFor } from '../testing/fixtures';
+import { deriveParams, halfBeatProb } from './difficulty';
 import { computeFeatures, endPosition } from './features';
 import { generateDynamic } from './generator';
 import { arcThrough, flattenPath, samplePath } from './path';
@@ -39,7 +40,7 @@ function violations(map: GeneratedMap): string[] {
   const eps = 0.02 * r;
   const cache = objs.map(shape);
   const beat = map.beatMs;
-  const minGap = Math.max(beat / 4, 50);
+  const minGap = Math.max(beat / 4 - 0.1, 50);
 
   if (Math.hypot(first.pos.x - PLAYFIELD_CENTER.x, first.pos.y - PLAYFIELD_CENTER.y) > 100.01) out.push('first object far from center');
 
@@ -205,29 +206,50 @@ describe('generator constraints', () => {
   });
 });
 
-/** Expected objects per minute for a preset, from its beat grid. */
-function expected(d: DifficultySettings): number {
-  const base = d.bpm * (0.6 + 0.07 * d.density);
-  return base;
-}
-
-describe('generator shape', () => {
-  it('keeps object counts near the expected rate', () => {
-    for (const lp of LEVEL_PRESETS) {
-      let total = 0;
-      let seconds = 0;
-      for (let seed = 1; seed <= 10; seed++) {
-        const m = generateDynamic(launchFor(lp.difficulty, seed, 90));
-        total += m.objects.length;
-        seconds += 90;
+describe('generator rhythm', () => {
+  it('puts half-beat gaps at the rate density asks for', () => {
+    const shares: number[] = [];
+    for (const density of [1, 5, 10]) {
+      const d = { ...DEFAULT_DIFFICULTY, bpm: 150, density, streams: 0, sliders: 0, spinners: 0, complexity: 4 };
+      const p = deriveParams(d, []);
+      let half = 0;
+      let all = 0;
+      let want = 0;
+      for (let seed = 1; seed <= 12; seed++) {
+        const m = generateDynamic(launchFor(d, seed, 90));
+        const f = computeFeatures(m);
+        m.objects.forEach((o, i) => {
+          if (o.number < 2 || !(o.pattern === 'jump' || o.pattern === 'backforth' || o.pattern === 'flow')) return;
+          const g = f[i]!.gapMs!;
+          all++;
+          want += halfBeatProb(p, o.intensity);
+          if (Math.abs(g - m.beatMs / 2) < 1) half++;
+        });
       }
-      const perMin = (total / seconds) * 60;
-      const exp = expected(lp.difficulty);
-      expect(perMin).toBeGreaterThan(exp * 0.75);
-      expect(perMin).toBeLessThan(exp * 1.25);
+      const share = half / all;
+      shares.push(share);
+      expect(all).toBeGreaterThan(100);
+      expect(Math.abs(share - want / all), `density ${density}`).toBeLessThan(0.12);
     }
+    expect(shares[0]!).toBeLessThan(shares[1]!);
+    expect(shares[1]!).toBeLessThan(shares[2]!);
+    expect(shares[0]!).toBeLessThan(0.2);
+    expect(shares[2]!).toBeGreaterThan(0.6);
   });
 
+  it('makes more objects per minute as density rises', () => {
+    const rate = (density: number) => {
+      const d = { ...DEFAULT_DIFFICULTY, bpm: 150, density, streams: 0, sliders: 0, spinners: 0 };
+      let n = 0;
+      for (let seed = 1; seed <= 8; seed++) n += generateDynamic(launchFor(d, seed, 90)).objects.length;
+      return n;
+    };
+    expect(rate(1)).toBeLessThan(rate(5));
+    expect(rate(5)).toBeLessThan(rate(10));
+  });
+});
+
+describe('generator shape', () => {
   it('turns gently at low complexity and sharply at high complexity', () => {
     const share = (complexity: number, test: (a: number) => boolean) => {
       let n = 0;
@@ -293,6 +315,27 @@ describe('generator shape', () => {
           if (!dup) throw new Error(`level ${lp.level} seed ${seed} section ${si} has no repeat: ${sigs.join(',')}`);
         });
       }
+    }
+  });
+
+  it('detects stream runs on preset maps wherever streams are on', () => {
+    for (const lp of LEVEL_PRESETS) {
+      if (lp.difficulty.streams <= 0) continue;
+      let tagged = 0;
+      let inRun = 0;
+      for (let seed = 1; seed <= 5; seed++) {
+        const m = generateDynamic(launchFor(lp.difficulty, seed, 90));
+        const f = computeFeatures(m);
+        m.objects.forEach((o, i) => {
+          if (o.pattern !== 'stream' && o.pattern !== 'burst') return;
+          tagged++;
+          if (f[i]!.runLength >= 3) inRun++;
+          // The analytics call a note a stream note when it is under 1.6 widths from the one before.
+          if (o.number > 1) expect(f[i]!.spacing!, `level ${lp.level}`).toBeLessThan(1.6);
+        });
+      }
+      expect(tagged, `level ${lp.level}`).toBeGreaterThan(10);
+      expect(inRun / tagged, `level ${lp.level}`).toBeGreaterThan(0.85);
     }
   });
 

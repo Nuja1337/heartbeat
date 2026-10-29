@@ -1,6 +1,6 @@
 // Training module set builders (PLAN section 8). Each module turns a level into a set of objects.
 
-import { LEVEL_LIMITS, MODES, PLAYFIELD_CENTER, rawDemandAt, windowsForTiming } from '../../shared/catalog';
+import { LEVEL_LIMITS, MODES, PLAYFIELD_CENTER, levelForDemand, rawDemandAt, windowsForTiming } from '../../shared/catalog';
 import type { HitObject, HitRecord, HitWindows, MapSection, ModuleId, ModuleOptions, Vec2 } from '../../shared/types';
 import { MapBuilder, angleDiff } from '../map/placement';
 import type { BuilderConfig, Motif, SliderSpec } from '../map/placement';
@@ -10,6 +10,15 @@ import type { Rng } from '../map/rng';
 const clamp = (x: number, lo: number, hi: number) => (x < lo ? lo : x > hi ? hi : x);
 const round5 = (x: number) => Math.round(x / 5) * 5;
 const round1 = (x: number) => Math.round(x * 10) / 10;
+
+/**
+ * The highest level at which a module's map still changes. Streams stop getting faster once the gap reaches
+ * 50 ms, and Reading stops once the approach time reaches 250 ms, so a staircase gains nothing past that.
+ */
+export function maxLevelFor(module: ModuleId): number {
+  const cap = module === 'streams' ? levelForDemand('speed', 1000 / 50) : module === 'reading' ? levelForDemand('reading', 1000 / 250) : LEVEL_LIMITS.max;
+  return Math.min(LEVEL_LIMITS.max, Math.floor(cap * 20) / 20);
+}
 
 export function clampLevel(l: number): number {
   return clamp(l, LEVEL_LIMITS.min, LEVEL_LIMITS.max);

@@ -94,6 +94,7 @@ export class Renderer {
   private visible = new Int32Array(256);
   private tmp: Vec2 = { x: 0, y: 0 };
   private spotLift = 0;
+  private droppedTo = 0;
   private lastNow = 0;
   private hudData: HudData = {
     showScore: true,
@@ -117,6 +118,11 @@ export class Renderer {
     this.sprites = new SpriteCache(make);
   }
 
+  /** Slider body bitmaps held right now. */
+  get bodyCount(): number {
+    return this.sprites.bodyCount;
+  }
+
   /** Call after the canvas size or DPR changes. */
   invalidate(): void {
     this.sprites.clear();
@@ -129,6 +135,7 @@ export class Renderer {
     this.hud.reset();
     this.sprites.dropBodiesBelow(1e9);
     this.spotLift = 0;
+    this.droppedTo = 0;
   }
 
   render(rs: RenderState): void {
@@ -188,6 +195,11 @@ export class Renderer {
     const objs = s.objs;
     const fade = s.map.mods.includes('fade');
     const hints = rs.settings.display.pathHints;
+    // Sliders that are finished no longer need their body bitmap.
+    if (s.firstOpen !== this.droppedTo) {
+      this.sprites.dropBodiesBelow(s.firstOpen);
+      this.droppedTo = s.firstOpen;
+    }
     let n = 0;
     for (let i = s.firstOpen; i < objs.length; i++) {
       const st = objs[i] as ObjState;
@@ -628,6 +640,11 @@ export class Renderer {
       ctx.fillText(STRINGS.outOfHealth, cx, cy);
       ctx.globalAlpha = 1;
     }
+  }
+
+  /** A banner with text of its own. */
+  static notice(title: string, sub: string, now: number): { title: string; sub: string; t0: number; until: number } {
+    return { title, sub, t0: now, until: now + 3500 };
   }
 
   /** Banner for the end of a set. */

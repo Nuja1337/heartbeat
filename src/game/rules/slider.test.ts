@@ -167,6 +167,52 @@ describe('tracking', () => {
   });
 });
 
+describe('the end of a slider', () => {
+  it('leaves out ticks that fall after the end check', () => {
+    const o = straight(300, { tickDistance: 140, spanMs: 500 });
+    const g = buildSliderGeometry(o);
+    expect(g.partsBeforeEnd).toBe(1);
+    expect(g.checkT.length).toBe(2);
+    expect(Math.max(...Array.from(g.checkT))).toBeLessThanOrEqual(endCheckTime(o));
+  });
+
+  it('does not count a release after the end check as lost tracking', () => {
+    const o = straight(300, { tickDistance: 75 });
+    const g = buildSliderGeometry(o);
+    const { r, sink } = run(
+      o,
+      (t) => {
+        const p = { x: 0, y: 0 };
+        ballPos(g, t, p);
+        return p;
+      },
+      (t) => t >= o.time && t <= o.endTime - 30,
+    );
+    expect(r.endHit).toBe(true);
+    expect(r.breaks).toBe(0);
+    expect(r.firstLossAt).toBeNull();
+    expect(r.stats().trackedFraction).toBeGreaterThan(0.98);
+    expect(r.fraction()).toBe(1);
+    expect(sink.parts.every((p) => p.hit)).toBe(true);
+  });
+
+  it('still counts a release before the end check', () => {
+    const o = straight(300, { tickDistance: 75 });
+    const g = buildSliderGeometry(o);
+    const { r } = run(
+      o,
+      (t) => {
+        const p = { x: 0, y: 0 };
+        ballPos(g, t, p);
+        return p;
+      },
+      (t) => t >= o.time && t <= o.endTime - 80,
+    );
+    expect(r.endHit).toBe(false);
+    expect(r.breaks).toBe(1);
+  });
+});
+
 describe('final judgment', () => {
   it('grades by the share of parts', () => {
     expect(trackingJudgment(1)).toBe('crisp');

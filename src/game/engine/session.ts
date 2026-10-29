@@ -147,13 +147,16 @@ export class GameSession {
   readonly objs: ObjState[] = [];
   readonly features: ObjectFeatures[] = [];
   readonly scoring: Scoring;
-  readonly cursor = new CursorBuffer(16384);
+  // 65536 samples hold about 8 seconds of an 8 kHz mouse, enough for the longest movement window.
+  readonly cursor = new CursorBuffer(65536);
   readonly hold = new HoldLog();
   readonly records: HitRecord[] = [];
   now: Ms = 0;
   mask = 0;
   strayPresses = 0;
   pauses = 0;
+  /** Play time of the last resume from a pause. */
+  lastResume = 0;
   failed = false;
   failT = 0;
   moreSets: boolean;
@@ -256,6 +259,8 @@ export class GameSession {
     }
     const last = this.map.objects[this.map.objects.length - 1] as HitObject;
     this.map.durationMs = endOf(last) + 1000;
+    // The quiet second after the last object does not drain either.
+    this.drainFree.push(endOf(last), this.map.durationMs);
   }
 
   /* -------------------------------------------------------------- input */
@@ -321,9 +326,18 @@ export class GameSession {
   /** A pause started at play time t. Objects on screen at that moment are marked. */
   notePause(t: Ms): void {
     this.pauses++;
-    for (const s of this.objs) {
-      if (!s.done && s.obj.time - s.obj.approachMs <= t) s.afterPause = true;
+    for (let i = this.firstOpen; i < this.objs.length; i++) {
+      const s = this.objs[i] as ObjState;
+      if (s.done) continue;
+      // The pause counts when it falls in the approach, or in the cursor's trip from the object before.
+      const reach = Math.max(s.obj.approachMs, (this.features[i] as ObjectFeatures).gapMs ?? 0);
+      if (s.obj.time - reach <= t) s.afterPause = true;
     }
+  }
+
+  /** The play carries on at play time t after a pause. Movement windows do not reach back before it. */
+  noteResume(t: Ms): void {
+    this.lastResume = t;
   }
 
   /* ------------------------------------------------------------- judging */
@@ -397,7 +411,9 @@ export class GameSession {
     while (this.firstOpen < this.objs.length && (this.objs[this.firstOpen] as ObjState).done) this.firstOpen++;
     const judgment = s.judgment as Judgment;
     this.scoring.finalize(judgment);
-    const press = s.press ?? (judgment === 'miss' && s.aimPress ? { t: s.aimPress.t, x: s.aimPress.x, y: s.aimPress.y, slot: s.aimPress.slot } : null);
+    // An object that was skipped had no press of its own, so an earlier stray press is not its.
+    const skipped = s.headJudgment === 'miss' && s.missReason === 'skipped';
+    const press = skipped ? null : (s.press ?? (judgment === 'miss' && s.aimPress ? { t: s.aimPress.t, x: s.aimPress.x, y: s.aimPress.y, slot: s.aimPress.slot } : null));
     const rec = buildRecord({
       obj: o,
       prev: i > 0 ? (this.objs[i - 1] as ObjState).obj : null,
@@ -408,6 +424,7 @@ export class GameSession {
       press: o.kind === 'spinner' ? null : press,
       comboBefore: s.comboBefore,
       afterPause: s.afterPause,
+      movementFrom: this.lastResume,
       cursor: this.cursor,
       slider: s.slider ? s.slider.stats() : null,
       spinner: s.spinner ? s.spinner.stats() : null,
@@ -584,6 +601,8 @@ export class GameSession {
     const from = this.lastDrainT;
     this.lastDrainT = now;
     if (!this.map.health || now <= from) return;
+    // Once everything is judged there is nothing left to lose health on.
+    if (!this.moreSets && this.doneCount >= this.objs.length) return;
     let active = now - from;
     const free = this.drainFree;
     while (this.drainPtr < free.length && (free[this.drainPtr + 1] as number) < from) this.drainPtr += 2;

@@ -22,6 +22,8 @@ export interface PlayerModel {
   spinFactor: number;
   /** How long a tap holds its key, ms. */
   holdMs: number;
+  /** Let go of a slider this long before it ends. Negative lets go after. Default -5. */
+  sliderReleaseEarly?: number;
 }
 
 export const PERFECT_PLAYER: PlayerModel = {
@@ -206,7 +208,7 @@ export class AutoPlayer {
     end.y += wob * Math.sin(t1 / 120 + ph2);
     this.lastPos = end;
     this.lastT = Math.max(t1, tp + 1);
-    this.addEvent({ t: t1 + 5, kind: 'release', slot });
+    this.addEvent({ t: t1 - (m.sliderReleaseEarly ?? -5), kind: 'release', slot });
   }
 
   private planSpinner(obj: Extract<HitObject, { kind: 'spinner' }>): void {

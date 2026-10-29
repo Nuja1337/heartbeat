@@ -132,21 +132,24 @@ function star(ctx: PatternCtx): Motif | null {
 
 function flow(ctx: PatternCtx): Motif | null {
   const { rng, p, intensity } = ctx;
-  const maxN = Math.floor(ctx.maxBeats * 2);
-  if (maxN < 4) return null;
+  const total = Math.floor(Math.min(rng.int(3, 6), ctx.maxBeats));
+  if (total < 2) return null;
   const s = rng.sign();
   const bend = s * rng.range(15, 45);
+  // The rhythm follows density like a jump chain does.
+  const gaps = gapsFor(rng, halfBeatProb(p, intensity), total);
   // Stay under one full turn so the curve never lands on itself.
-  const n = Math.min(maxN, rng.int(6, 12), Math.floor(330 / Math.abs(bend)) + 1);
-  const dist = jumpDistance(p, 0.5, intensity);
+  const n = Math.min(gaps.length, Math.floor(330 / Math.abs(bend)) + 1);
+  if (n < 3) return null;
+  const offs = offsets(gaps.slice(0, n));
+  const dist = jumpDistance(p, total / gaps.length, intensity);
   const ramp = rng.sign() * 0.1;
   const lead = turnSource(rng, p)();
-  const steps: MotifStep[] = [];
-  for (let k = 0; k < n; k++) {
+  const steps: MotifStep[] = offs.map((off, k) => {
     const f = n > 1 ? (2 * k) / (n - 1) - 1 : 0;
-    steps.push({ off: k * 0.5, dist: dist * (1 + ramp * f), turn: k === 0 ? lead : bend });
-  }
-  return { tag: 'flow', steps, beats: Math.ceil(n / 2) };
+    return { off, dist: dist * (1 + ramp * f), turn: k === 0 ? lead : bend };
+  });
+  return { tag: 'flow', steps, beats: Math.ceil((offs[n - 1] as number) + (gaps[n - 1] as number)) };
 }
 
 function streamNotes(ctx: PatternCtx, tag: 'stream' | 'burst'): Motif | null {

@@ -274,9 +274,9 @@ export const DEFAULT_SETTINGS: Settings = {
 /* ------------------------------------------------------------ demand */
 /* Raw demand per object, and anchors that map raw demand to the level scale (Level N preset = N). */
 
-/** Raw demand at Dynamic levels 1..8. aim is an estimate until calibrated (plan step 3); the rest follow from the presets. */
+/** Raw demand at Dynamic levels 1..8. aim is the median measured on generated preset maps (20 seeds each); the rest follow from the presets. */
 export const DEMAND_ANCHORS: Record<SkillId, readonly number[]> = {
-  aim: [2.9, 3.8, 4.6, 5.5, 6.6, 7.9, 9.5, 11.5], // bits per second
+  aim: [3.28, 5.91, 7.34, 8.56, 9.87, 11.27, 12.73, 14.57], // bits per second
   speed: [7.3, 8.3, 9.3, 10.3, 11.3, 12.3, 13.3, 14.7], // taps per second
   tracking: [1.68, 2.31, 3.01, 3.82, 4.85, 6.1, 7.63, 9.54], // ball speed / follow radius, per second
   precision: [15.6, 16.7, 17.5, 18.5, 20.0, 21.7, 23.8, 26.3], // 1000 / radius
