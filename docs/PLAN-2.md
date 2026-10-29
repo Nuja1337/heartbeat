@@ -25,6 +25,21 @@ Rules for every phase:
 - A reviewer checks each phase before the next starts. The app must be shippable after each phase.
 - New contract entries that the engine doesn't support yet stay out of `allowedMods` and `MODE_ORDER` until the phase that implements them (see the main-session steps).
 
+**Build order as run.** This replaces the pairing in the phases below. Each step's builders own the files their phase brief gives them, and a reviewer pass follows each step.
+
+| Step | Builders | Notes |
+|---|---|---|
+| 1 | F1: §3 contract, `shared/replay.ts`, `shared/codes.ts` | Alone, because everything else codes against it |
+| 2 | F2: `src/data/**`, `analytics/{summary,fixtures,bests}.ts` ∥ G1 | |
+| 3 | U1 ∥ G2 | |
+| 4 | U2 ∥ G3 | |
+| 5 | U3 ∥ G4 | |
+| 6 | U4 | |
+| 7 | U5 | |
+| 8 | Main session: review, browser pass, one deploy at the end | |
+
+**Decisions taken by default** (§12, the owner can change any of them): bests keep comparing 1.0 and 2.0 plays through `scoringVersion`; the newest 100 replays plus kept ones; the daily map changes at local midnight; Space Grotesk is added; lime is the accent; 2.0 ships once at the end, after the owner exports a backup; the grade names as proposed; both new mods.
+
 ### Phase 0: golden fixtures, contract, formats
 
 **0.1 Main session.** Tag the current commit `v1.0`. Get the architect review of §4 before anything below starts.
@@ -819,6 +834,78 @@ The seed is fixed to the date, and the level is the player's choice.
 - Share codes store the version. Opening one made with another version shows the same note.
 - Bests per preset compare across versions (decision 1).
 - The aim demand anchors keep their Level 2 to 8 values. Level 1 becomes 4.6, and Phase 4 tunes the generator so every preset lands within 5% of its anchor.
+
+### 4.11 Corrections from the format review (binding)
+
+These override §4, §5.2, §8.3 and the Phase 0.4 tests wherever they differ.
+
+**Bests and lifted rows (was a live-data bug).**
+- `src/analytics/bests.ts`: `pbFlags` and `computeBests` compare `scoringVersion ?? 1` instead of `engineVersion`. This moves from Phase 2 to Phase 0.
+- In `savePlay`, the existing rows are lifted with `upgradeSummary` before `pbFlags`, `allRatings`, tiers and `newMilestones` see them.
+
+**`savePlay` order (replaces §4.4 steps 3 to 5).**
+1. Summarize and pack the records. Encode and gzip the replay before any transaction. On an encode error, carry on without a replay.
+2. Transaction A, as in 1.0 plus milestones: `plays` (with `hasReplay: false`), `playDetails`, `progress` and `meta`.
+3. Transaction B, only when A committed and a replay exists: put the replay rows (`keep` = 1 when A set `pb.score` or `pb.level`), then put the summary again with `hasReplay: true`. Any failure in B is swallowed, and the play stays saved.
+4. Retention runs afterwards in its own transaction.
+- `hasReplay` is a hint for lists. `getReplay` is the truth, and readers accept a true flag with no row.
+- The stored bytes are a tight array (`byteOffset === 0` and `byteLength === buffer.byteLength`), because structured clone copies the whole underlying buffer otherwise.
+
+**Two replay stores (replaces the single `replays` store in §4.4).**
+- `replays` holds `{ playId, v: 1, startedAt, keep, size, rawBytes, events, engineVersion }` with the `startedAt` and `keep_startedAt` indexes. `size` is the gzip byte length.
+- `replayBytes` holds `{ playId, bytes }`, keyed by `playId`.
+- `MIGRATIONS[2]` creates both, each guarded with `if (!db.objectStoreNames.contains(name))`.
+- `getReplay` reads both. `deletePlay`, `deleteAllData`, retention and import touch both. Retention, `replayStorage()` and any listing read `replays` only, never `replayBytes`.
+
+**Codec rules (add to §4.3).**
+- The t stream is the second difference over all N events in order. The x and y streams are second differences over the P positioned events only, in order. t is not monotonic: a press or move can carry a lower t than the advance before it. The encoder never reorders.
+- `encodeReplay` throws when `t·64` or `v·16` is not an integer, and the play then saves without a replay. `qt` and `qp` add `+ 0` so that −0 becomes +0.
+- Non-zero flags or reserved bytes count as "newer". Every length (H, N, P, LT, LX, LY) is checked against the bytes remaining before anything is allocated. A varint longer than 8 bytes, or one that runs past its stream, is "damaged". P must equal the number of ops 0 to 4 found.
+- Events with t > endT are kept. Playback duration is max(endT, the last t).
+- `ReplayFormatError` carries `kind: 'damaged' | 'newer'`, and the UI maps the kind to the message.
+- Chunking in `TraceRecorder` is invisible in the format.
+- The golden-bytes test compares the 12-byte prefix and everything from offset 12 + H as hex, and the header as parsed JSON. Key order in the header is not part of the format.
+
+**Share codes (add to §4.8).**
+- The decoder re-encodes the decoded bytes and rejects the code when the string differs (canonical form). Without this, a changed last character can pass the checksum.
+- Modes not in `MODE_ORDER` (today `placement`) are rejected.
+- `lengthSec` snaps to the nearest entry of `MODES[mode].lengthOptions`.
+
+**Export and import (add to §4.5).**
+- Import sets `hasReplay` from whether a replay row was stored, like `hasDetail`.
+- A `JsonReplay` is skipped, not its play, unless `data` is a string under 16 MB decoded and `events` and `rawBytes` are finite numbers.
+- A v2 file can hold `v: 1` summaries, because `buildExport` exports raw rows. Import lifts each one.
+- `deleteAllData` also clears both replay stores and the meta keys `milestones`, `insightSnooze` and every `plan:*`. The `onboarding` key survives.
+- A tombstoned play's replay is not imported.
+
+**Blocked and failed opens (add to §4.4).**
+- `db.ts` exports `onDbBlocked(fn)` next to `onDbOutdated`. The Shell shows "Close other Flickwise tabs to finish the update." while blocked and clears it once the open succeeds.
+- `open.onerror` with a `VersionError` shows "This browser has data from a newer Flickwise. Reload to update."
+
+**Settings (add to §4.6).** Round to a step as a whole count of steps, then `Number((count × step).toFixed(2))`, so 0.15 stays exactly 0.15.
+
+**Service worker (add to §8.3).** This host answers a missing `/assets/*.js` with 200 `text/html`.
+- Install fetches `/asset-manifest.json` with `cache: 'no-store'`. It caches an asset only when `response.ok` and the `Content-Type` isn't `text/html`, and otherwise the install fails.
+- The runtime cache-first path applies the same check and never caches opaque or non-200 responses.
+- Every live response already carries `Cache-Control: public, max-age=0, must-revalidate`, so `sw.js` is revalidated on each navigation and the kill switch takes effect at once.
+
+**Playback (add to §5.2).**
+- Playback copies `map.objects` and `map.sections`, because the `GameSession` constructor empties the array it gets.
+- `progressMs` comes from the replay.
+- Ops are fed in trace order even when t decreases.
+- A Phase 1 test checks, for each adaptive headless play, that `computeFeatures(session.map)` deep-equals `session.features`.
+
+**Extra tests for Phase 0.**
+1. Migration test 4 builds the v1 database from a frozen copy of `MIGRATIONS[1]` kept in `src/data/fixtures/`, never the live one, and snapshots the store and index names of a fresh v2 database.
+2. A 2.0 play saved over the fixture rows: a higher score than the fixture's Level 3 play sets `pb.score` and a lower one doesn't. Ratings and tiers are computed against the lifted v1 rows.
+3. Mixed rows: upgrade the fixture database, save one 2.0 play with a replay, export, import into a fresh database, and compare `listSummaries` and the replays.
+4. Codec vectors: N = 0, a first event at t = 0, t decreasing between ops, duplicate t, negative and off-field positions, −0, t ≥ 2³¹/64 ms, a trace over 2 × 65536 events, and a P mismatch rejected.
+5. Codec fuzz: 1,000 random single-byte flips and truncations of a valid container each throw `ReplayFormatError`, and never hang or return.
+6. Test 6 also checks the tight buffer, and that a failing replay put leaves the play saved.
+7. `deleteAllData` clears the replays and the new meta keys.
+8. Share codes: the canonical check rejects `AQABFc1bB1oAQAACBEN`, `placement` is rejected, and `lengthSec` snaps.
+9. Test 10 also checks that `onDbBlocked` fired and that the pending open resolved after the v1 connection closed.
+10. Settings step rounding gives exact values.
 
 ---
 
