@@ -26,7 +26,7 @@ async function seed(n = 3) {
 describe('export versions', () => {
   it('writes the detail version and imports from it', async () => {
     const ids = await seed(2);
-    const file = JSON.parse(JSON.stringify(await buildExport(undefined, NOW)));
+    const file = JSON.parse(JSON.stringify(await buildExport(undefined, {}, NOW)));
     expect(file.plays[0].detail.v).toBe(1);
 
     await deleteDatabase();
@@ -37,7 +37,7 @@ describe('export versions', () => {
 
   it('leaves out details written by a newer version and counts them', async () => {
     await seed(2);
-    const file = JSON.parse(JSON.stringify(await buildExport(undefined, NOW)));
+    const file = JSON.parse(JSON.stringify(await buildExport(undefined, {}, NOW)));
     file.plays[0].detail.v = 99;
     await deleteDatabase();
     const report = await importExport(file);
@@ -47,7 +47,7 @@ describe('export versions', () => {
 
   it('skips malformed summaries and counts them', async () => {
     await seed(3);
-    const file = JSON.parse(JSON.stringify(await buildExport(undefined, NOW)));
+    const file = JSON.parse(JSON.stringify(await buildExport(undefined, {}, NOW)));
     delete file.plays[0].summary.buckets;
     file.plays[1].summary.modeId = 'not-a-mode';
     file.plays[2].summary = 'nonsense';
@@ -63,10 +63,10 @@ describe('export versions', () => {
 describe('delete all', () => {
   it('leaves a tombstone for every play so an old export cannot bring them back', async () => {
     const ids = await seed(3);
-    const old = JSON.parse(JSON.stringify(await buildExport(undefined, NOW)));
+    const old = JSON.parse(JSON.stringify(await buildExport(undefined, {}, NOW)));
     await deleteAllData(NOW);
     expect(await countPlays()).toBe(0);
-    const after = await buildExport(undefined, NOW);
+    const after = await buildExport(undefined, {}, NOW);
     expect(after.tombstones.map((t) => t.id).sort()).toEqual([...ids].sort());
     const report = await importExport(old);
     expect(report.playsAdded).toBe(0);

@@ -17,6 +17,7 @@ import type { ColumnArray, ColumnTable } from './schema';
 export const KINDS: ObjectKind[] = ['circle', 'slider', 'spinner'];
 export const PATTERNS: PatternTag[] = [
   'single', 'jump', 'backforth', 'triangle', 'square', 'star', 'flow', 'stream', 'burst', 'doubles', 'slider', 'spinner',
+  'stack', 'cutstream', 'spacedstream', 'polygon',
 ];
 export const JUDGMENT_ORDER: Judgment[] = ['crisp', 'solid', 'rough', 'miss'];
 export const MISS_REASONS: MissReason[] = ['none', 'aim', 'early', 'skipped', 'tracking', 'spin'];
@@ -34,6 +35,7 @@ export const OBJECT_COLUMNS = {
   distance: 'f32', gapMs: 'f32', velocity: 'f32', spacing: 'f32', turnAngle: 'f32', direction: 'f32', progress: 'f32',
   runIndex: 'u16', runLength: 'u16', visibleCount: 'u8',
   arriveMs: 'f32', efficiency: 'f32', peakSpeed: 'f32', corrections: 'u8',
+  leaveMs: 'f32', primaryAlong: 'f32', primaryLateral: 'f32', primaryEndMs: 'f32', correctionPath: 'f32',
 } as const satisfies Record<string, ColType>;
 
 export const SLIDER_COLUMNS = {
@@ -140,6 +142,11 @@ export function packRecords(records: readonly HitRecord[]): { objects: ColumnTab
     o.efficiency![i] = f(r.movement.efficiency);
     o.peakSpeed![i] = f(r.movement.peakSpeed);
     o.corrections![i] = u8(r.movement.corrections);
+    o.leaveMs![i] = f(r.movement.leaveMs);
+    o.primaryAlong![i] = f(r.movement.primaryAlong);
+    o.primaryLateral![i] = f(r.movement.primaryLateral);
+    o.primaryEndMs![i] = f(r.movement.primaryEndMs);
+    o.correctionPath![i] = f(r.movement.correctionPath);
   });
   const s = sliders.columns;
   sliderRows.forEach((row, k) => {
@@ -267,6 +274,11 @@ export function unpackRecords(detail: {
         efficiency: nn(o('efficiency', i)),
         corrections: corr === NULL_U8 ? null : corr,
         peakSpeed: nn(o('peakSpeed', i)),
+        leaveMs: nn(o('leaveMs', i)),
+        primaryAlong: nn(o('primaryAlong', i)),
+        primaryLateral: nn(o('primaryLateral', i)),
+        primaryEndMs: nn(o('primaryEndMs', i)),
+        correctionPath: nn(o('correctionPath', i)),
       },
       slider: sliderAt.get(i) ?? null,
       spinner: spinnerAt.get(i) ?? null,

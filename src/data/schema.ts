@@ -7,11 +7,14 @@ import type {
   JudgmentCounts,
   LaunchRequest,
   LevelStep,
+  MilestoneId,
   ModId,
   ModeId,
   ModuleId,
   ModuleOptions,
   PlayStatus,
+  SectionFocus,
+  SectionRole,
   SkillId,
 } from '../shared/types';
 
@@ -99,9 +102,34 @@ export interface TierEvent {
   tier: number;
 }
 
+/** Per-section results of a play from generator 2. Filled by the analytics builder. */
+export interface SectionStat {
+  start: number;
+  end: number;
+  role: SectionRole | null;
+  focus: SectionFocus;
+  n: number;
+  accuracy: number | null;
+  misses: number;
+}
+
+/** Means over jumps from 2.0 records. Distances in target radii. */
+export interface MoveStat {
+  n: number;
+  /** Mean leaveMs / gapMs. */
+  leaveFrac: number | null;
+  /** Mean, radii. */
+  primaryAlong: number | null;
+  /** Mean, radii. */
+  correctionPath: number | null;
+  /** Share of jumps with corrections >= 1. */
+  correctionShare: number | null;
+  efficiency: number | null;
+}
+
 export interface PlaySummary {
   id: string;
-  v: 1;
+  v: 2;
   deviceId: string;
   createdAt: number;
   modeId: ModeId;
@@ -138,6 +166,36 @@ export interface PlaySummary {
   tiers: TierEvent[];
   /** false once retention has removed the per-object detail. */
   hasDetail: boolean;
+  /** A hint for lists. getReplay is the truth, and readers accept a true flag with no row. */
+  hasReplay: boolean;
+  sections: SectionStat[] | null;
+  movement: MoveStat | null;
+  throughput: { n: number; bitsPerSec: number } | null;
+  /** Bests compare plays within one scoring version. 1.0 plays are version 1. */
+  scoringVersion: number;
+  /** Milestones first reached with this play. */
+  milestones: MilestoneId[];
+}
+
+/** Replay metadata. The gzip bytes live in the replayBytes store, so lists never load them. */
+export interface ReplayRow {
+  playId: string;
+  v: 1;
+  /** The play's, for retention order. */
+  startedAt: number;
+  /** 0 or 1, because booleans can't be index keys. */
+  keep: 0 | 1;
+  /** Gzip byte length. */
+  size: number;
+  rawBytes: number;
+  events: number;
+  engineVersion: number;
+}
+
+export interface ReplayBytesRow {
+  playId: string;
+  /** gzip(container). A tight array: byteOffset 0 and the whole buffer. */
+  bytes: Uint8Array;
 }
 
 /** A column table. Every column has `count` entries. */
@@ -181,7 +239,10 @@ export type RuleId =
   | 'off-center'
   | 'spinners'
   | 'same-module'
-  | 'long-session';
+  | 'long-session'
+  | 'late-leave'
+  | 'first-motion'
+  | 'corrections';
 
 export type DrillBaseline =
   | { kind: 'mean'; mean: number; sd: number; n: number }
@@ -264,7 +325,41 @@ export interface UiPrefs {
       }
     >
   >;
+  /** The Daily page: the level the player chose, null for the default. */
+  daily: { level: number | null };
+  playback: { speed: number };
+  installDismissed: boolean;
 }
+
+/** Milestones reached so far. The earliest `at` wins when sources merge. */
+export type MilestoneRecord = { at: number; playId: string | null };
+export type Milestones = Partial<Record<MilestoneId, MilestoneRecord>>;
+
+export interface Onboarding {
+  done: boolean;
+  at: number | null;
+  input: boolean;
+  calibrated: boolean;
+  placed: boolean;
+}
+
+export interface PlanStep {
+  step: number;
+  kind: 'warmup' | 'drill' | 'dynamic';
+  title: string;
+  launch: LaunchRequest;
+  insightKey: string | null;
+}
+
+/** One day's training plan, stored under the meta key `plan:YYYY-MM-DD`. */
+export interface DailyPlan {
+  date: string;
+  createdAt: number;
+  steps: PlanStep[];
+}
+
+/** Insight key to "hidden until", in epoch ms. */
+export type InsightSnooze = Record<string, number>;
 
 /** A play with its per-object records, for analysis. */
 export interface PlayData {
@@ -272,5 +367,5 @@ export interface PlayData {
   records: HitRecord[];
 }
 
-export const SUMMARY_VERSION = 1;
+export const SUMMARY_VERSION = 2;
 export const DETAIL_VERSION = 1;

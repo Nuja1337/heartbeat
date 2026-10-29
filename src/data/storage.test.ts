@@ -137,7 +137,7 @@ describe('plays', () => {
     await deletePlay(saved!.summary.id, NOW);
     expect(await getSummary(saved!.summary.id)).toBeUndefined();
     expect(await getDetail(saved!.summary.id)).toBeUndefined();
-    const file = await buildExport(undefined, NOW);
+    const file = await buildExport(undefined, {}, NOW);
     expect(file.tombstones.map((t) => t.id)).toEqual([saved!.summary.id]);
   });
 
@@ -219,7 +219,7 @@ describe('export and import', () => {
     const before = await listSummaries();
     const detailBefore = await getRecords(before[0]!.id);
     const progressBefore = await loadProgress();
-    const file = await buildExport({ engineVersion: 1, generatorVersion: 1 }, NOW);
+    const file = await buildExport({ engineVersion: 1, generatorVersion: 1 }, {}, NOW);
     const bytes = await exportBytes(file, false);
 
     await deleteDatabase();
@@ -241,7 +241,7 @@ describe('export and import', () => {
 
   it('skips plays that already exist', async () => {
     await seed();
-    const file = await buildExport(undefined, NOW);
+    const file = await buildExport(undefined, {}, NOW);
     const report = await importExport(JSON.parse(JSON.stringify(file)));
     expect(report.playsAdded).toBe(0);
     expect(report.playsSkipped).toBe(5);
@@ -250,7 +250,7 @@ describe('export and import', () => {
 
   it('applies tombstones from the file', async () => {
     await seed();
-    const file = JSON.parse(JSON.stringify(await buildExport(undefined, NOW)));
+    const file = JSON.parse(JSON.stringify(await buildExport(undefined, {}, NOW)));
     const victim = file.plays[0].summary.id as string;
     file.tombstones = [{ id: victim, deletedAt: NOW }];
     const report = await importExport(file);
@@ -268,7 +268,7 @@ describe('export and import', () => {
 
   it('round trips through gzip', async () => {
     await seed();
-    const file = await buildExport(undefined, NOW);
+    const file = await buildExport(undefined, {}, NOW);
     const plain = await exportBytes(file, false);
     const gz = await exportBytes(file, true);
     expect(await getMeta('lastExport')).toBe(NOW);

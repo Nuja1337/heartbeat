@@ -1,4 +1,4 @@
-// Personal bests. Only completed plays count, and only plays from the same engine version are compared.
+// Personal bests. Only completed plays count, and only plays from the same scoring version are compared.
 
 import type { PbFlags, PlaySummary } from '../data/schema';
 import { MODS } from '../shared/catalog';
@@ -43,14 +43,17 @@ export interface ModuleBest {
   plays: number;
 }
 
-function latestEngine(summaries: readonly PlaySummary[]): number {
-  return summaries.reduce((m, s) => Math.max(m, s.engineVersion), 0);
+/** 1.0 summaries have no scoringVersion and count as version 1. */
+const scoringOf = (s: PlaySummary): number => s.scoringVersion ?? 1;
+
+function latestScoring(summaries: readonly PlaySummary[]): number {
+  return summaries.reduce((m, s) => Math.max(m, scoringOf(s)), 0);
 }
 
 export function computeBests(summaries: readonly PlaySummary[]): { dynamic: DynamicBest[]; modules: ModuleBest[] } {
   const done = summaries.filter(completed);
-  const engine = latestEngine(done);
-  const current = done.filter((s) => s.engineVersion === engine);
+  const scoring = latestScoring(done);
+  const current = done.filter((s) => scoringOf(s) === scoring);
 
   const groups = new Map<string, PlaySummary[]>();
   for (const s of current) {
@@ -87,7 +90,7 @@ export function computeBests(summaries: readonly PlaySummary[]): { dynamic: Dyna
 export function pbFlags(play: PlaySummary, existing: readonly PlaySummary[]): PbFlags {
   const flags: PbFlags = {};
   if (play.status !== 'completed') return flags;
-  const same = existing.filter((s) => completed(s) && s.engineVersion === play.engineVersion);
+  const same = existing.filter((s) => completed(s) && scoringOf(s) === scoringOf(play));
   if (play.modeId === 'dynamic') {
     const key = dynamicKey(play);
     const peers = same.filter((s) => s.modeId === 'dynamic' && dynamicKey(s) === key);

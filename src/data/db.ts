@@ -1,10 +1,25 @@
 // IndexedDB access: open, migrate, and small promise helpers.
 
 export const DB_NAME = 'flickwise';
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
-export type StoreName = 'meta' | 'settings' | 'plays' | 'playDetails' | 'progress' | 'drills' | 'tombstones';
-export const STORE_NAMES: StoreName[] = ['meta', 'settings', 'plays', 'playDetails', 'progress', 'drills', 'tombstones'];
+export type StoreName = 'meta' | 'settings' | 'plays' | 'playDetails' | 'progress' | 'drills' | 'tombstones' | 'replays' | 'replayBytes';
+export const STORE_NAMES: StoreName[] = [
+  'meta', 'settings', 'plays', 'playDetails', 'progress', 'drills', 'tombstones', 'replays', 'replayBytes',
+];
+
+/** Shown while another tab holds the old database open. */
+export const DB_BLOCKED_MESSAGE = 'Close other Flickwise tabs to finish the update.';
+/** Shown when this browser's data was written by a newer Flickwise than the running code. */
+export const DB_NEWER_MESSAGE = 'This browser has data from a newer Flickwise. Reload to update.';
+
+/** The open failed because the stored database is newer than this code. The message can be shown as is. */
+export class DbNewerError extends Error {
+  constructor() {
+    super(DB_NEWER_MESSAGE);
+    this.name = 'DbNewerError';
+  }
+}
 
 type Migration = (db: IDBDatabase, tx: IDBTransaction) => void;
 
@@ -26,15 +41,34 @@ export const MIGRATIONS: Record<number, Migration> = {
     drills.createIndex('status', 'status');
     db.createObjectStore('tombstones', { keyPath: 'id' });
   },
+  /** Only adds stores. Existing rows are never rewritten. */
+  2: (db) => {
+    if (!db.objectStoreNames.contains('replays')) {
+      const replays = db.createObjectStore('replays', { keyPath: 'playId' });
+      replays.createIndex('startedAt', 'startedAt');
+      replays.createIndex('keep_startedAt', ['keep', 'startedAt']);
+    }
+    if (!db.objectStoreNames.contains('replayBytes')) db.createObjectStore('replayBytes', { keyPath: 'playId' });
+  },
 };
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 const outdatedListeners = new Set<() => void>();
+const blockedListeners = new Set<() => void>();
 
 /** Called when another tab opened a newer version of the database. */
 export function onDbOutdated(fn: () => void): () => void {
   outdatedListeners.add(fn);
   return () => outdatedListeners.delete(fn);
+}
+
+/**
+ * Called when the open is blocked by another tab that still holds an older version open. The open stays
+ * pending and succeeds once that tab closes its connection. The caller clears its message when openDb resolves.
+ */
+export function onDbBlocked(fn: () => void): () => void {
+  blockedListeners.add(fn);
+  return () => blockedListeners.delete(fn);
 }
 
 export function openDb(): Promise<IDBDatabase> {
@@ -59,8 +93,11 @@ export function openDb(): Promise<IDBDatabase> {
       };
       resolve(db);
     };
-    open.onerror = () => reject(open.error ?? new Error('Could not open the database.'));
-    open.onblocked = () => reject(new Error('The database is blocked by another tab. Close other Flickwise tabs and reload.'));
+    open.onerror = () => {
+      const error = open.error;
+      reject(error?.name === 'VersionError' ? new DbNewerError() : (error ?? new Error('Could not open the database.')));
+    };
+    open.onblocked = () => blockedListeners.forEach((fn) => fn());
   });
   dbPromise.catch(() => {
     dbPromise = null;
@@ -82,7 +119,10 @@ export async function deleteDatabase(): Promise<void> {
     const r = indexedDB.deleteDatabase(DB_NAME);
     r.onsuccess = () => resolve();
     r.onerror = () => reject(r.error);
-    r.onblocked = () => resolve();
+    // A connection that is still closing blocks the delete for a moment. Wait for it, but not forever.
+    r.onblocked = () => {
+      setTimeout(resolve, 1000);
+    };
   });
 }
 

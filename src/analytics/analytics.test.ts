@@ -289,23 +289,25 @@ describe('sessions and bests', () => {
     expect(w.lastWeek.plays).toBe(0);
   });
 
-  it('keeps bests per setting and mod set, from completed plays of the latest engine only', () => {
-    const mk = (seed: number, o: Parameters<typeof makeFixture>[0], engine = 1) => {
+  it('keeps bests per setting and mod set, from completed plays of the latest scoring version only', () => {
+    const mk = (seed: number, o: Parameters<typeof makeFixture>[0], scoring = 1, engine = 1) => {
       const fx = makeFixture({ objects: 60, seed, lengthSec: 90, ...o });
-      return summarizePlay({ ...fx.result, engineVersion: engine });
+      return { ...summarizePlay({ ...fx.result, engineVersion: engine }), scoringVersion: scoring };
     };
     const a = mk(1, { presetLevel: 4 });
     const b = mk(2, { presetLevel: 4, baseMiss: 0.3 });
     const c = mk(3, { presetLevel: 4, mods: ['fade'] });
     const d = mk(4, { presetLevel: 4, status: 'failed' });
     const old = mk(5, { presetLevel: 4 }, 0);
-    const bests = computeBests([a, b, c, d, old]);
+    // A play from another engine version still competes when the scoring version is the same.
+    const newerEngine = mk(7, { presetLevel: 4, baseMiss: 0.5 }, 1, 2);
+    const bests = computeBests([a, b, c, d, old, newerEngine]);
     expect(bests.dynamic).toHaveLength(2);
-    const plain = bests.dynamic.find((e) => e.plays === 2)!;
-    expect(plain.score.id).toBe(a.score >= b.score ? a.id : b.id);
+    const plain = bests.dynamic.find((e) => e.plays === 3)!;
+    expect(plain.score.id).toBe([a, b, newerEngine].reduce((m, s) => (s.score > m.score ? s : m)).id);
 
     const later = mk(6, { presetLevel: 4 });
-    const flags = pbFlags({ ...later, score: a.score + b.score + 1 }, [a, b, c, d, old]);
+    const flags = pbFlags({ ...later, score: a.score + b.score + newerEngine.score + 1 }, [a, b, c, d, old, newerEngine]);
     expect(flags.score).toBe(true);
     expect(pbFlags(later, [])).toEqual({});
   });

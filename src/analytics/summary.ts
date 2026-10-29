@@ -3,7 +3,7 @@
 
 import type { PlaySummary, SkillScore } from '../data/schema';
 import { SUMMARY_VERSION } from '../data/schema';
-import { JUDGMENTS } from '../shared/catalog';
+import { JUDGMENTS, SCORING_VERSION } from '../shared/catalog';
 import type { HitRecord, ModId, PlayResult, SkillId } from '../shared/types';
 import { computeBuckets, isJump, isStreamNote, isTap, tapJudgment, tapMissed } from './buckets';
 import { itemsFromRecords, mapDemand, SKILL_ORDER } from './demand';
@@ -193,6 +193,13 @@ export function summarizePlay(result: PlayResult, ctx: SummaryContext = {}): Pla
     pb: {},
     tiers: [],
     hasDetail: all.length > 0,
+    // Placeholders. The analytics builder fills the real values.
+    hasReplay: false,
+    sections: null,
+    movement: null,
+    throughput: null,
+    scoringVersion: SCORING_VERSION,
+    milestones: [],
   };
 }
 

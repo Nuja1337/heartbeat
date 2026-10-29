@@ -94,7 +94,7 @@ describe.skipIf(!process.env.MAKE_FIXTURE)('make the 1.0 fixture', () => {
       await setTierHistory(tiers);
     }
 
-    const file = await buildExport({ engineVersion: 1, generatorVersion: 1 }, EXPORTED_AT);
+    const file = await buildExport({ engineVersion: 1, generatorVersion: 1 }, {}, EXPORTED_AT);
     const summaries = await listSummaries();
     const progress = await loadProgress();
     vi.restoreAllMocks();

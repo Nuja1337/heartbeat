@@ -76,6 +76,14 @@ export function insightText(ruleId: RuleId, variant: string | null, p: Params): 
       return `You hit almost every target, but your clicks land far from the center. On average a click is ${num(p, 'pct')}% of a target's width off.`;
     case 'spinners':
       return `You finish only ${num(p, 'pct')}% of spinners in time.`;
+    case 'late-leave':
+      return `On fast jumps you leave the last target late, after about ${num(p, 'pct')}% of the time to the next one. Leaving sooner gives the move more time.`;
+    case 'first-motion':
+      return variant === 'over'
+        ? `On long jumps your first motion goes about ${num(p, 'pct')}% of a target's width past the center before you pull back.`
+        : `On long jumps your first motion stops about ${num(p, 'pct')}% of a target's width short, and a second motion makes up the rest.`;
+    case 'corrections':
+      return `You make a second motion on ${num(p, 'pct')}% of your longer jumps. Try for one smooth move that stops on the target.`;
     case 'same-module':
       return `You've played ${str(p, 'module')} four times in a row. Try another module next, then come back to it.`;
     case 'long-session':
@@ -101,6 +109,9 @@ export const RULE_NOUN: Record<RuleId, [string, string]> = {
   spinners: ['spinner', 'spinners'],
   'same-module': ['play', 'plays'],
   'long-session': ['play', 'plays'],
+  'late-leave': ['jump', 'jumps'],
+  'first-motion': ['jump', 'jumps'],
+  corrections: ['jump', 'jumps'],
 };
 
 export function basisText(ruleId: RuleId, n: number, scope: 'window' | 'play'): string {
@@ -132,6 +143,9 @@ export function ruleTitle(ruleId: RuleId, variant: string | null): string {
     case 'spinners': return 'Spinners';
     case 'same-module': return 'Variety';
     case 'long-session': return 'Rest';
+    case 'late-leave': return 'Leaving the last target sooner';
+    case 'first-motion': return 'Where your first motion stops';
+    case 'corrections': return 'One smooth move per jump';
   }
 }
 
@@ -178,6 +192,12 @@ export function metricCopy(ruleId: RuleId, variant: string | null): MetricCopy {
       return { metric: 'how far your clicks land from the center', format: (v) => `${pctWidth(v)}% of a width` };
     case 'spinners':
       return { metric: 'how many spinners you finish in time', format: (v) => `${pct(v)}%` };
+    case 'late-leave':
+      return { metric: 'how late you leave the last target', format: (v) => `${pct(v)}% of the gap` };
+    case 'first-motion':
+      return { metric: 'where your first motion stops on long jumps', format: (v) => (pctWidth(v) === 0 ? 'on the center' : `${pctWidth(v)}% ${v < 0 ? 'short' : 'past'}`) };
+    case 'corrections':
+      return { metric: 'how often you make a second motion', format: (v) => `${pct(v)}%` };
     case 'same-module':
     case 'long-session':
       return { metric: '', format: (v) => String(v) };

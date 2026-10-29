@@ -6,10 +6,11 @@ import { summarizePlay } from '../analytics/summary';
 import type { HitRecord, ModeId, PlayResult } from '../shared/types';
 import { packRecords, unpackRecords } from './columns';
 import { getAll, req, withTx } from './db';
+import { applyReplayRetention, makeReplayRows, prepareReplay } from './replays';
 import { applyPlayToProgress } from './progress';
 import { DETAIL_VERSION, SUMMARY_VERSION } from './schema';
 import type { MetaRow, PlayData, PlayDetail, PlaySummary, ProgressRow, TierHistory } from './schema';
-import { getDeviceId, requestPersistence } from './meta';
+import { getDeviceId, planKeyRange, requestPersistence } from './meta';
 import type { ModuleId } from '../shared/types';
 
 /** A quit play with fewer judged objects than this isn't saved. */
@@ -19,8 +20,18 @@ export function shouldSave(result: PlayResult): boolean {
   return result.status !== 'quit' || result.records.length >= MIN_QUIT_OBJECTS;
 }
 
-/* Older stored shapes are lifted one version at a time. There is only version 1 so far. */
-const SUMMARY_UPGRADES: Record<number, (raw: Record<string, unknown>) => Record<string, unknown>> = {};
+/* Older stored shapes are lifted one version at a time. Stored rows are never rewritten by the lift. */
+export const SUMMARY_UPGRADES: Record<number, (raw: Record<string, unknown>) => Record<string, unknown>> = {
+  1: (raw) => ({
+    ...raw,
+    hasReplay: false,
+    sections: null,
+    movement: null,
+    throughput: null,
+    scoringVersion: 1,
+    milestones: [],
+  }),
+};
 const DETAIL_UPGRADES: Record<number, (raw: Record<string, unknown>) => Record<string, unknown>> = {};
 
 function lift<T>(raw: unknown, target: number, steps: typeof SUMMARY_UPGRADES, what: string): T {
@@ -45,15 +56,33 @@ export interface SaveOutcome {
   progress: ProgressRow[];
 }
 
-/** Saves a finished play, its detail, module progress and any new tiers in one transaction. */
+/** Lifts stored summaries. A row that can't be lifted (a newer version) is left out of the comparisons. */
+function liftAll(rows: unknown[]): PlaySummary[] {
+  const out: PlaySummary[] = [];
+  for (const row of rows) {
+    try {
+      out.push(upgradeSummary(row));
+    } catch {
+      // Not comparable. It stays in the database untouched.
+    }
+  }
+  return out;
+}
+
+/**
+ * Saves a finished play, its detail, module progress and any new tiers. The replay is encoded and gzipped
+ * first, because awaiting other work inside a transaction would commit it early. Transaction A writes the play.
+ * Transaction B writes the replay once A has committed, and a failure there leaves the play saved.
+ */
 export async function savePlay(result: PlayResult, now = Date.now()): Promise<SaveOutcome | null> {
   if (!shouldSave(result)) return null;
   const deviceId = await getDeviceId();
   const summary = summarizePlay(result, { deviceId, now });
   const packed = packRecords(result.records);
+  const prepared = await prepareReplay(result.replay);
   let progress: ProgressRow[] = [];
   await withTx(['plays', 'playDetails', 'progress', 'meta'], 'readwrite', async (tx) => {
-    const existing = await getAll<PlaySummary>(tx, 'plays');
+    const existing = liftAll(await getAll<unknown>(tx, 'plays'));
     const progressRows = await getAll<ProgressRow>(tx, 'progress');
     const tierRow = await req<MetaRow | undefined>(tx.objectStore('meta').get('tiers'));
     const history = (tierRow?.value as TierHistory | undefined) ?? {};
@@ -75,6 +104,22 @@ export async function savePlay(result: PlayResult, now = Date.now()): Promise<Sa
       tx.objectStore('meta').put({ key: 'tiers', value: recordTierEvents(history, summary.tiers, now) } satisfies MetaRow);
     }
   });
+  if (prepared) {
+    try {
+      const keep = summary.pb.score === true || summary.pb.level === true;
+      const rows = makeReplayRows(summary.id, summary.startedAt, keep, prepared);
+      const withReplay: PlaySummary = { ...summary, hasReplay: true };
+      await withTx(['replays', 'replayBytes', 'plays'], 'readwrite', (tx) => {
+        tx.objectStore('replays').put(rows.row);
+        tx.objectStore('replayBytes').put(rows.bytes);
+        tx.objectStore('plays').put(withReplay);
+      });
+      summary.hasReplay = true;
+      await applyReplayRetention();
+    } catch {
+      // The play is saved. Only its replay is lost.
+    }
+  }
   // Best effort. The browser may ignore it.
   requestPersistence(now).catch(() => undefined);
   return { summary, progress };
@@ -130,24 +175,28 @@ export async function loadPlayData(summaries: readonly PlaySummary[]): Promise<P
 }
 
 export async function deletePlay(id: string, now = Date.now()): Promise<void> {
-  await withTx(['plays', 'playDetails', 'tombstones'], 'readwrite', (tx) => {
+  await withTx(['plays', 'playDetails', 'tombstones', 'replays', 'replayBytes'], 'readwrite', (tx) => {
     tx.objectStore('plays').delete(id);
     tx.objectStore('playDetails').delete(id);
+    tx.objectStore('replays').delete(id);
+    tx.objectStore('replayBytes').delete(id);
     tx.objectStore('tombstones').put({ id, deletedAt: now });
   });
 }
 
 /**
- * Removes plays, progress, drills and tier history. Settings and the device id stay. Every deleted
+ * Removes plays, replays, progress, drills, tier history, milestones, insight snoozes and daily plans.
+ * Settings, the device id and the onboarding state stay. Every deleted
  * play leaves a tombstone, so a later sync or an old export can't bring it back.
  */
 export async function deleteAllData(now = Date.now()): Promise<void> {
-  await withTx(['plays', 'playDetails', 'progress', 'drills', 'tombstones', 'meta'], 'readwrite', async (tx) => {
+  await withTx(['plays', 'playDetails', 'progress', 'drills', 'tombstones', 'meta', 'replays', 'replayBytes'], 'readwrite', async (tx) => {
     const ids = await req(tx.objectStore('plays').getAllKeys());
     for (const id of ids) tx.objectStore('tombstones').put({ id: String(id), deletedAt: now });
-    for (const name of ['plays', 'playDetails', 'progress', 'drills'] as const) tx.objectStore(name).clear();
-    tx.objectStore('meta').delete('tiers');
-    tx.objectStore('meta').delete('lastExport');
+    for (const name of ['plays', 'playDetails', 'progress', 'drills', 'replays', 'replayBytes'] as const) tx.objectStore(name).clear();
+    const meta = tx.objectStore('meta');
+    for (const key of ['tiers', 'lastExport', 'milestones', 'insightSnooze']) meta.delete(key);
+    for (const key of await req(meta.getAllKeys(planKeyRange()))) meta.delete(key);
   });
 }
 
