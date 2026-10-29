@@ -11,7 +11,7 @@ import { isJump, isStreamNote, isTap, octantOf, tapMissed } from './buckets';
 import { basisText, insightText, lateralSide, OCTANT_PHRASE, recommendationLabel, ruleTitle } from './insightCopy';
 import type { Params } from './insightCopy';
 import { SESSION_GAP_MS, groupSessions } from './sessions';
-import { aggOf, logSdZ, mean, sd, twoPropZ, welch } from './stats';
+import { aggOf, logSdZ, mean, quantile, sd, twoPropZ, welch } from './stats';
 
 export const INSIGHT_WINDOW_DAYS = 30;
 export const MAX_TAPS = 3000;
@@ -170,15 +170,45 @@ function meanTest(values: number[], minN: number, thr: number, dir: -1 | 0 | 1, 
 
 /* ------------------------------------------------------------- rules */
 
-const isLongFast = (t: Tap): boolean => {
+/**
+ * "Long" and "fast" are measured against the player's own jumps, because real maps at the lower
+ * levels have almost no jumps over 4.5 target widths. Long is at least the 75th percentile of jump
+ * spacing (and no less than 1.5 widths). Fast is at least the median jump speed. The cut-offs are
+ * rounded and kept in the variant, so a drill later measures the same jumps.
+ */
+interface JumpCuts {
+  spacing: number;
+  velocity: number;
+}
+const roundTo = (v: number, step: number): number => Math.round(v / step) * step;
+const clean = (v: number): number => Math.round(v * 100) / 100;
+
+function jumpCuts(rows: Rows): JumpCuts | null {
+  const jumps = rows.taps.filter((t) => isJump(t.rec) && t.rec.features.spacing !== null && t.rec.features.velocity !== null);
+  if (jumps.length < 20) return null;
+  return {
+    spacing: clean(Math.max(1.5, roundTo(quantile(jumps.map((t) => t.rec.features.spacing!), 0.75), 0.25))),
+    velocity: clean(roundTo(quantile(jumps.map((t) => t.rec.features.velocity!), 0.5), 0.05)),
+  };
+}
+const cutVariant = (c: JumpCuts): string => `s${c.spacing}v${c.velocity}`;
+function parseCuts(variant: string | null): JumpCuts | null {
+  const m = variant?.match(/^s([\d.]+)v([\d.]+)$/);
+  return m ? { spacing: Number(m[1]), velocity: Number(m[2]) } : null;
+}
+const isLongFast = (t: Tap, c: JumpCuts): boolean => {
   const f = t.rec.features;
-  return isJump(t.rec) && t.along !== null && f.spacing !== null && f.velocity !== null && f.spacing >= 4.5 && f.velocity >= 0.9;
+  return isJump(t.rec) && t.along !== null && f.spacing !== null && f.velocity !== null && f.spacing >= c.spacing && f.velocity >= c.velocity;
 };
 const isShort = (t: Tap): boolean => {
   const f = t.rec.features;
   return isJump(t.rec) && t.along !== null && f.spacing !== null && f.spacing >= 1 && f.spacing < 2.5;
 };
-const longFastAlong = (r: Rows) => nonNull(r.taps.filter(isLongFast).map((t) => t.along));
+/** Along errors of the long, fast jumps. Uses the cut-offs in `variant`, or the rows' own when there are none. */
+function longFastAlong(r: Rows, variant: string | null): number[] {
+  const c = parseCuts(variant) ?? jumpCuts(r);
+  return c ? nonNull(r.taps.filter((t) => isLongFast(t, c)).map((t) => t.along)) : [];
+}
 const shortAlong = (r: Rows) => nonNull(r.taps.filter(isShort).map((t) => t.along));
 
 const pctWidth = (radii: number) => Math.round(Math.abs(radii) * 50);
@@ -188,12 +218,25 @@ function jumpsRec(options: ModuleOptions) {
 }
 
 const streamNotesFast = (r: Rows) => nonNull(r.taps.filter((t) => isStreamNote(t.rec) && (t.rec.features.gapMs ?? 999) < 140).map((t) => t.timing));
-const lateStream = (r: Rows) => nonNull(r.taps.filter((t) => isStreamNote(t.rec) && t.rec.features.runIndex >= 9).map((t) => t.timing));
-const earlyStream = (r: Rows) => nonNull(r.taps.filter((t) => isStreamNote(t.rec) && t.rec.features.runIndex >= 1 && t.rec.features.runIndex <= 4).map((t) => t.timing));
+const lateStream = (r: Rows) => nonNull(r.taps.filter((t) => isStreamNote(t.rec) && t.rec.features.runIndex >= 6).map((t) => t.timing));
+const earlyStream = (r: Rows) => nonNull(r.taps.filter((t) => isStreamNote(t.rec) && t.rec.features.runIndex >= 1 && t.rec.features.runIndex <= 3).map((t) => t.timing));
 
-const turnTaps = (r: Rows) => r.taps.filter((t) => isJump(t.rec) && t.rec.features.spacing !== null && t.rec.features.spacing >= 2.5 && t.rec.features.turnAngle !== null);
+const turnTaps = (r: Rows) => r.taps.filter((t) => isJump(t.rec) && t.rec.features.spacing !== null && t.rec.features.spacing >= 1.5 && t.rec.features.turnAngle !== null);
 const sharpTaps = (r: Rows) => turnTaps(r).filter((t) => t.rec.features.turnAngle! >= 100);
 const wideTaps = (r: Rows) => turnTaps(r).filter((t) => t.rec.features.turnAngle! < 100);
+
+/**
+ * How many targets count as a busy screen depends on the approach times the player used, so it is
+ * taken from their own maps. Busy is the top quarter (at least 3 targets) and calm is the bottom quarter.
+ */
+function busyCuts(rows: Rows): { busy: number; calm: number } | null {
+  if (rows.taps.length < 100) return null;
+  const counts = rows.taps.map((t) => t.rec.features.visibleCount);
+  const busy = Math.max(3, Math.round(quantile(counts, 0.75)));
+  const calm = Math.max(1, Math.min(busy - 1, Math.round(quantile(counts, 0.25))));
+  return { busy, calm };
+}
+const busyTaps = (r: Rows, cut: number): Tap[] => r.taps.filter((t) => t.rec.features.visibleCount >= cut);
 
 const rate = (taps: Tap[]): Sample => ({ kind: 'rate', hits: taps.filter((t) => t.missed).length, n: taps.length });
 
@@ -207,15 +250,17 @@ const rules: Rule[] = [
     id: 'long-undershoot',
     minN: 40,
     detect(rows, scale) {
-      const values = longFastAlong(rows);
+      const cuts = jumpCuts(rows);
+      if (!cuts) return null;
+      const values = longFastAlong(rows, cutVariant(cuts));
       const t = meanTest(values, 40, 0.25, -1, scale);
       if (!t) return null;
       return {
-        variant: null, ratio: Math.abs(t.mean) / 0.25, n: t.n, params: { pct: pctWidth(t.mean) },
+        variant: cutVariant(cuts), ratio: Math.abs(t.mean) / 0.25, n: t.n, params: { pct: pctWidth(t.mean), cut: cuts.spacing },
         ...jumpsRec({ distanceFocus: 'long' }), sample: { kind: 'mean', values },
       };
     },
-    sample: (r) => ({ kind: 'mean', values: longFastAlong(r) }),
+    sample: (r, variant) => ({ kind: 'mean', values: longFastAlong(r, variant) }),
     good: () => 'zero',
     threshold: () => 0.25,
   },
@@ -223,15 +268,17 @@ const rules: Rule[] = [
     id: 'long-overshoot',
     minN: 40,
     detect(rows, scale) {
-      const values = longFastAlong(rows);
+      const cuts = jumpCuts(rows);
+      if (!cuts) return null;
+      const values = longFastAlong(rows, cutVariant(cuts));
       const t = meanTest(values, 40, 0.25, 1, scale);
       if (!t) return null;
       return {
-        variant: null, ratio: Math.abs(t.mean) / 0.25, n: t.n, params: { pct: pctWidth(t.mean) },
+        variant: cutVariant(cuts), ratio: Math.abs(t.mean) / 0.25, n: t.n, params: { pct: pctWidth(t.mean), cut: cuts.spacing },
         ...jumpsRec({ distanceFocus: 'long' }), sample: { kind: 'mean', values },
       };
     },
-    sample: (r) => ({ kind: 'mean', values: longFastAlong(r) }),
+    sample: (r, variant) => ({ kind: 'mean', values: longFastAlong(r, variant) }),
     good: () => 'zero',
     threshold: () => 0.25,
   },
@@ -452,20 +499,26 @@ const rules: Rule[] = [
     id: 'busy-screen',
     minN: 50,
     detect(rows, scale) {
-      const busy = rows.taps.filter((t) => t.rec.features.visibleCount >= 4);
-      const calm = rows.taps.filter((t) => t.rec.features.visibleCount <= 2);
+      const cuts = busyCuts(rows);
+      if (!cuts) return null;
+      const busy = busyTaps(rows, cuts.busy);
+      const calm = rows.taps.filter((t) => t.rec.features.visibleCount <= cuts.calm);
       if (busy.length < need(50, scale) || calm.length < need(50, scale)) return null;
       const mb = busy.filter((t) => t.missed).length;
       const mc = calm.filter((t) => t.missed).length;
       const diff = mb / busy.length - mc / calm.length;
       if (diff < 0.06 || twoPropZ(mb, busy.length, mc, calm.length) < 2) return null;
       return {
-        variant: null, ratio: diff / 0.06, n: Math.min(busy.length, calm.length),
-        params: { a: Math.round((mb / busy.length) * 100), b: Math.round((mc / calm.length) * 100) },
+        variant: `b${cuts.busy}c${cuts.calm}`, ratio: diff / 0.06, n: Math.min(busy.length, calm.length),
+        params: { cut: cuts.busy, a: Math.round((mb / busy.length) * 100), b: Math.round((mc / calm.length) * 100) },
         modeId: 'reading', options: withDefaults('reading', {}), sample: rate(busy),
       };
     },
-    sample: (r) => rate(r.taps.filter((t) => t.rec.features.visibleCount >= 4)),
+    sample: (r, variant) => {
+      const m = variant?.match(/^b(\d+)c(\d+)$/);
+      const cut = m ? Number(m[1]) : (busyCuts(r)?.busy ?? 4);
+      return rate(busyTaps(r, cut));
+    },
     good: () => 'down',
     threshold: () => 0.06,
   },

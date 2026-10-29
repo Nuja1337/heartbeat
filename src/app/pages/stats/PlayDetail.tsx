@@ -105,7 +105,7 @@ export function PlayDetail() {
                   <span>Spinner {i + 1}</span>
                   <Badge>{JUDGMENTS[r.judgment].label}</Badge>
                   <span className="text-ink-2">
-                    {r.spinner!.rotations.toFixed(1)} of {r.spinner!.rotationsRequired} turns, {Math.round(r.spinner!.meanRpm)} rpm on average, {Math.round(r.spinner!.peakRpm)} at the peak
+                    {r.spinner!.rotations.toFixed(1)} turns, {r.spinner!.rotationsRequired} needed, {Math.round(r.spinner!.meanRpm)} rpm on average, {Math.round(r.spinner!.peakRpm)} at the peak
                   </span>
                 </li>
               ))}

@@ -49,8 +49,10 @@ export function Histogram({
   label: string;
   compact?: boolean;
 }) {
-  const W = 720;
-  const M = { l: compact ? 8 : 40, r: 8, t: 8, b: 26 };
+  // A narrow card scales the drawing down, so the compact chart uses a narrow drawing to keep text readable.
+  const W = compact ? 400 : 720;
+  const font = compact ? 12 : 11;
+  const M = { l: compact ? 8 : 40, r: 8, t: 8, b: 40 };
   const shares = series.map((s) => {
     const total = s.counts.reduce((a, b) => a + b, 0) || 1;
     return s.counts.map((c) => c / total);
@@ -79,7 +81,7 @@ export function Histogram({
         yTicks.map((v) => (
           <g key={v}>
             <line x1={M.l} x2={W - M.r} y1={y(v)} y2={y(v)} stroke={CHART.grid} />
-            <text x={M.l - 6} y={y(v)} dy="0.32em" textAnchor="end" fontSize={11} fill={CHART.ink2}>
+            <text x={M.l - 6} y={y(v)} dy="0.32em" textAnchor="end" fontSize={font} fill={CHART.ink2}>
               {Math.round(v * 100)}%
             </text>
           </g>
@@ -120,10 +122,13 @@ export function Histogram({
         </g>
       )}
       {xTicks.map((v) => (
-        <text key={v} x={x(v)} y={height - 8} textAnchor="middle" fontSize={11} fill={CHART.ink2}>
-          {v > 0 ? `+${v}` : v} ms
+        <text key={v} x={x(v)} y={height - 22} textAnchor={v === HIST_MIN ? 'start' : v === HIST_MAX ? 'end' : 'middle'} fontSize={font} fill={CHART.ink2}>
+          {v > 0 ? `+${v}` : v}
         </text>
       ))}
+      <text x={(M.l + W - M.r) / 2} y={height - 6} textAnchor="middle" fontSize={font} fill={CHART.ink2}>
+        Early (left) and late (right), in ms
+      </text>
     </svg>
   );
 }

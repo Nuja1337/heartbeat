@@ -48,6 +48,11 @@ export interface FixtureOptions {
   /* planted weaknesses */
   /** Mean overshoot (positive) or undershoot (negative), in radii, on spacing >= 4.5 and velocity >= 0.9. */
   longAlong?: number;
+  /** Jump spacings in target widths to pick from. Default reaches 7.5, which real maps below Level 7 do not. */
+  jumpSpacings?: number[];
+  /** Where "long" and "fast" start for longAlong, in widths and units per ms. */
+  longFrom?: number;
+  fastFrom?: number;
   /** Same for spacing 1 to 2.5. */
   shortAlong?: number;
   /** Mean lateral error in radii when moving in one octant. */
@@ -69,6 +74,8 @@ export interface FixtureOptions {
   endDrop?: number;
   /** Extra miss chance when four or more targets are visible. */
   busyExtraMiss?: number;
+  /** The number of visible targets where busyExtraMiss starts. */
+  busyFrom?: number;
   /** Aim noise in radii that keeps clicks off center without causing misses. */
   offCenter?: boolean;
   /** Share of spinners that fall short. */
@@ -166,7 +173,7 @@ function layout(o: Required<Pick<FixtureOptions, 'objects' | 'radius'>> & Fixtur
       }
     } else {
       const gap = r.pick([250, 300, 375, 450, 500]);
-      const spacing = r.pick([1.5, 2, 3, 4, 5, 5.5, 6, 7.5]);
+      const spacing = r.pick(o.jumpSpacings ?? [1.5, 2, 3, 4, 5, 5.5, 6, 7.5]);
       const next = place(pos, spacing * 2 * radius, r.range(0, Math.PI * 2));
       t += gap;
       slots.push({ kind: 'circle', pattern: 'jump', time: t, endTime: t, pos: next, endPos: next, shape: 'straight', repeats: 0, length: 0, velocity: 0 });
@@ -289,8 +296,8 @@ export function makeFixture(options: FixtureOptions = {}): Fixture {
       // Miss chance without a press.
       let pMiss = o.baseMiss ?? 0.04;
       if (progress > 0.5) pMiss += o.secondHalfDrop ?? 0;
-      if (f.turnAngle !== null && f.spacing !== null && f.spacing >= 2.5) pMiss += f.turnAngle >= 100 ? (o.sharpExtraMiss ?? 0) : (o.wideExtraMiss ?? 0);
-      if (f.visibleCount >= 4) pMiss += o.busyExtraMiss ?? 0;
+      if (f.turnAngle !== null && f.spacing !== null && f.spacing >= 1.5) pMiss += f.turnAngle >= 100 ? (o.sharpExtraMiss ?? 0) : (o.wideExtraMiss ?? 0);
+      if (f.visibleCount >= (o.busyFrom ?? 4)) pMiss += o.busyExtraMiss ?? 0;
       const noPress = r.next() < pMiss;
 
       let sd = o.timingSd ?? 25;
@@ -302,7 +309,7 @@ export function makeFixture(options: FixtureOptions = {}): Fixture {
       const aimSd = o.aimSd ?? 0.28;
       let alongMean = 0;
       if (f.spacing !== null && f.velocity !== null) {
-        if (f.spacing >= 4.5 && f.velocity >= 0.9) alongMean = o.longAlong ?? 0;
+        if (f.spacing >= (o.longFrom ?? 4.5) && f.velocity >= (o.fastFrom ?? 0.9)) alongMean = o.longAlong ?? 0;
         else if (f.spacing >= 1 && f.spacing < 2.5) alongMean = o.shortAlong ?? 0;
       }
       let latMean = 0;

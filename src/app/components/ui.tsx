@@ -9,10 +9,11 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'md' | 'sm' | 'lg';
 
 const VARIANT: Record<Variant, string> = {
-  primary: 'bg-accent text-accent-ink hover:brightness-110 font-semibold',
-  secondary: 'bg-surface-2 text-ink border border-line-2 hover:border-ink-3',
-  ghost: 'text-ink-2 hover:text-ink hover:bg-surface-2',
-  danger: 'bg-transparent text-miss border border-miss/50 hover:bg-miss/10',
+  // Dark text on the accent fill. A disabled primary drops the fill so it can't be mistaken for an active one.
+  primary: 'bg-accent text-accent-ink hover:brightness-110 font-semibold disabled:bg-surface-2 disabled:text-ink-2 disabled:border disabled:border-line-2 disabled:hover:brightness-100',
+  secondary: 'bg-surface-2 text-ink border border-line-2 hover:border-ink-3 disabled:text-ink-2 disabled:hover:border-line-2',
+  ghost: 'text-ink-2 hover:text-ink hover:bg-surface-2 disabled:text-ink-3 disabled:hover:bg-transparent',
+  danger: 'bg-transparent text-miss border border-miss/50 hover:bg-miss/10 disabled:text-ink-2 disabled:border-line-2 disabled:hover:bg-transparent',
 };
 const SIZE: Record<Size, string> = {
   sm: 'px-2.5 py-1 text-sm',
@@ -20,7 +21,7 @@ const SIZE: Record<Size, string> = {
   lg: 'px-6 py-3 text-lg',
 };
 
-const base = 'inline-flex items-center justify-center gap-2 rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer select-none';
+const base = 'inline-flex items-center justify-center gap-2 rounded-md transition disabled:cursor-not-allowed cursor-pointer select-none';
 
 export function buttonClass(variant: Variant = 'secondary', size: Size = 'md', extra = ''): string {
   return `${base} ${VARIANT[variant]} ${SIZE[size]} ${extra}`;

@@ -42,7 +42,7 @@ describe('insight rules', () => {
     const i = find(found, 'long-undershoot')!;
     expect(i).toBeDefined();
     expect(found[0]!.ruleId).toBe('long-undershoot');
-    expect(i.text).toMatch(/^You stop short on long, fast jumps\. Your clicks land about \d+% of a target's width before the center\.$/);
+    expect(i.text).toMatch(/^You stop short on long, fast jumps \(over [\d.]+ target widths\)\. Your clicks land about \d+% of a target's width before the center\.$/);
     expect(Number(i.text.match(/about (\d+)%/)![1])).toBeGreaterThanOrEqual(18);
     expect(Number(i.text.match(/about (\d+)%/)![1])).toBeLessThanOrEqual(26);
     expect(i.basis).toMatch(/^Based on \d+ jumps from the last 30 days\.$/);
@@ -54,7 +54,7 @@ describe('insight rules', () => {
 
   it('long-overshoot and short-overshoot', () => {
     const found = detectInsights(history({ longAlong: 0.45, shortAlong: 0.4 }), NOW);
-    expect(find(found, 'long-overshoot')?.text).toMatch(/^You overshoot long, fast jumps\./);
+    expect(find(found, 'long-overshoot')?.text).toMatch(/^You overshoot long, fast jumps \(over [\d.]+ target widths\)\./);
     expect(find(found, 'long-undershoot')).toBeUndefined();
     const short = find(found, 'short-overshoot')!;
     expect(short.text).toMatch(/^You overshoot short jumps by about \d+% of a target's width\.$/);
@@ -128,8 +128,8 @@ describe('insight rules', () => {
   });
 
   it('busy-screen', () => {
-    const i = find(detectInsights(history({ busyExtraMiss: 0.2 }, 10), NOW), 'busy-screen')!;
-    expect(i.text).toMatch(/^You miss more when four or more targets are on screen \(\d+% against \d+%\)\.$/);
+    const i = find(detectInsights(history({ busyExtraMiss: 0.2, busyFrom: 3 }, 10), NOW), 'busy-screen')!;
+    expect(i.text).toMatch(/^You miss more when \d+ or more targets are on screen \(\d+% against \d+% on quieter screens\)\.$/);
     expect(i.recommendation?.modeId).toBe('reading');
   });
 

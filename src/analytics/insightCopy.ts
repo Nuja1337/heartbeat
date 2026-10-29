@@ -40,9 +40,9 @@ export const plural = (n: number, one: string, many = `${one}s`): string => `${n
 export function insightText(ruleId: RuleId, variant: string | null, p: Params): string {
   switch (ruleId) {
     case 'long-undershoot':
-      return `You stop short on long, fast jumps. Your clicks land about ${num(p, 'pct')}% of a target's width before the center.`;
+      return `You stop short on long, fast jumps (over ${num(p, 'cut')} target widths). Your clicks land about ${num(p, 'pct')}% of a target's width before the center.`;
     case 'long-overshoot':
-      return `You overshoot long, fast jumps. Your clicks land about ${num(p, 'pct')}% of a target's width past the center.`;
+      return `You overshoot long, fast jumps (over ${num(p, 'cut')} target widths). Your clicks land about ${num(p, 'pct')}% of a target's width past the center.`;
     case 'short-overshoot':
       return `You overshoot short jumps by about ${num(p, 'pct')}% of a target's width.`;
     case 'direction-drift':
@@ -55,7 +55,7 @@ export function insightText(ruleId: RuleId, variant: string | null, p: Params): 
         ? `You rush fast streams, about ${num(p, 'ms')} ms early on average.`
         : `You're late on fast streams by about ${num(p, 'ms')} ms on average.`;
     case 'stream-fade':
-      return `Your timing gets looser after the first eight taps of a stream (${num(p, 'a')} ms spread against ${num(p, 'b')} ms).`;
+      return `Your timing gets looser after the first five taps of a stream (${num(p, 'a')} ms spread against ${num(p, 'b')} ms).`;
     case 'second-half':
       return `Your accuracy drops by about ${num(p, 'pp')} points in the second half of a play.`;
     case 'sharp-wide':
@@ -71,7 +71,7 @@ export function insightText(ruleId: RuleId, variant: string | null, p: Params): 
     case 'timing-bias':
       return `You click about ${num(p, 'ms')} ms ${variant === 'early' ? 'early' : 'late'} on average.`;
     case 'busy-screen':
-      return `You miss more when four or more targets are on screen (${num(p, 'a')}% against ${num(p, 'b')}%).`;
+      return `You miss more when ${num(p, 'cut')} or more targets are on screen (${num(p, 'a')}% against ${num(p, 'b')}% on quieter screens).`;
     case 'off-center':
       return `You hit almost every target, but your clicks land far from the center. On average a click is ${num(p, 'pct')}% of a target's width off.`;
     case 'spinners':

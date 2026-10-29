@@ -65,9 +65,10 @@ describe('buckets', () => {
   it('bins at the documented edges', () => {
     expect(distanceBin(0.99)).toBe('stack');
     expect(distanceBin(1)).toBe('short');
-    expect(distanceBin(2.5)).toBe('medium');
-    expect(distanceBin(4.5)).toBe('long');
-    expect(distanceBin(7)).toBe('far');
+    expect(distanceBin(1.99)).toBe('short');
+    expect(distanceBin(2)).toBe('medium');
+    expect(distanceBin(3)).toBe('long');
+    expect(distanceBin(4.5)).toBe('far');
     expect([109, 110, 159, 160, 249, 250, 399, 400, 699, 700].map(gapBin)).toEqual([0, 1, 1, 2, 2, 3, 3, 4, 4, 5]);
     expect([0.39, 0.4, 0.89, 0.9, 1.49, 1.5].map(velocityBin)).toEqual([0, 1, 1, 2, 2, 3]);
     expect([44, 45, 99, 100, 149, 150].map(turnBin)).toEqual(['straight', 'wide', 'wide', 'sharp', 'sharp', 'reversal']);
@@ -129,7 +130,7 @@ describe('summarizePlay', () => {
     expect(s.accuracy).toBeCloseTo(fx.result.accuracy, 6);
     expect(s.timing.sd).toBeGreaterThan(15);
     expect(s.timing.sd).toBeLessThan(40);
-    const longBuckets = Object.entries(s.buckets).filter(([k]) => k.startsWith('dg:long:'));
+    const longBuckets = Object.entries(s.buckets).filter(([k]) => k.startsWith('dg:far:'));
     expect(longBuckets.length).toBeGreaterThan(0);
     const along = mean(longBuckets.map(([, b]) => b.along.mean));
     expect(along).toBeLessThan(-0.2);

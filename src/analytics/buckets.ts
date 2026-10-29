@@ -43,13 +43,14 @@ export function motionOf(r: HitRecord): Motion | null {
 
 export const DISTANCE_BINS = ['stack', 'short', 'medium', 'long', 'far'] as const;
 export type DistanceBin = (typeof DISTANCE_BINS)[number];
-const DISTANCE_EDGES = [1, 2.5, 4.5, 7];
+// Real maps put most jumps between 1 and 3 widths, so the bins are finer there.
+const DISTANCE_EDGES = [1, 2, 3, 4.5];
 export const DISTANCE_LABELS: Record<DistanceBin, string> = {
   stack: 'Under 1',
-  short: '1 to 2.5',
-  medium: '2.5 to 4.5',
-  long: '4.5 to 7',
-  far: '7 and up',
+  short: '1 to 2',
+  medium: '2 to 3',
+  long: '3 to 4.5',
+  far: '4.5 and up',
 };
 
 export const GAP_EDGES = [110, 160, 250, 400, 700];

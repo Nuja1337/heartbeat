@@ -69,12 +69,12 @@ describe('rules that talk about jumps count jumps', () => {
 describe('drill baseline and after-data use the same plays', () => {
   const prior = (): PlayData[] => [
     // The Jumps module is much harder on long jumps than Dynamic, so mixing them inflates the baseline.
-    ...hist({ modeId: 'jumps', longAlong: -0.8 }, 5, NOW - 3 * DAY, 40),
-    ...hist({ longAlong: -0.3 }, 5, NOW - 600_000, 60),
+    ...hist({ modeId: 'jumps', longAlong: -0.8, longFrom: 4, fastFrom: 0 }, 5, NOW - 3 * DAY, 40),
+    ...hist({ longAlong: -0.3, longFrom: 4, fastFrom: 0 }, 5, NOW - 600_000, 60),
   ];
   const after = (): PlayData[] => [
     ...[0, 1, 2].map((k) => ({ ...hist({ modeId: 'jumps', objects: 60, drillId: 'd' }, 1, NOW + (k + 1) * 3 * 3_600_000, 80 + k)[0]! })),
-    ...hist({ longAlong: -0.3 }, 6, NOW + 2 * DAY, 90, 3_600_000),
+    ...hist({ longAlong: -0.3, longFrom: 4, fastFrom: 0 }, 6, NOW + 2 * DAY, 90, 3_600_000),
   ];
 
   it('a player who does not change is not reported as better', () => {
@@ -137,5 +137,82 @@ describe('labels', () => {
   it('reads naturally after "Opens"', () => {
     expect(recommendationLabel('jumps', { directionFocus: 2, distanceFocus: 'mixed' })).toBe('Jumps, moving down');
     expect(recommendationLabel('jumps', { distanceFocus: 'long' })).toBe('Jumps, long distances');
+  });
+});
+
+describe('insights on realistic jump distances', () => {
+  // Real Dynamic maps below Level 7 have almost no jumps over 4.5 widths (p90 is 2.3 to 3.3 at Levels 1 to 6).
+  const LEVEL_4 = [1.2, 1.6, 1.9, 2.2, 2.6, 3, 3.5, 4];
+  const LEVEL_1 = [1, 1.3, 1.6, 1.9, 2.2, 2.5];
+
+  it('finds a planted undershoot at Level 4 spacing', () => {
+    const plays = hist({ jumpSpacings: LEVEL_4, longAlong: -0.4, longFrom: 2.8, fastFrom: 0 }, 7, NOW - 600_000, 300);
+    const jumpsOver45 = plays.flatMap((p) => p.records).filter((r) => isJump(r) && (r.features.spacing ?? 0) >= 4.5);
+    expect(jumpsOver45).toHaveLength(0);
+    const i = detectInsights(plays, NOW).find((x) => x.ruleId === 'long-undershoot')!;
+    expect(i).toBeDefined();
+    const cut = Number(i.text.match(/over ([\d.]+) target widths/)![1]);
+    expect(cut).toBeGreaterThanOrEqual(2.5);
+    expect(cut).toBeLessThanOrEqual(3.5);
+    expect(i.variant).toMatch(/^s[\d.]+v[\d.]+$/);
+    expect(i.recommendation?.options.distanceFocus).toBe('long');
+  });
+
+  it('finds a planted undershoot at Level 1 spacing', () => {
+    const plays = hist({ jumpSpacings: LEVEL_1, longAlong: -0.4, longFrom: 1.9, fastFrom: 0 }, 8, NOW - 600_000, 320);
+    const i = detectInsights(plays, NOW).find((x) => x.ruleId === 'long-undershoot');
+    expect(i).toBeDefined();
+    expect(Number(i!.text.match(/over ([\d.]+) target widths/)![1])).toBeGreaterThanOrEqual(1.5);
+  });
+
+  it('stays silent when the long jumps are fine', () => {
+    const plays = hist({ jumpSpacings: LEVEL_4, longAlong: 0, longFrom: 2.8, fastFrom: 0 }, 7, NOW - 600_000, 340);
+    expect(detectInsights(plays, NOW).find((x) => x.ruleId === 'long-undershoot' || x.ruleId === 'long-overshoot')).toBeUndefined();
+  });
+
+  it('a drill measures the same jumps even when later maps have longer ones', async () => {
+    const { ruleSample, buildRows } = await import('./insights');
+    const plays = hist({ jumpSpacings: LEVEL_4, longAlong: -0.4, longFrom: 2.8, fastFrom: 0 }, 7, NOW - 600_000, 360);
+    const i = detectInsights(plays, NOW).find((x) => x.ruleId === 'long-undershoot')!;
+    const cut = Number(i.variant!.match(/^s([\d.]+)/)![1]);
+    const harder = hist({ jumpSpacings: [3, 4, 5, 6, 7], longAlong: -0.4, longFrom: 2.8, fastFrom: 0 }, 4, NOW + DAY, 380);
+    const sample = ruleSample('long-undershoot', i.variant, buildRows(harder))!;
+    const expected = harder.flatMap((p) => p.records).filter((r) => isJump(r) && r.aimAlong !== null && (r.features.spacing ?? 0) >= cut).length;
+    expect(sample.kind === 'mean' && sample.values.length).toBeLessThanOrEqual(expected);
+    expect(sample.kind === 'mean' && sample.values.length).toBeGreaterThan(0);
+  });
+
+  it('puts Level 4 jumps in more than one of the longer bins', async () => {
+    const { computeBuckets } = await import('./buckets');
+    const plays = hist({ jumpSpacings: LEVEL_4 }, 3, NOW, 400);
+    const keys = Object.keys(computeBuckets(plays.flatMap((p) => p.records)));
+    expect(keys.some((k) => k.startsWith('dg:long:'))).toBe(true);
+    expect(keys.some((k) => k.startsWith('dg:medium:'))).toBe(true);
+  });
+
+  it('finds sharp against wide turns on short Level 1 jumps', () => {
+    const plays = hist({ jumpSpacings: LEVEL_1, sharpExtraMiss: 0.2 }, 8, NOW - 600_000, 420);
+    expect(detectInsights(plays, NOW).find((x) => x.ruleId === 'sharp-wide')).toBeDefined();
+  });
+
+  it('finds a busy-screen problem relative to the maps the player uses', () => {
+    const plays = hist({ busyExtraMiss: 0.2, busyFrom: 3 }, 10, NOW - 600_000, 440);
+    const i = detectInsights(plays, NOW).find((x) => x.ruleId === 'busy-screen')!;
+    expect(i.text).toMatch(/^You miss more when 3 or more targets are on screen/);
+  });
+});
+
+describe('no stream data yet', () => {
+  it('gives no Speed score and no stream insights when no note is part of a run', () => {
+    const plays = hist({ jumpsOnly: false, streamShare: 3, sliderShare: 0, spinnerShare: 0, streamOffsetMs: 25 }, 7, NOW - 600_000, 460);
+    // The engine can report runLength 0 for every note.
+    const flat: PlayData[] = plays.map((p) => {
+      const records = p.records.map((r) => ({ ...r, features: { ...r.features, runIndex: 0, runLength: 0 } }));
+      const fx = makeFixture({ seed: 1, objects: 10 });
+      return { summary: summarizePlay({ ...fx.result, records, startedAt: p.summary.startedAt, endedAt: p.summary.endedAt }), records };
+    });
+    expect(flat.every((p) => p.summary.skills.speed === undefined)).toBe(true);
+    const found = detectInsights(flat, NOW);
+    expect(found.find((i) => i.ruleId === 'stream-offset' || i.ruleId === 'stream-fade')).toBeUndefined();
   });
 });

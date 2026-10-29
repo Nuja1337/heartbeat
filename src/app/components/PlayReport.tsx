@@ -86,7 +86,7 @@ export function PlayReport({ summary: s, records }: { summary: PlaySummary; reco
                 <Histogram
                   label="Timing errors in 5 ms bins"
                   compact
-                  height={150}
+                  height={250}
                   series={[{ label: 'All taps', color: '#7dd3fc', counts: histCounts(timing) }]}
                   mean={s.timing.mean}
                   sd={s.timing.sd}
