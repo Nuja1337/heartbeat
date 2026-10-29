@@ -17,6 +17,8 @@ export function cloneSettings(s: Settings): Settings {
     input: { ...s.input, keys: [...s.input.keys] as [string, string] },
     audio: { ...s.audio },
     display: { ...s.display },
+    skin: { ...s.skin },
+    goals: { ...s.goals },
     data: { ...s.data },
   };
 }
@@ -42,6 +44,7 @@ export function sanitizeSettings(raw: unknown): Settings {
       cursor: i.cursor === 'drawn' || i.cursor === 'system' ? i.cursor : d.input.cursor,
       cursorScale: clamp(i.cursorScale, 0.5, 2, d.input.cursorScale),
       cursorTrail: bool(i.cursorTrail, d.input.cursorTrail),
+      retryKey: d.input.retryKey, // TODO next builder: sanitize per PLAN-2 4.6
     },
     audio: {
       master: clamp(a.master, 0, 1, d.audio.master),
@@ -49,6 +52,10 @@ export function sanitizeSettings(raw: unknown): Settings {
       hits: clamp(a.hits, 0, 1, d.audio.hits),
       effects: clamp(a.effects, 0, 1, d.audio.effects),
       ambient: clamp(a.ambient, 0, 1, d.audio.ambient),
+      soundSet: d.audio.soundSet,
+      metronome: d.audio.metronome,
+      metronomeVolume: d.audio.metronomeVolume,
+      offsetMs: d.audio.offsetMs,
     },
     display: {
       errorBar: bool(p.errorBar, d.display.errorBar),
@@ -58,10 +65,15 @@ export function sanitizeSettings(raw: unknown): Settings {
       reduceMotion: bool(p.reduceMotion, d.display.reduceMotion),
       lowLatency: bool(p.lowLatency, d.display.lowLatency),
       showFps: bool(p.showFps, d.display.showFps),
+      visualOffsetMs: d.display.visualOffsetMs,
+      frameGraph: d.display.frameGraph,
     },
+    skin: { ...d.skin },
+    goals: { ...d.goals },
     data: {
       detailRetentionDays:
         retention === null ? null : typeof retention === 'number' && retention >= 1 ? Math.floor(retention) : d.data.detailRetentionDays,
+      replayLimit: d.data.replayLimit,
     },
     updatedAt: typeof r.updatedAt === 'number' ? r.updatedAt : 0,
   };

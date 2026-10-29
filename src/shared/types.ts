@@ -26,7 +26,8 @@ export type ModeId =
   | 'timing'
   | 'stamina'
   | 'warmup'
-  | 'mix';
+  | 'mix'
+  | 'placement';
 
 /** Training modules whose level adapts after every set. */
 export type ModuleId =
@@ -39,7 +40,18 @@ export type ModuleId =
   | 'reading'
   | 'timing';
 
-export type ModId = 'fade' | 'spotlight' | 'fast' | 'slow' | 'tight' | 'wide' | 'mirror' | 'nofail' | 'onelife';
+export type ModId =
+  | 'fade'
+  | 'spotlight'
+  | 'fast'
+  | 'slow'
+  | 'tight'
+  | 'wide'
+  | 'mirror'
+  | 'nofail'
+  | 'onelife'
+  | 'bullseye'
+  | 'norings';
 
 export type SkillId = 'aim' | 'speed' | 'tracking' | 'precision' | 'timing' | 'reading' | 'spin';
 
@@ -59,7 +71,36 @@ export type PatternTag =
   | 'burst'
   | 'doubles'
   | 'slider'
-  | 'spinner';
+  | 'spinner'
+  | 'stack'
+  | 'cutstream'
+  | 'spacedstream'
+  | 'polygon';
+
+export type GradeId = 'pinpoint' | 'sharp' | 'clean' | 'steady' | 'loose' | 'scattered';
+
+export type MilestoneId =
+  | 'first-play'
+  | 'plays-50'
+  | 'plays-250'
+  | 'hours-5'
+  | 'hours-25'
+  | 'streak-7'
+  | 'streak-30'
+  | 'combo-100'
+  | 'combo-500'
+  | 'no-miss'
+  | 'daily-7'
+  | 'drill-better'
+  | 'placement'
+  | 'clear-1'
+  | 'clear-2'
+  | 'clear-3'
+  | 'clear-4'
+  | 'clear-5'
+  | 'clear-6'
+  | 'clear-7'
+  | 'clear-8';
 
 export type InputSlot = 'key1' | 'key2' | 'mouse1' | 'mouse2';
 
@@ -219,7 +260,7 @@ export interface SliderObject extends HitObjectBase {
   tickDistance: number;
   /** Once tracking, the cursor must stay within this distance of the ball while holding. */
   followRadius: number;
-  /** straight = one line, arc = one arc, curve = anything with a cubic. */
+  /** straight = one line, arc = one arc, curve = anything else. */
   shape: 'straight' | 'arc' | 'curve';
 }
 
@@ -247,11 +288,17 @@ export interface HealthRules {
 
 export type SectionFocus = 'jumps' | 'flow' | 'streams' | 'sliders' | 'mixed' | 'break' | 'set';
 
+export type SectionRole = 'intro' | 'build' | 'peak' | 'rest' | 'outro';
+
 export interface MapSection {
   start: Ms;
   end: Ms;
   intensity: number;
   focus: SectionFocus;
+  /** Dynamic maps from generator 2. Absent on adaptive sets and older maps. */
+  role?: SectionRole;
+  /** The second half of the section mirrors the first. */
+  mirrored?: boolean;
 }
 
 export interface GeneratedMap {
@@ -269,6 +316,8 @@ export interface GeneratedMap {
   health: HealthRules | null;
   objects: HitObject[];
   sections: MapSection[];
+  /** Play time of beat 0 of the beat grid, after rate. Absent when the map has no steady beat. */
+  beatOffsetMs?: Ms;
 }
 
 /** A map after mods: positions mirrored, times scaled by rate, health flags set. */
@@ -279,6 +328,13 @@ export interface PlayableMap extends GeneratedMap {
 }
 
 /* ------------------------------------------------------------- launch */
+
+/** Where a play was started. Absent on 1.0 plays, which count as manual. */
+export type LaunchSource =
+  | { kind: 'manual' }
+  | { kind: 'daily'; date: string } // local date YYYY-MM-DD
+  | { kind: 'plan'; date: string; step: number } // step is 0-based
+  | { kind: 'share'; code: string };
 
 export interface LaunchRequest {
   modeId: ModeId;
@@ -295,6 +351,8 @@ export interface LaunchRequest {
   levels: Partial<Record<ModuleId, number>>;
   /** Set when the play was started from an insight's drill. */
   drillId: string | null;
+  /** Where the play was started. Absent on 1.0 plays, which count as manual. */
+  source?: LaunchSource;
 }
 
 /* ------------------------------------------------------------ records */
@@ -333,6 +391,15 @@ export interface MovementMetrics {
   corrections: number | null;
   /** Highest cursor speed in that interval, units per ms. */
   peakSpeed: number | null;
+  /** From the start of the movement window to the start of the move toward this target. */
+  leaveMs?: Ms | null;
+  /** End of the first (main) motion relative to the center, with the same axes and signs as aimAlong and aimLateral. */
+  primaryAlong?: number | null;
+  primaryLateral?: number | null;
+  /** When the first motion ended, relative to this object's time. Negative = before it. */
+  primaryEndMs?: Ms | null;
+  /** Cursor path length from the end of the first motion to the press. */
+  correctionPath?: number | null;
 }
 
 export interface SliderStats {
@@ -437,6 +504,10 @@ export interface InputInfo {
   pointerHz: number | null;
   /** Median frame rate seen, Hz. */
   displayHz: number | null;
+  visualOffsetMs?: number;
+  audioOffsetMs?: number;
+  /** 99th percentile frame time during play, ms. */
+  frameP99Ms?: number | null;
 }
 
 export interface PlayMapInfo {
@@ -449,6 +520,8 @@ export interface PlayMapInfo {
   mods: ModId[];
   health: HealthRules | null;
   counts: Record<ObjectKind, number>;
+  sections?: MapSection[];
+  beatOffsetMs?: Ms;
 }
 
 export interface PlayResult {
@@ -480,9 +553,47 @@ export interface PlayResult {
   input: InputInfo;
   /** Judged objects only, sorted by index. */
   records: HitRecord[];
+  /** Absent if recording failed. */
+  replay?: ReplayData;
+}
+
+/* ------------------------------------------------------------ replay */
+
+/** Every call the engine made to GameSession, in order. Times on a 1/64 ms grid, positions on a 1/16 unit grid. */
+export interface InputTrace {
+  count: number;
+  /** TRACE_OP codes. */
+  ops: Uint8Array;
+  t: Float64Array;
+  /** Set for ops that carry a position (move, pressAt). 0 elsewhere. */
+  x: Float32Array;
+  y: Float32Array;
+}
+
+export interface ReplayData {
+  /** REPLAY_FORMAT. */
+  format: number;
+  engineVersion: number;
+  launch: LaunchRequest;
+  /** The map as played: mods applied and every adaptive set included. */
+  map: PlayableMap;
+  progressMs: Ms;
+  status: PlayStatus;
+  /** Session time at the end. Equals PlayResult.playedMs. */
+  endT: Ms;
+  /** Final judgment per object index: c, s, r, m, or '-' when not judged. */
+  judgments: string;
+  levels: LevelStep[];
+  trace: InputTrace;
 }
 
 /* ----------------------------------------------------------- settings */
+
+export type SoundSetId = 'glass' | 'wood' | 'pulse';
+export type PaletteId = 'flickwise' | 'classic' | 'clearview' | 'contrast';
+export type CursorStyle = 'ring' | 'cross' | 'dot';
+export type ApproachStyle = 'ring' | 'fill' | 'brackets';
+export type MetronomeMode = 'off' | 'beat' | 'bar';
 
 export interface Settings {
   v: 1;
@@ -500,6 +611,8 @@ export interface Settings {
     /** 0.5..2 */
     cursorScale: number;
     cursorTrail: boolean;
+    /** KeyboardEvent.code held 0.3 s to restart. '' = off. Never Escape or a hit key. */
+    retryKey: string;
   };
   audio: {
     /** 0..1 */
@@ -508,6 +621,12 @@ export interface Settings {
     hits: number;
     effects: number;
     ambient: number;
+    soundSet: SoundSetId;
+    metronome: MetronomeMode;
+    /** 0..1 */
+    metronomeVolume: number;
+    /** -100..300. The metronome plays this many ms earlier. */
+    offsetMs: number;
   };
   display: {
     errorBar: boolean;
@@ -518,10 +637,26 @@ export interface Settings {
     /** Canvas with desynchronized: true. Takes effect at the next play. */
     lowLatency: boolean;
     showFps: boolean;
+    /** -50..150. Objects are drawn this many ms ahead of play time. */
+    visualOffsetMs: number;
+    frameGraph: boolean;
+  };
+  skin: {
+    palette: PaletteId;
+    cursorStyle: CursorStyle;
+    approach: ApproachStyle;
+    fieldGrid: boolean;
+    clickRipple: boolean;
+  };
+  goals: {
+    /** 0 = no goal. 0..600, step 15. */
+    weeklyMinutes: number;
   };
   data: {
     /** Days to keep per-object detail. null = forever. Play summaries are always kept. */
     detailRetentionDays: number | null;
+    /** Newest replays kept, besides kept ones. null = all. */
+    replayLimit: number | null;
   };
   updatedAt: number;
 }
@@ -534,6 +669,8 @@ export interface GameCallbacks {
   onFinish(result: PlayResult): void;
   /** The engine could not start. The message is shown to the player as is. */
   onError(message: string): void;
+  /** The player held the retry key. The play ended with status 'quit'. When absent, the key does nothing. */
+  onRetry?(result: PlayResult): void;
 }
 
 export interface GameHandle {
@@ -563,5 +700,61 @@ export type CreateGame = (
 
 export type PreviewLaunch = (launch: LaunchRequest) => MapPreview;
 
+export type TestSound = 'hit' | 'miss' | 'combo' | 'tick' | 'metronome' | 'countdown';
 /** Plays one feedback sound. Call from a click handler (audio needs a user gesture). */
-export type PlayTestSound = (settings: Settings, sound: 'hit' | 'miss' | 'combo') => void;
+export type PlayTestSound = (settings: Settings, sound: TestSound) => void;
+
+export type PlaybackSource =
+  | { kind: 'replay'; replay: ReplayData }
+  | { kind: 'autoplay'; launch: LaunchRequest; loop: boolean };
+export interface PlaybackInfo {
+  durationMs: Ms;
+  /** Objects whose judgment in this run differs from ReplayData.judgments. 0 for autoplay. */
+  mismatches: number;
+}
+export interface PlaybackCallbacks {
+  onReady(info: PlaybackInfo): void;
+  /** At most 10 times a second while playing, and after every seek. */
+  onTime(t: Ms): void;
+  onEnd(): void;
+  onError(message: string): void;
+}
+export interface PlaybackHandle {
+  play(): void;
+  pause(): void;
+  seek(t: Ms): void;
+  /** 0.25..2 */
+  setSpeed(speed: number): void;
+  setSettings(settings: Settings): void;
+  destroy(): void;
+}
+export type CreatePlayback = (
+  canvas: HTMLCanvasElement,
+  source: PlaybackSource,
+  settings: Settings,
+  callbacks: PlaybackCallbacks,
+) => PlaybackHandle;
+
+export type CalibrationKind = 'visual' | 'audio';
+export interface CalibrationResult {
+  kind: CalibrationKind;
+  /** Median of press time minus beat time, ms. Positive = late. */
+  offsetMs: number;
+  sdMs: number;
+  taps: number;
+}
+export interface CalibrationCallbacks {
+  onTap(taps: number, needed: number): void;
+  onDone(result: CalibrationResult): void;
+  onError(message: string): void;
+}
+export interface CalibrationHandle {
+  restart(): void;
+  destroy(): void;
+}
+export type CreateCalibration = (
+  canvas: HTMLCanvasElement,
+  kind: CalibrationKind,
+  settings: Settings,
+  callbacks: CalibrationCallbacks,
+) => CalibrationHandle;

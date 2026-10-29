@@ -1,6 +1,6 @@
 // The Web Audio graph: voices into category gains, then master, a compressor and the output.
 
-import type { Settings } from '../../shared/types';
+import type { Settings, TestSound } from '../../shared/types';
 import type { FeedbackEvent } from '../engine/session';
 import { sounds } from './sounds';
 import type { Bus } from './sounds';
@@ -238,7 +238,9 @@ export class AudioEngine {
 let shared: AudioEngine | null = null;
 
 /** Plays one feedback sound for the settings page. Call from a click handler. */
-export function playTestSound(settings: Settings, sound: 'hit' | 'miss' | 'combo'): void {
+export function playTestSound(settings: Settings, sound: TestSound): void {
+  // The other sounds come with the 2.0 audio work.
+  if (sound !== 'hit' && sound !== 'miss' && sound !== 'combo') return;
   if (!shared) shared = new AudioEngine(settings.audio);
   shared.setSettings(settings.audio);
   shared.playTest(sound);
