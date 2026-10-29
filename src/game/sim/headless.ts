@@ -16,6 +16,10 @@ export interface HeadlessOptions {
   maxMs?: number;
   /** Seed of the simulated player's noise. */
   playerSeed?: number;
+  /** Play time between two session advances, ms. Default 1. The player moves the cursor at every step. */
+  stepMs?: number;
+  /** Log the input so the result carries a replay. Default true. */
+  record?: boolean;
   listener?: FeedbackListener;
   /** Called about every 16 ms of play time, for tests that draw. */
   onFrame?: (t: number, session: GameSession) => void;
@@ -31,15 +35,17 @@ const INPUT: InputInfo = { pointer: 'mouse', rawInput: false, unadjusted: false,
 export function runHeadless(opts: HeadlessOptions): HeadlessRun {
   const { launch, model } = opts;
   const setup = setupPlay(launch);
-  const session = new GameSession({ map: setup.map, launch, controller: setup.controller, progressMs: setup.progressMs });
+  const session = new GameSession({ map: setup.map, launch, controller: setup.controller, progressMs: setup.progressMs, record: opts.record });
   if (opts.listener) session.on(opts.listener);
   const player = new AutoPlayer(model, createRng(opts.playerSeed ?? hash32(launch.seed, 'player')));
   const pos: Vec2 = { x: 0, y: 0 };
   let planned = 0;
   const limit = opts.maxMs ?? launch.lengthSec * 1000 * 3 + 60000;
+  const step = Math.max(1, opts.stepMs ?? 1);
   let t = 0;
+  let nextFrame = 16;
   while (t < limit && !session.over && !session.failed) {
-    t++;
+    t += step;
     while (planned < session.objs.length) {
       player.plan(session.map.objects[planned]!, session.features[planned]!);
       planned++;
@@ -48,7 +54,10 @@ export function runHeadless(opts: HeadlessOptions): HeadlessRun {
     session.move(t, pos);
     player.drain(t, (e) => (e.kind === 'press' ? session.press(e.slot, e.t, null) : session.release(e.slot, e.t)));
     session.advance(t);
-    if (opts.onFrame && t % 16 === 0) opts.onFrame(t, session);
+    if (opts.onFrame && t >= nextFrame) {
+      opts.onFrame(t, session);
+      nextFrame = t - (t % 16) + 16;
+    }
   }
   const status: PlayStatus = session.failed ? 'failed' : session.over ? 'completed' : 'quit';
   const result = session.finish(status, { startedAt: 0, endedAt: 0, input: INPUT });

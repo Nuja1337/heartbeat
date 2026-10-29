@@ -24,6 +24,13 @@ export interface PlayerModel {
   holdMs: number;
   /** Let go of a slider this long before it ends. Negative lets go after. Default -5. */
   sliderReleaseEarly?: number;
+  /** Wait this long after the last press before leaving for the next target, ms. For planting late-leave data. */
+  leaveDelayMs?: number;
+  /**
+   * The first motion toward a target stops this fraction of the distance short, then a slower motion finishes the
+   * job. 0.3 stops at 70%. For planting data with corrections. Needs a known distance, so it skips the first object.
+   */
+  primaryShort?: number;
 }
 
 export const PERFECT_PLAYER: PlayerModel = {
@@ -167,11 +174,31 @@ export class AutoPlayer {
       target.x -= Math.cos(a) * m.undershoot.radii * r;
       target.y -= Math.sin(a) * m.undershoot.radii * r;
     }
-    const start = this.lastT;
+    let start = this.lastT;
+    const wait = m.leaveDelayMs ?? 0;
+    if (wait > 0 && tp - start > 20) {
+      // Keep still for a while, but leave enough time to get there.
+      const leave = Math.min(start + wait, start + 0.6 * (tp - start));
+      this.hold(start, leave, this.lastPos);
+      start = leave;
+    }
     let arrive = tp - m.arriveEarly;
     arrive = Math.max(arrive, start + 0.4 * (tp - start));
     if (arrive <= start) arrive = start + 1;
-    this.move(start, arrive, target);
+    const short = m.primaryShort ?? 0;
+    if (short > 0 && short < 1 && f.distance !== null && arrive - start >= 40) {
+      // A fast first motion that stops short, a pause, then a slower motion to the target. The first motion's
+      // speed stays the higher of the two, so it is the one the movement metrics call the main motion.
+      const span = arrive - start;
+      const first = 0.9 / (1 + (1.5 * short) / (1 - short));
+      const mid = { x: this.lastPos.x + (target.x - this.lastPos.x) * (1 - short), y: this.lastPos.y + (target.y - this.lastPos.y) * (1 - short) };
+      this.move(start, start + first * span, mid);
+      this.lastPos = mid;
+      this.hold(start + first * span, start + (first + 0.1) * span, mid);
+      this.move(start + (first + 0.1) * span, arrive, target);
+    } else {
+      this.move(start, arrive, target);
+    }
     this.hold(arrive, tp, target);
     this.lastPos = target;
     this.lastT = tp;
@@ -239,7 +266,8 @@ export class AutoPlayer {
     this.lastT = t1;
     this.lastPress = t0;
     const slot = this.nextSlot();
-    this.addEvent({ t: t0, kind: 'press', slot });
+    // The session snaps times to the 1/64 ms grid. A press that rounds down would land before the spinner starts.
+    this.addEvent({ t: Math.ceil(t0 * 64) / 64, kind: 'press', slot });
     this.addEvent({ t: t1 + 5, kind: 'release', slot });
   }
 }

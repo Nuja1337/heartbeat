@@ -10,6 +10,8 @@ export interface InputSink {
   press(slot: InputSlot, ts: number, x: number | null, y: number | null): void;
   release(slot: InputSlot, ts: number): void;
   escape(ts: number): void;
+  /** The retry key went down or up. Never called for Escape or a hit key. */
+  retry(ts: number, down: boolean): void;
   lockLost(ts: number): void;
   /** True while the game wants to keep keys such as Space from the page. */
   active(): boolean;
@@ -191,14 +193,28 @@ export class InputHandler {
     if (slot || code === 'Space') {
       if (this.sink.active()) e.preventDefault();
     }
+    if (!slot && this.isRetryKey(code)) {
+      if (this.sink.active()) e.preventDefault();
+      if (!e.repeat) this.sink.retry(e.timeStamp, true);
+      return;
+    }
     if (!slot || e.repeat || this.heldKeys[slot]) return;
     this.heldKeys[slot] = true;
     this.sink.press(slot, e.timeStamp, null, null);
   };
 
+  /** The retry key is never Escape and never a hit key. '' turns it off. */
+  private isRetryKey(code: string): boolean {
+    const k = this.getSettings().input.retryKey;
+    return k !== '' && code === k && code !== 'Escape' && this.slotFor(code) === null;
+  }
+
   private onKeyUp = (e: KeyboardEvent): void => {
     const slot = this.slotFor(e.code);
-    if (!slot) return;
+    if (!slot) {
+      if (this.isRetryKey(e.code)) this.sink.retry(e.timeStamp, false);
+      return;
+    }
     if (this.sink.active()) e.preventDefault();
     if (!this.heldKeys[slot]) return;
     this.heldKeys[slot] = false;

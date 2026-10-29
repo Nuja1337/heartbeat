@@ -53,6 +53,8 @@ export const STRINGS = {
   accuracy: (a: number) => `${(a * 100).toFixed(1)}%`,
   fps: (n: number) => `${Math.round(n)} fps`,
   rpmLabel: 'rpm',
+  /** Shown under the combo while the retry key is held. */
+  retrying: 'Restarting',
   /** Digits for the resume countdown, indexed by the number shown. */
   countdown: ['0', '1', '2', '3'],
   bonus: '+1',

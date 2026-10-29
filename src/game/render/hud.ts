@@ -23,6 +23,8 @@ export interface HudData {
   windows: HitWindows;
   errorBar: boolean;
   fps: number | null;
+  /** Quick retry hold progress, 0..1. 0 hides the bar. */
+  retry: number;
 }
 
 const BAR_W = 360;
@@ -199,6 +201,23 @@ export class Hud {
     }
 
     if (d.errorBar) this.drawErrorBar(ctx, layout, fx, d.windows, now);
+    if (d.retry > 0) this.drawRetry(ctx, layout, d.retry);
+  }
+
+  /** The quick retry hold: a short bar under the combo that fills as the key stays down. */
+  private drawRetry(ctx: CanvasRenderingContext2D, layout: FieldLayout, progress: number): void {
+    const cx = layout.cssW / 2;
+    const w = 160;
+    const y = 92;
+    ctx.fillStyle = COLORS.fieldEdge;
+    ctx.fillRect(cx - w / 2, y, w, 4);
+    ctx.fillStyle = COLORS.ink;
+    ctx.fillRect(cx - w / 2, y, w * Math.min(1, progress), 4);
+    ctx.font = F_SMALL;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = COLORS.ink2;
+    ctx.fillText(STRINGS.retrying, cx, y + 20);
   }
 
   private drawErrorBar(ctx: CanvasRenderingContext2D, layout: FieldLayout, fx: Effects, win: HitWindows, now: number): void {

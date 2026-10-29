@@ -14,8 +14,9 @@ import {
   RECORD_VERSION,
   modConflicts,
 } from '../../shared/catalog';
-import type { DifficultySettings, GameHandle, LaunchRequest, ModId, ModeId, ModuleId, PlayResult, Settings } from '../../shared/types';
-import { ENGINE_VERSION, GENERATOR_VERSION, createGame, playTestSound, previewLaunch } from '../index';
+import { decodeReplay, encodeReplay } from '../../shared/replay';
+import type { DifficultySettings, GameHandle, LaunchRequest, ModId, ModeId, ModuleId, PlaybackHandle, PlayResult, Settings } from '../../shared/types';
+import { ENGINE_VERSION, GENERATOR_VERSION, createGame, createPlayback, playTestSound, previewLaunch } from '../index';
 
 const STORE = 'flickwise-dev-harness';
 
@@ -76,13 +77,16 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Attrs = {}, ..
 
 const form = loadForm();
 let handle: GameHandle | null = null;
+let playback: PlaybackHandle | null = null;
+let lastResult: PlayResult | null = null;
 
 document.body.style.cssText = 'margin:0;background:#0b0f14;color:#e5e7eb;font:13px/1.4 system-ui,sans-serif;overflow:hidden';
 const canvas = el('canvas', { style: 'position:fixed;inset:0;width:100vw;height:100vh;display:block' });
 const panel = el('div', { style: 'position:fixed;top:0;left:0;bottom:0;width:380px;overflow:auto;padding:14px;box-sizing:border-box;background:rgba(11,15,20,0.96);border-right:1px solid #1f2937;z-index:5' });
 const pauseBox = el('div', { style: 'position:fixed;inset:0;display:none;align-items:center;justify-content:center;gap:12px;background:rgba(5,7,10,0.6);z-index:8' });
 const panelButton = el('button', { style: 'position:fixed;top:8px;left:8px;z-index:9;display:none', textContent: 'Back to the harness' });
-document.body.append(canvas, panel, pauseBox, panelButton);
+const watchBar = el('div', { style: 'position:fixed;left:0;right:0;bottom:0;display:none;align-items:center;gap:10px;padding:8px 14px;background:rgba(5,7,10,0.85);z-index:9' });
+document.body.append(canvas, panel, pauseBox, panelButton, watchBar);
 
 const log = el('pre', { style: 'white-space:pre-wrap;margin:8px 0;font-size:12px' });
 const json = el('textarea', { style: 'width:100%;height:120px;font-size:11px;background:#0e141b;color:#9ca3af;border:1px solid #1f2937', readOnly: true });
@@ -231,6 +235,7 @@ function build(): void {
       { style: 'display:flex;gap:6px;margin:12px 0;flex-wrap:wrap' },
       el('button', { textContent: 'Play', style: 'padding:8px 16px;font-weight:600', click: play }),
       el('button', { textContent: 'Preview map', click: preview }),
+      el('button', { textContent: 'Watch last play', click: watch }),
       el('button', { textContent: 'Hit sound', click: () => playTestSound(form.settings, 'hit') }),
       el('button', { textContent: 'Miss sound', click: () => playTestSound(form.settings, 'miss') }),
       el('button', { textContent: 'Combo sound', click: () => playTestSound(form.settings, 'combo') }),
@@ -248,6 +253,9 @@ function showPanel(on: boolean): void {
 
 function play(): void {
   saveForm(form);
+  playback?.destroy();
+  playback = null;
+  watchBar.style.display = 'none';
   handle?.destroy();
   pauseBox.style.display = 'none';
   showPanel(false);
@@ -258,10 +266,17 @@ function play(): void {
     },
     onFinish: (r) => {
       pauseBox.style.display = 'none';
+      lastResult = r;
       report(r);
       showPanel(true);
       form.seed = Math.floor(Math.random() * 2 ** 32);
       build();
+    },
+    // Holding the retry key ends the play and starts the same map again.
+    onRetry: (r) => {
+      lastResult = r;
+      report(r);
+      play();
     },
     onError: (message) => {
       log.textContent = message;
@@ -273,6 +288,81 @@ function play(): void {
 panelButton.addEventListener('click', () => {
   handle?.quit();
 });
+
+/** Play the last play's replay back. The replay goes through the codec first, like a saved one does. */
+function watch(): void {
+  const replay = lastResult?.replay;
+  if (!replay) {
+    log.textContent = lastResult ? 'The last play has no replay.' : 'Play first, then watch it.';
+    return;
+  }
+  let decoded: typeof replay;
+  let bytes = 0;
+  try {
+    const encoded = encodeReplay(replay);
+    bytes = encoded.byteLength;
+    decoded = decodeReplay(encoded);
+  } catch (err) {
+    log.textContent = `The replay did not survive the codec: ${String(err)}`;
+    return;
+  }
+  playback?.destroy();
+  handle?.destroy();
+  showPanel(false);
+  panelButton.style.display = 'none';
+  watchBar.replaceChildren();
+  watchBar.style.display = 'flex';
+  const status = el('span', { style: 'min-width:260px' }, 'Loading');
+  const slider = el('input', { type: 'range', min: 0, max: 1, step: 1, value: 0, style: 'flex:1' });
+  let dragging = false;
+  slider.addEventListener('input', () => {
+    dragging = true;
+    playback?.seek(Number(slider.value));
+  });
+  slider.addEventListener('change', () => {
+    dragging = false;
+  });
+  const speed = select(['0.25', '0.5', '1', '1.5', '2'].map((v) => [v, `${v}x`] as [string, string]), '1', (v) => playback?.setSpeed(Number(v)));
+  watchBar.append(
+    el('button', { textContent: 'Play', click: () => playback?.play() }),
+    el('button', { textContent: 'Pause', click: () => playback?.pause() }),
+    speed,
+    slider,
+    status,
+    el('button', { textContent: 'Back to the harness', click: stopWatching }),
+  );
+  let duration = 0;
+  let mismatches = 0;
+  const say = (t: number) => {
+    status.textContent = `${(t / 1000).toFixed(1)} of ${(duration / 1000).toFixed(1)} s, ${mismatches} judgments differ, ${(bytes / 1024).toFixed(0)} kB raw`;
+  };
+  playback = createPlayback(canvas, { kind: 'replay', replay: decoded }, structuredClone(form.settings), {
+    onReady: (info) => {
+      duration = info.durationMs;
+      mismatches = info.mismatches;
+      slider.max = String(Math.ceil(duration));
+      say(0);
+      playback?.play();
+    },
+    onTime: (t) => {
+      if (!dragging) slider.value = String(Math.round(t));
+      say(t);
+    },
+    onEnd: () => {
+      status.textContent = `Done. ${mismatches} judgments differ.`;
+    },
+    onError: (message) => {
+      status.textContent = message;
+    },
+  });
+}
+
+function stopWatching(): void {
+  playback?.destroy();
+  playback = null;
+  watchBar.style.display = 'none';
+  showPanel(true);
+}
 
 function preview(): void {
   const t0 = performance.now();

@@ -1,6 +1,6 @@
 // The browser wrapper. It wires the clock, input, session, renderer and audio together and implements GameHandle.
 
-import { MODES } from '../../shared/catalog';
+import { MODES, RETRY_HOLD_MS } from '../../shared/catalog';
 import type { CreateGame, GameCallbacks, GameHandle, InputInfo, InputSlot, LaunchRequest, PlayStatus, Settings } from '../../shared/types';
 import { AudioEngine } from '../audio/audio';
 import { setupPlay } from '../modes/runner';
@@ -11,6 +11,7 @@ import { Renderer } from '../render/renderer';
 import type { OverlayKind, RenderState } from '../render/renderer';
 import { keyLabel, STRINGS } from '../render/strings';
 import { Clock } from './clock';
+import { Decimator } from './decimate';
 import { InputHandler } from './input';
 import type { InputSink } from './input';
 import { Loop } from './loop';
@@ -37,6 +38,7 @@ const FAIL_BANNER_MS = 1200;
 class Game implements GameHandle, InputSink {
   private state: State = 'ready';
   private session!: GameSession;
+  private dec: Decimator;
   private clock = new Clock();
   private pf: Playfield;
   private renderer!: Renderer;
@@ -46,7 +48,6 @@ class Game implements GameHandle, InputSink {
   private loop: Loop;
   private rs!: RenderState;
   private flags: DisplayFlags = { earlyLate: true, crispPopups: false, reduceMotion: false };
-  private pt = { x: 0, y: 0 };
   private amb = { tracking: false, speed: 0, rpm: 0 };
   private finished = false;
   private destroyed = false;
@@ -65,6 +66,8 @@ class Game implements GameHandle, InputSink {
   private lengthMs = 0;
   private fpsAt = 0;
   private fps: number | null = null;
+  /** When the retry key went down, or -1 when it is not held. */
+  private retryAt = -1;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -75,6 +78,7 @@ class Game implements GameHandle, InputSink {
   ) {
     const setup = setupPlay(launch);
     this.session = new GameSession({ map: setup.map, launch, controller: setup.controller, progressMs: setup.progressMs });
+    this.dec = new Decimator(this.session);
     this.lengthMs = setup.controller ? launch.lengthSec * 1000 : setup.map.durationMs;
     this.pf = new Playfield(canvas);
     this.renderer = new Renderer(ctx, this.pf);
@@ -104,6 +108,7 @@ class Game implements GameHandle, InputSink {
       level: status ? status.level : null,
       set: status ? status.set : null,
       lengthMs: this.lengthMs,
+      retry: 0,
     };
     document.addEventListener('visibilitychange', this.onVisibility);
     window.addEventListener('blur', this.onBlur);
@@ -119,9 +124,7 @@ class Game implements GameHandle, InputSink {
     if (this.state !== 'playing') return;
     const t = this.clock.play(ts);
     if (t < 0) return;
-    this.pt.x = x;
-    this.pt.y = y;
-    this.session.move(t, this.pt);
+    this.dec.move(t, x, y);
   }
 
   press(slot: InputSlot, ts: number, x: number | null, y: number | null): void {
@@ -140,13 +143,7 @@ class Game implements GameHandle, InputSink {
     if (this.state !== 'playing') return;
     const t = this.clock.play(ts);
     if (t < 0) return;
-    if (x === null || y === null) {
-      this.session.press(slot, t, null);
-    } else {
-      this.pt.x = x;
-      this.pt.y = y;
-      this.session.press(slot, t, this.pt);
-    }
+    this.dec.press(slot, t, x, y);
     this.afterInput(performance.now());
   }
 
@@ -154,7 +151,22 @@ class Game implements GameHandle, InputSink {
     if (this.state !== 'playing') return;
     const t = this.clock.play(ts);
     if (t < 0) return;
-    this.session.release(slot, t);
+    this.dec.release(slot, t);
+  }
+
+  retry(ts: number, down: boolean): void {
+    if (!down) {
+      this.retryAt = -1;
+      return;
+    }
+    if (this.retryAt >= 0 || !this.callbacks.onRetry || !this.retryAllowed()) return;
+    this.retryAt = ts;
+  }
+
+  /** The hold counts while playing, paused or counting down, and in the short steps between a pause and play. */
+  private retryAllowed(): boolean {
+    const s = this.state;
+    return s === 'playing' || s === 'paused' || s === 'countdown' || s === 'locking' || s === 'needsClick';
   }
 
   escape(ts: number): void {
@@ -207,18 +219,16 @@ class Game implements GameHandle, InputSink {
   /** Put the latest known cursor position into the play, so a key press before any movement lands in the right place. */
   private syncCursor(ts: number): void {
     const t = this.clock.play(ts);
-    this.pt.x = this.rs.cursorX;
-    this.pt.y = this.rs.cursorY;
-    this.session.move(Math.max(0, t), this.pt);
+    this.dec.moveNow(Math.max(0, t), this.rs.cursorX, this.rs.cursorY);
   }
 
   private doPause(ts: number): void {
     if (this.state !== 'playing' && this.state !== 'countdown') return;
     if (this.state === 'playing') {
       const t = this.clock.play(ts);
-      this.session.advance(t);
+      this.dec.advance(t);
       this.input.releaseAll(ts);
-      this.session.notePause(t);
+      this.dec.notePause(t);
       this.clock.pause(ts);
     }
     this.state = 'paused';
@@ -297,19 +307,25 @@ class Game implements GameHandle, InputSink {
   }
 
   private onVisibility = (): void => {
-    if (document.visibilityState === 'hidden') this.doPause(performance.now());
+    if (document.visibilityState === 'hidden') {
+      // The key-up of a held retry key never arrives while the page is hidden.
+      this.retryAt = -1;
+      this.doPause(performance.now());
+    }
   };
 
   private onBlur = (): void => {
+    this.retryAt = -1;
     this.doPause(performance.now());
   };
 
-  private finish(status: PlayStatus): void {
+  private finish(status: PlayStatus, retry = false): void {
     if (this.finished || this.destroyed) return;
     this.finished = true;
+    this.retryAt = -1;
     const wasPlaying = this.state === 'playing';
     const now = performance.now();
-    if (wasPlaying) this.session.advance(this.clock.play(now));
+    if (wasPlaying) this.dec.advance(this.clock.play(now));
     this.state = 'done';
     const info: InputInfo = {
       pointer: this.input.pointerKind(),
@@ -318,15 +334,19 @@ class Game implements GameHandle, InputSink {
       sensitivity: this.settings.input.sensitivity,
       pointerHz: this.input.pointerHz(),
       displayHz: this.loop.displayHz(),
+      visualOffsetMs: this.settings.display.visualOffsetMs,
+      audioOffsetMs: this.settings.audio.offsetMs,
     };
     const result = this.session.finish(status, { startedAt: this.startedAt || Date.now(), endedAt: Date.now(), input: info });
     this.input.releaseAll(now);
     this.input.unlock();
     this.audio.quiet();
     this.rs.overlay = 'none';
+    this.rs.retry = 0;
     this.renderFrame(now);
     this.loop.stop();
-    this.callbacks.onFinish(result);
+    if (retry && this.callbacks.onRetry) this.callbacks.onRetry(result);
+    else this.callbacks.onFinish(result);
   }
 
   destroy(): void {
@@ -369,8 +389,17 @@ class Game implements GameHandle, InputSink {
       this.fps = this.loop.displayHz();
       this.fpsAt = now;
     }
+    if (this.retryAt >= 0) {
+      if (!this.retryAllowed()) this.retryAt = -1;
+      else if (now - this.retryAt >= RETRY_HOLD_MS) {
+        this.retryAt = -1;
+        this.finish('quit', true);
+        return;
+      }
+    }
+    this.rs.retry = this.retryAt >= 0 ? Math.min(1, (now - this.retryAt) / RETRY_HOLD_MS) : 0;
     if (this.state === 'playing') {
-      this.session.advance(this.clock.play(now));
+      this.dec.advance(this.clock.play(now));
       this.afterInput(now);
       if (this.state === 'playing' && this.session.over) {
         this.finish('completed');

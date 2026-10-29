@@ -167,7 +167,8 @@ describe('records', () => {
     const { result } = runHeadless({ launch: launchFor(DEFAULT_DIFFICULTY, 34, 40), model: PERFECT_PLAYER });
     for (const r of result.records) {
       if (r.kind === 'circle') {
-        expect(r.timingError).toBeCloseTo(0, 6);
+        // The session snaps press times to the 1/64 ms grid, so a perfect press is off by at most 1/128 ms.
+        expect(Math.abs(r.timingError!)).toBeLessThanOrEqual(1 / 128 + 1e-9);
         expect(r.aimRadial!).toBeLessThan(0.01);
         expect(r.input === 'key1' || r.input === 'key2').toBe(true);
         expect(r.crispMs).toBeGreaterThan(0);
@@ -179,5 +180,51 @@ describe('records', () => {
       expect(r.movement.arriveMs!).toBeLessThanOrEqual(0);
       expect(r.movement.efficiency!).toBeGreaterThan(0.9);
     }
+  });
+});
+
+describe('planted movement habits', () => {
+  const launch = { ...launchFor(DEFAULT_DIFFICULTY, 77, 60, [], 'jumps'), options: MODES.jumps.defaultOptions, levels: { jumps: 5 } };
+
+  function stats(model: typeof PERFECT_PLAYER) {
+    const { result } = runHeadless({ launch, model });
+    const jumps = result.records.filter(
+      (r) => r.kind === 'circle' && r.movement.primaryAlong != null && r.features.distance !== null && r.features.gapMs !== null && r.features.spacing! >= 2.5,
+    );
+    const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    return {
+      n: jumps.length,
+      leave: mean(jumps.map((r) => r.movement.leaveMs!)),
+      leaveFrac: mean(jumps.map((r) => r.movement.leaveMs! / r.features.gapMs!)),
+      along: mean(jumps.map((r) => r.movement.primaryAlong! / r.features.distance!)),
+      correction: mean(jumps.map((r) => r.movement.correctionPath! / r.features.distance!)),
+      result,
+    };
+  }
+
+  it('a clean player ends the first motion on the target and leaves early', () => {
+    const s = stats(PERFECT_PLAYER);
+    expect(s.n).toBeGreaterThan(10);
+    expect(Math.abs(s.along)).toBeLessThan(0.05);
+    expect(s.correction).toBeLessThan(0.05);
+    expect(s.leaveFrac).toBeLessThan(0.3);
+  });
+
+  it('leaveDelayMs delays the start of the move and leaves the play perfect', () => {
+    const base = stats(PERFECT_PLAYER);
+    const late = stats({ ...PERFECT_PLAYER, leaveDelayMs: 150 });
+    expect(late.leave).toBeGreaterThan(base.leave + 80);
+    expect(late.leaveFrac).toBeGreaterThan(base.leaveFrac + 0.2);
+    expect(late.result.counts.miss).toBe(0);
+    expect(late.result.counts.crisp).toBe(base.result.counts.crisp);
+  });
+
+  it('primaryShort stops the first motion short and adds a correction', () => {
+    const base = stats(PERFECT_PLAYER);
+    const short = stats({ ...PERFECT_PLAYER, primaryShort: 0.3 });
+    expect(short.along).toBeLessThan(-0.2);
+    expect(short.along).toBeGreaterThan(-0.4);
+    expect(short.correction).toBeGreaterThan(base.correction + 0.2);
+    expect(short.result.counts.miss).toBe(0);
   });
 });

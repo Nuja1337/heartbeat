@@ -307,3 +307,127 @@ describe('pauses', () => {
     expect(s.objs[2]!.afterPause).toBe(false);
   });
 });
+
+describe('recording', () => {
+  const INFO = { startedAt: 0, endedAt: 0, input: { pointer: null, rawInput: false, unadjusted: false, sensitivity: 1, pointerHz: null, displayHz: null } };
+
+  function recorded(act: (s: GameSession) => void) {
+    const { s } = sessionFor([makeCircle(0, 1000, 100, 100)]);
+    act(s);
+    const result = s.finish('quit', INFO);
+    const tr = result.replay!.trace;
+    return Array.from({ length: tr.count }, (_, i) => [tr.ops[i], tr.t[i], tr.x[i], tr.y[i]]);
+  }
+
+  it('logs each public call with its op code', () => {
+    const log = recorded((s) => {
+      s.move(1, { x: 10, y: 20 });
+      s.press('key2', 2, null);
+      s.press('mouse1', 3, { x: 30, y: 40 });
+      s.release('key2', 4);
+      s.advance(5);
+      s.notePause(5);
+      s.noteResume(6);
+    });
+    expect(log).toEqual([
+      [0, 1, 10, 20],
+      [6, 2, 0, 0],
+      [3, 3, 30, 40],
+      [10, 4, 0, 0],
+      [13, 5, 0, 0],
+      [14, 5, 0, 0],
+      [15, 6, 0, 0],
+    ]);
+  });
+
+  it('snaps times to 1/64 ms and positions to 1/16 before it uses and logs them', () => {
+    const { s } = sessionFor([makeCircle(0, 1000, 100, 100)]);
+    s.move(10.01, { x: 100.04, y: 99.97 });
+    s.press('key1', 10.02, { x: 100.04, y: 99.97 });
+    s.advance(10.7);
+    const tr = s.finish('quit', INFO).replay!.trace;
+    expect(Array.from(tr.t.subarray(0, tr.count))).toEqual([10.015625, 10.015625, 10.703125]);
+    expect(Array.from(tr.x.subarray(0, 2))).toEqual([100.0625, 100.0625]);
+    expect(Array.from(tr.y.subarray(0, 2))).toEqual([100, 100]);
+    expect(s.now).toBe(10.703125);
+    expect(s.cursor.lastT).toBe(10.015625);
+    expect(s.cursor.lastX).toBe(100.0625);
+  });
+
+  it('writes -0 as +0', () => {
+    const log = recorded((s) => s.move(-0, { x: -0.01, y: -0 }));
+    expect(Object.is(log[0]![1], 0)).toBe(true);
+    expect(Object.is(log[0]![2], 0)).toBe(true);
+    expect(Object.is(log[0]![3], 0)).toBe(true);
+  });
+
+  it('logs an advance only when it moves the clock forward', () => {
+    const log = recorded((s) => {
+      s.advance(10);
+      s.advance(10);
+      s.advance(9);
+      s.advance(10.001);
+      s.advance(11);
+    });
+    expect(log).toEqual([[13, 10, 0, 0], [13, 11, 0, 0]]);
+  });
+
+  it('does not log the advance a press or a release makes inside', () => {
+    const log = recorded((s) => {
+      s.press('key1', 50, { x: 0, y: 0 });
+      s.release('key1', 60);
+    });
+    expect(log.map((e) => e[0])).toEqual([1, 9]);
+  });
+
+  it('keeps calls that come out of order in the order they were made', () => {
+    const log = recorded((s) => {
+      s.move(20, { x: 1, y: 1 });
+      s.press('key1', 17, null);
+    });
+    expect(log.map((e) => e[1])).toEqual([20, 17]);
+  });
+
+  it('leaves the replay out when record is off', () => {
+    const base = makeMap([makeCircle(0, 1000, 100, 100)]);
+    const s = new GameSession({ map: { ...base, mods: [], rate: 1 }, launch: launchFor(), record: false });
+    s.move(1, { x: 1, y: 1 });
+    expect(s.finish('quit', INFO).replay).toBeUndefined();
+  });
+
+  it('still finishes when the recording cannot be built', () => {
+    const { s } = sessionFor([makeCircle(0, 1000, 100, 100)]);
+    (s as unknown as { recorder: { toTrace(): never } }).recorder = {
+      toTrace() {
+        throw new Error('no memory');
+      },
+    };
+    const r = s.finish('quit', INFO);
+    expect(r.replay).toBeUndefined();
+    expect(r.status).toBe('quit');
+  });
+
+  it('puts a copy of the map and its sections in the replay', () => {
+    const { s } = sessionFor([makeCircle(0, 1000, 100, 100), makeCircle(1, 2000, 200, 100)]);
+    const r = s.finish('quit', INFO);
+    expect(r.replay!.map.objects).toHaveLength(2);
+    expect(r.replay!.map.objects).not.toBe(s.map.objects);
+    expect(r.replay!.judgments).toBe('--');
+    expect(r.replay!.progressMs).toBe(s.progressMs);
+  });
+
+  it('passes the sections and beat offset on in the result map', () => {
+    const base = makeMap([makeCircle(0, 1000, 100, 100)], {
+      sections: [{ start: 0, end: 2000, intensity: 0.5, focus: 'mixed', role: 'build' } as never],
+      beatOffsetMs: 321,
+    });
+    const s = new GameSession({ map: { ...base, mods: [], rate: 1 }, launch: launchFor() });
+    const r = s.finish('quit', INFO);
+    expect(r.map.sections).toEqual(base.sections);
+    expect(r.map.sections).not.toBe(base.sections);
+    expect(r.map.beatOffsetMs).toBe(321);
+    const plain = sessionFor([makeCircle(0, 1000, 100, 100)]).s.finish('quit', INFO);
+    expect(plain.map.sections).toBeUndefined();
+    expect(plain.map.beatOffsetMs).toBeUndefined();
+  });
+});

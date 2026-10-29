@@ -1,7 +1,7 @@
 // GameSession: the headless core. Judging, combo, score, health, records and feedback events.
 // It never touches the DOM, so Node tests and the headless simulator run it directly.
 
-import { RECORD_VERSION } from '../../shared/catalog';
+import { RECORD_VERSION, REPLAY_FORMAT, TRACE_OP } from '../../shared/catalog';
 import type {
   HitObject,
   HitRecord,
@@ -15,13 +15,16 @@ import type {
   Ms,
   ObjectFeatures,
   ObjectKind,
+  PlayMapInfo,
   PlayResult,
   PlayStatus,
   PlayableMap,
+  ReplayData,
   SliderObject,
   Vec2,
 } from '../../shared/types';
 import { extendFeatures } from '../map/features';
+import { pressOp, qp, qt, releaseOp, TraceRecorder } from '../replay/recorder';
 import { BREAK_EFFECT_MIN, Scoring } from '../rules/scoring';
 import { classifyError, expiryTime, nearestAimPress, resolvePress } from '../rules/judge';
 import type { AimPress, Target } from '../rules/judge';
@@ -103,7 +106,11 @@ export interface SessionInit {
   controller?: SetController | null;
   /** Length that ObjectFeatures.progress is measured against. */
   progressMs?: number;
+  /** Log every public input call so the play can be replayed. Default true. Playback passes false. */
+  record?: boolean;
 }
+
+const JUDGMENT_CHAR: Record<Judgment, string> = { crisp: 'c', solid: 's', rough: 'r', miss: 'm' };
 
 export class ObjState {
   target: Target;
@@ -165,9 +172,12 @@ export class GameSession {
   /** First object that is not fully judged yet. */
   firstOpen = 0;
 
+  /** Length that ObjectFeatures.progress is measured against. */
+  readonly progressMs: number;
+
   private controller: SetController | null;
   private listeners: FeedbackListener[] = [];
-  private progressMs: number;
+  private recorder: TraceRecorder | null;
   private headPtr = 0;
   private sliderPtr = 0;
   private spinPtr = 0;
@@ -197,6 +207,7 @@ export class GameSession {
     this.controller = init.controller ?? null;
     this.moreSets = this.controller !== null;
     this.progressMs = init.progressMs ?? init.map.durationMs;
+    this.recorder = init.record === false ? null : new TraceRecorder();
     this.scoring = new Scoring(init.map.health);
     const initial = init.map.objects.slice();
     this.map.objects.length = 0;
@@ -265,22 +276,38 @@ export class GameSession {
 
   /* -------------------------------------------------------------- input */
 
-  move(t: Ms, pos: Vec2): void {
-    this.cursor.push(t, pos.x, pos.y);
+  // Every public input call snaps its time and position to the replay grid first, and logs what it uses.
+
+  move(tIn: Ms, pos: Vec2): void {
+    const t = qt(tIn);
+    const x = qp(pos.x);
+    const y = qp(pos.y);
+    this.recorder?.record(TRACE_OP.move, t, x, y);
+    this.cursor.push(t, x, y);
     this.startSpinners(t);
     const sp = this.activeSpin;
     if (sp && sp.spinner) {
-      sp.spinner.update(t, pos.x, pos.y, this.mask !== 0);
+      sp.spinner.update(t, x, y, this.mask !== 0);
       this.afterSpinUpdate(sp, t);
     }
   }
 
-  press(slot: InputSlot, t: Ms, pos: Vec2 | null): void {
+  press(slot: InputSlot, tIn: Ms, pos: Vec2 | null): void {
+    const t = qt(tIn);
+    if (pos) this.recorder?.record(pressOp(slot, true), t, qp(pos.x), qp(pos.y));
+    else this.recorder?.record(pressOp(slot, false), t, 0, 0);
     if (this.failed || this.finished) return;
-    this.advance(t);
-    const p = pos ?? this.cursor.positionAt(t, this.tmp);
-    const x = p.x;
-    const y = p.y;
+    this.advanceTo(t);
+    let x: number;
+    let y: number;
+    if (pos) {
+      x = qp(pos.x);
+      y = qp(pos.y);
+    } else {
+      const p = this.cursor.positionAt(t, this.tmp);
+      x = p.x;
+      y = p.y;
+    }
     this.mask |= SLOT_BIT[slot];
     this.hold.set(t, this.mask);
     this.startSpinners(t);
@@ -311,9 +338,11 @@ export class GameSession {
     this.checkFail(t);
   }
 
-  release(slot: InputSlot, t: Ms): void {
+  release(slot: InputSlot, tIn: Ms): void {
+    const t = qt(tIn);
+    this.recorder?.record(releaseOp(slot), t, 0, 0);
     if (this.finished) return;
-    this.advance(t);
+    this.advanceTo(t);
     this.mask &= ~SLOT_BIT[slot];
     this.hold.set(t, this.mask);
     const sp = this.activeSpin;
@@ -324,7 +353,9 @@ export class GameSession {
   }
 
   /** A pause started at play time t. Objects on screen at that moment are marked. */
-  notePause(t: Ms): void {
+  notePause(tIn: Ms): void {
+    const t = qt(tIn);
+    this.recorder?.record(TRACE_OP.pause, t, 0, 0);
     this.pauses++;
     for (let i = this.firstOpen; i < this.objs.length; i++) {
       const s = this.objs[i] as ObjState;
@@ -336,7 +367,9 @@ export class GameSession {
   }
 
   /** The play carries on at play time t after a pause. Movement windows do not reach back before it. */
-  noteResume(t: Ms): void {
+  noteResume(tIn: Ms): void {
+    const t = qt(tIn);
+    this.recorder?.record(TRACE_OP.resume, t, 0, 0);
     this.lastResume = t;
   }
 
@@ -539,8 +572,19 @@ export class GameSession {
 
   /* ------------------------------------------------------------- advance */
 
-  /** Move the session clock to `now`. Expires objects, evaluates sliders and spinners, drains health. */
-  advance(now: Ms): void {
+  /**
+   * Move the session clock to `nowIn`. Expires objects, evaluates sliders and spinners, drains health.
+   * The call is logged only when it moves the clock, so a replay needs no more calls than the play made.
+   */
+  advance(nowIn: Ms): void {
+    const now = qt(nowIn);
+    if (now <= this.now) return;
+    this.recorder?.record(TRACE_OP.advance, now, 0, 0);
+    this.advanceTo(now);
+  }
+
+  /** The inner advance: no quantizing, no logging. `now` is already on the grid. */
+  private advanceTo(now: Ms): void {
     if (now <= this.now) return;
     if (this.failed || this.finished) {
       this.now = now;
@@ -645,21 +689,25 @@ export class GameSession {
     for (const o of this.map.objects) counts[o.kind]++;
     const m = this.map;
     const records = this.records.slice().sort((a, b) => a.index - b.index);
-    return {
+    const levels = this.controller ? this.controller.levelSteps() : [];
+    const mapInfo: PlayMapInfo = {
+      format: m.format,
+      generatorVersion: m.generatorVersion,
+      seed: m.seed,
+      beatMs: m.beatMs,
+      durationMs: m.durationMs,
+      rate: m.rate,
+      mods: m.mods.slice(),
+      health: m.health ? { ...m.health } : null,
+      counts,
+    };
+    if (m.sections.length > 0) mapInfo.sections = m.sections.map((sec) => ({ ...sec }));
+    if (m.beatOffsetMs !== undefined) mapInfo.beatOffsetMs = m.beatOffsetMs;
+    const result: PlayResult = {
       recordVersion: RECORD_VERSION,
       engineVersion: ENGINE_VERSION,
       launch: this.launch,
-      map: {
-        format: m.format,
-        generatorVersion: m.generatorVersion,
-        seed: m.seed,
-        beatMs: m.beatMs,
-        durationMs: m.durationMs,
-        rate: m.rate,
-        mods: m.mods.slice(),
-        health: m.health ? { ...m.health } : null,
-        counts,
-      },
+      map: mapInfo,
       startedAt: info.startedAt,
       endedAt: info.endedAt,
       playedMs: this.now,
@@ -671,11 +719,44 @@ export class GameSession {
       sliderParts: { hit: this.scoring.partsHit, total: this.scoring.partsTotal },
       strayPresses: this.strayPresses,
       pauses: this.pauses,
-      levels: this.controller ? this.controller.levelSteps() : [],
+      levels,
       finalLevels: this.controller ? this.controller.finalLevels() : {},
       healthAtEnd: m.health ? this.scoring.health : null,
       input: info.input,
       records,
+    };
+    // A play that cannot be recorded still saves, without a replay.
+    if (this.recorder) {
+      try {
+        result.replay = this.buildReplay(status, levels);
+      } catch {
+        // Leave replay out.
+      }
+    }
+    return result;
+  }
+
+  /** Final judgment per object index: c, s, r or m, and '-' for an object that is not judged yet. */
+  judgmentString(): string {
+    let out = '';
+    for (const s of this.objs) out += s.done && s.judgment ? JUDGMENT_CHAR[s.judgment] : '-';
+    return out;
+  }
+
+  private buildReplay(status: PlayStatus, levels: LevelStep[]): ReplayData {
+    const rec = this.recorder as TraceRecorder;
+    return {
+      format: REPLAY_FORMAT,
+      engineVersion: ENGINE_VERSION,
+      launch: this.launch,
+      // The session empties and refills map.objects, so the replay keeps its own copies.
+      map: { ...this.map, objects: this.map.objects.slice(), sections: this.map.sections.slice() },
+      progressMs: this.progressMs,
+      status,
+      endT: this.now,
+      judgments: this.judgmentString(),
+      levels: levels.slice(),
+      trace: rec.toTrace(),
     };
   }
 }

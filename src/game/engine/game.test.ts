@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_DIFFICULTY, DEFAULT_SETTINGS, LEVEL_PRESETS } from '../../shared/catalog';
+import { decodeReplay, encodeReplay } from '../../shared/replay';
 import type { GameCallbacks, GameHandle, PlayResult, Settings } from '../../shared/types';
 import { installFakeDom, key, pointer } from '../testing/fakeDom';
 import type { FakeEnv } from '../testing/fakeDom';
@@ -12,22 +13,39 @@ afterEach(() => {
   env = null;
 });
 
-function start(overrides: { settings?: Partial<Settings['input']>; mode?: 'dynamic' | 'jumps'; rawUpdate?: boolean; length?: number } = {}) {
+function start(
+  overrides: {
+    settings?: Partial<Settings['input']>;
+    display?: Partial<Settings['display']>;
+    audio?: Partial<Settings['audio']>;
+    mode?: 'dynamic' | 'jumps';
+    rawUpdate?: boolean;
+    length?: number;
+    noRetry?: boolean;
+  } = {},
+) {
   const e = installFakeDom({ rawUpdate: overrides.rawUpdate });
   env = e;
   const results: PlayResult[] = [];
   const pauses: boolean[] = [];
   const errors: string[] = [];
+  const retries: PlayResult[] = [];
   const callbacks: GameCallbacks = {
     onPause: (p) => pauses.push(p),
     onFinish: (r) => results.push(r),
     onError: (m) => errors.push(m),
+    ...(overrides.noRetry ? {} : { onRetry: (r: PlayResult) => retries.push(r) }),
   };
-  const settings: Settings = { ...DEFAULT_SETTINGS, input: { ...DEFAULT_SETTINGS.input, ...overrides.settings } };
+  const settings: Settings = {
+    ...DEFAULT_SETTINGS,
+    input: { ...DEFAULT_SETTINGS.input, ...overrides.settings },
+    display: { ...DEFAULT_SETTINGS.display, ...overrides.display },
+    audio: { ...DEFAULT_SETTINGS.audio, ...overrides.audio },
+  };
   const mode = overrides.mode ?? 'dynamic';
   const launch = launchFor(mode === 'dynamic' ? LEVEL_PRESETS[2]!.difficulty : DEFAULT_DIFFICULTY, 5, overrides.length ?? 20, [], mode);
   const handle: GameHandle = createGameImpl(e.canvas as unknown as HTMLCanvasElement, launch, settings, callbacks);
-  return { e, handle, results, pauses, errors };
+  return { e, handle, results, pauses, errors, retries };
 }
 
 describe('createGame', () => {
@@ -268,5 +286,194 @@ describe('createGame', () => {
     const errors: string[] = [];
     createGameImpl(e.canvas as unknown as HTMLCanvasElement, launchFor(), DEFAULT_SETTINGS, { onPause: vi.fn(), onFinish: vi.fn(), onError: (m) => errors.push(m) });
     expect(errors).toHaveLength(1);
+  });
+});
+
+describe('quick retry', () => {
+  const begin = (e: FakeEnv) => {
+    key(e, 'keydown', 'KeyZ');
+    key(e, 'keyup', 'KeyZ');
+    e.run(500);
+  };
+
+  it('ends the play with status quit after a 300 ms hold, and calls onRetry instead of onFinish', () => {
+    const { e, results, retries } = start({ mode: 'jumps' });
+    begin(e);
+    key(e, 'keydown', 'Backquote');
+    e.run(250);
+    expect(retries).toHaveLength(0);
+    e.run(100);
+    expect(retries).toHaveLength(1);
+    expect(retries[0]!.status).toBe('quit');
+    expect(retries[0]!.replay).toBeDefined();
+    expect(results).toHaveLength(0);
+    key(e, 'keyup', 'Backquote');
+    e.run(500);
+    expect(retries).toHaveLength(1);
+    expect(results).toHaveLength(0);
+  });
+
+  it('does nothing when the key is let go at 200 ms', () => {
+    const { e, handle, results, retries } = start({ mode: 'jumps' });
+    begin(e);
+    key(e, 'keydown', 'Backquote');
+    e.run(200);
+    key(e, 'keyup', 'Backquote');
+    e.run(600);
+    expect(retries).toHaveLength(0);
+    // The hold starts over on the next press.
+    key(e, 'keydown', 'Backquote');
+    e.run(150);
+    key(e, 'keyup', 'Backquote');
+    e.run(400);
+    expect(retries).toHaveLength(0);
+    handle.quit();
+    expect(results).toHaveLength(1);
+  });
+
+  it('hands the renderer the progress of the hold', () => {
+    const { e, handle } = start({ mode: 'jumps' });
+    begin(e);
+    const rs = (handle as unknown as { rs: { retry?: number } }).rs;
+    expect(rs.retry).toBe(0);
+    key(e, 'keydown', 'Backquote');
+    e.run(150);
+    expect(rs.retry!).toBeGreaterThan(0.3);
+    expect(rs.retry!).toBeLessThan(0.8);
+    key(e, 'keyup', 'Backquote');
+    e.run(50);
+    expect(rs.retry).toBe(0);
+  });
+
+  it('does nothing when onRetry is not given', () => {
+    const { e, handle, results } = start({ mode: 'jumps', noRetry: true });
+    begin(e);
+    key(e, 'keydown', 'Backquote');
+    e.run(800);
+    key(e, 'keyup', 'Backquote');
+    expect(results).toHaveLength(0);
+    handle.quit();
+    expect(results).toHaveLength(1);
+    expect(results[0]!.status).toBe('quit');
+  });
+
+  it('is off when the retry key is empty', () => {
+    const { e, retries } = start({ mode: 'jumps', settings: { retryKey: '' } });
+    begin(e);
+    key(e, 'keydown', 'Backquote');
+    e.run(600);
+    expect(retries).toHaveLength(0);
+  });
+
+  it('never fires from Escape or a hit key', () => {
+    for (const code of ['Escape', 'KeyZ']) {
+      const { e, retries, handle } = start({ mode: 'jumps', settings: { retryKey: code } });
+      begin(e);
+      key(e, 'keydown', code);
+      e.run(600);
+      key(e, 'keyup', code);
+      expect(retries, code).toHaveLength(0);
+      handle.destroy();
+      e.cleanup();
+      env = null;
+    }
+  });
+
+  it('counts while the play is paused', () => {
+    const { e, retries, pauses } = start({ mode: 'jumps' });
+    begin(e);
+    key(e, 'keydown', 'Escape');
+    expect(pauses).toEqual([true]);
+    key(e, 'keydown', 'Backquote');
+    e.run(350);
+    expect(retries).toHaveLength(1);
+    expect(retries[0]!.status).toBe('quit');
+  });
+
+  it('counts during the resume countdown', () => {
+    const { e, handle, retries } = start({ mode: 'jumps' });
+    begin(e);
+    key(e, 'keydown', 'Escape');
+    handle.resume();
+    e.run(100);
+    key(e, 'keydown', 'Backquote');
+    e.run(350);
+    expect(retries).toHaveLength(1);
+  });
+
+  it('does not fire on the start screen', () => {
+    const { e, retries } = start({ mode: 'jumps' });
+    e.run(100);
+    key(e, 'keydown', 'Backquote');
+    e.run(600);
+    expect(retries).toHaveLength(0);
+  });
+
+  it('gives the pointer lock back', async () => {
+    const { e, retries } = start({ mode: 'jumps', settings: { rawInput: true } });
+    pointer(e, 'pointerdown', 640, 360, 1);
+    pointer(e, 'pointerup', 640, 360, 0);
+    await Promise.resolve();
+    await Promise.resolve();
+    e.run(500);
+    expect(e.document.pointerLockElement).toBe(e.canvas);
+    key(e, 'keydown', 'Backquote');
+    e.run(350);
+    expect(retries).toHaveLength(1);
+    expect(e.document.pointerLockElement).toBeNull();
+  });
+
+  it('forgets a held key when the window loses focus', () => {
+    const { e, retries } = start({ mode: 'jumps' });
+    begin(e);
+    key(e, 'keydown', 'Backquote');
+    e.run(100);
+    e.window.dispatch('blur');
+    e.run(600);
+    expect(retries).toHaveLength(0);
+  });
+});
+
+describe('recording in the game', () => {
+  it('puts a replay and the offsets in the result', () => {
+    const { e, handle, results } = start({ mode: 'jumps', display: { visualOffsetMs: 12 }, audio: { offsetMs: 40 } });
+    pointer(e, 'pointerdown', 640, 360, 1);
+    pointer(e, 'pointerup', 640, 360, 0);
+    e.run(2500);
+    for (let i = 0; i < 10; i++) {
+      pointer(e, 'pointermove', 100 + i * 40, 200, 0);
+      key(e, 'keydown', 'KeyZ');
+      key(e, 'keyup', 'KeyZ');
+      e.run(60);
+    }
+    handle.quit();
+    const r = results[0]!;
+    expect(r.input.visualOffsetMs).toBe(12);
+    expect(r.input.audioOffsetMs).toBe(40);
+    const replay = r.replay!;
+    expect(replay.endT).toBe(r.playedMs);
+    expect(replay.trace.count).toBeGreaterThan(100);
+    const back = decodeReplay(encodeReplay(replay));
+    expect(back.trace.count).toBe(replay.trace.count);
+    expect(back.judgments).toBe(replay.judgments);
+  });
+
+  it('feeds the session at most one move per 0.5 ms and draws the newest sample', () => {
+    const { e, handle, results } = start({ mode: 'jumps' });
+    pointer(e, 'pointerdown', 640, 360, 1);
+    pointer(e, 'pointerup', 640, 360, 0);
+    e.run(300);
+    const t0 = e.now();
+    const before = (handle as unknown as { session: { cursor: { size: number } } }).session.cursor.size;
+    for (let i = 0; i < 200; i++) pointer(e, 'pointermove', 400 + i, 300, 0, { timeStamp: t0 + i * 0.1 });
+    const rs = (handle as unknown as { rs: { cursorX: number } }).rs;
+    const fed = (handle as unknown as { session: { cursor: { size: number } } }).session.cursor.size - before;
+    // 200 samples over 20 ms are thinned to about 40, and the drawn cursor already follows the last one.
+    expect(fed).toBeLessThanOrEqual(41);
+    expect(fed).toBeGreaterThan(20);
+    expect(rs.cursorX).toBeGreaterThan(300);
+    e.run(50);
+    handle.quit();
+    expect(results).toHaveLength(1);
   });
 });

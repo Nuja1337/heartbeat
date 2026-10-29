@@ -41,6 +41,8 @@ export interface RenderState {
   set: number | null;
   /** Length that the time ring is measured against. */
   lengthMs: number;
+  /** How far the quick retry hold has got, 0..1. 0 hides the bar. */
+  retry?: number;
 }
 
 const TAU = Math.PI * 2;
@@ -108,6 +110,7 @@ export class Renderer {
     windows: { crisp: 40, solid: 80, rough: 120, early: 180 },
     errorBar: true,
     fps: null,
+    retry: 0,
   };
 
   constructor(
@@ -541,6 +544,7 @@ export class Renderer {
     if (first) d.windows = first.windows;
     d.errorBar = rs.settings.display.errorBar;
     d.fps = rs.settings.display.showFps ? rs.fps : null;
+    d.retry = rs.retry ?? 0;
     this.hud.draw(this.ctx, this.pf.layout, rs.fx, d, rs.now);
   }
 

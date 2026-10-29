@@ -26,7 +26,7 @@ describe('boundaries', () => {
   });
 
   it('keeps browser code in the files that may use it', () => {
-    const browserOk = /^(engine\/(game|input|loop|playfield)\.ts|render\/|audio\/|dev\/|testing\/fake|index\.ts$)/;
+    const browserOk = /^(engine\/(game|input|loop|playfield)\.ts|replay\/playback\.ts|render\/|audio\/|dev\/|testing\/fake|index\.ts$)/;
     const browserApi = /\b(document|window|navigator|AudioContext|HTMLCanvasElement|requestAnimationFrame|CanvasRenderingContext2D|OffscreenCanvas|ResizeObserver)\b/;
     for (const f of all) {
       if (browserOk.test(rel(f))) continue;
