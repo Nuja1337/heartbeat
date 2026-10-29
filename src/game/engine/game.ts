@@ -1,0 +1,410 @@
+// The browser wrapper. It wires the clock, input, session, renderer and audio together and implements GameHandle.
+
+import { MODES } from '../../shared/catalog';
+import type { CreateGame, GameCallbacks, GameHandle, InputInfo, InputSlot, LaunchRequest, PlayStatus, Settings } from '../../shared/types';
+import { AudioEngine } from '../audio/audio';
+import { setupPlay } from '../modes/runner';
+import { SYSTEM_CURSOR } from '../render/cursor';
+import { Effects } from '../render/effects';
+import type { DisplayFlags } from '../render/effects';
+import { Renderer } from '../render/renderer';
+import type { OverlayKind, RenderState } from '../render/renderer';
+import { keyLabel } from '../render/strings';
+import { Clock } from './clock';
+import { InputHandler } from './input';
+import type { InputSink } from './input';
+import { Loop } from './loop';
+import { Playfield } from './playfield';
+import { GameSession } from './session';
+import type { FeedbackEvent } from './session';
+
+type State = 'ready' | 'playing' | 'paused' | 'locking' | 'countdown' | 'needsClick' | 'failing' | 'done';
+
+const OVERLAY_OF: Record<State, OverlayKind> = {
+  ready: 'ready',
+  playing: 'none',
+  paused: 'none',
+  locking: 'none',
+  countdown: 'countdown',
+  needsClick: 'needsClick',
+  failing: 'failing',
+  done: 'none',
+};
+
+const COUNTDOWN_MS = 1000;
+const FAIL_BANNER_MS = 1200;
+
+class Game implements GameHandle, InputSink {
+  private state: State = 'ready';
+  private session!: GameSession;
+  private clock = new Clock();
+  private pf: Playfield;
+  private renderer!: Renderer;
+  private fx = new Effects();
+  private audio: AudioEngine;
+  private input: InputHandler;
+  private loop: Loop;
+  private rs!: RenderState;
+  private flags: DisplayFlags = { earlyLate: true, crispPopups: false, reduceMotion: false };
+  private pt = { x: 0, y: 0 };
+  private amb = { tracking: false, speed: 0, rpm: 0 };
+  private finished = false;
+  private destroyed = false;
+  private startedAt = 0;
+  private overlayT0 = 0;
+  private failStart = 0;
+  private countdownStart = 0;
+  private everRaw = false;
+  private penFirst = false;
+  private cursorStyle = '';
+  private lengthMs = 0;
+  private fpsAt = 0;
+  private fps: number | null = null;
+
+  constructor(
+    private canvas: HTMLCanvasElement,
+    launch: LaunchRequest,
+    private settings: Settings,
+    private callbacks: GameCallbacks,
+    ctx: CanvasRenderingContext2D,
+  ) {
+    const setup = setupPlay(launch);
+    this.session = new GameSession({ map: setup.map, launch, controller: setup.controller, progressMs: setup.progressMs });
+    this.lengthMs = setup.controller ? launch.lengthSec * 1000 : setup.map.durationMs;
+    this.pf = new Playfield(canvas);
+    this.renderer = new Renderer(ctx, this.pf);
+    this.pf.onResize = () => this.renderer.invalidate();
+    this.pf.attach();
+    this.audio = new AudioEngine(settings.audio);
+    this.input = new InputHandler(canvas, this.pf, () => this.settings, this);
+    this.input.attach();
+    this.session.on((e) => this.onEvent(e));
+    this.syncFlags();
+    const status = this.session.levelStatus();
+    this.rs = {
+      session: this.session,
+      fx: this.fx,
+      settings,
+      playT: 0,
+      now: performance.now(),
+      cursorX: 500,
+      cursorY: 312.5,
+      drawCursor: false,
+      overlay: 'ready',
+      overlayT0: performance.now(),
+      startLabel: keyLabel(settings.input.keys[0]),
+      raw: settings.input.rawInput,
+      fps: null,
+      showScore: !MODES[launch.modeId].adaptive,
+      level: status ? status.level : null,
+      set: status ? status.set : null,
+      lengthMs: this.lengthMs,
+    };
+    document.addEventListener('visibilitychange', this.onVisibility);
+    window.addEventListener('blur', this.onBlur);
+    this.loop = new Loop((ts) => this.frame(ts));
+    this.loop.start();
+  }
+
+  /* --------------------------------------------------------------- sink */
+
+  move(ts: number, x: number, y: number): void {
+    this.rs.cursorX = x;
+    this.rs.cursorY = y;
+    if (this.state !== 'playing') return;
+    const t = this.clock.play(ts);
+    if (t < 0) return;
+    this.pt.x = x;
+    this.pt.y = y;
+    this.session.move(t, this.pt);
+  }
+
+  press(slot: InputSlot, ts: number, x: number | null, y: number | null): void {
+    if (this.state === 'ready') {
+      if (x !== null && y !== null) {
+        this.rs.cursorX = x;
+        this.rs.cursorY = y;
+      }
+      this.start(ts);
+      return;
+    }
+    if (this.state === 'needsClick') {
+      this.beginLock();
+      return;
+    }
+    if (this.state !== 'playing') return;
+    const t = this.clock.play(ts);
+    if (t < 0) return;
+    if (x === null || y === null) {
+      this.session.press(slot, t, null);
+    } else {
+      this.pt.x = x;
+      this.pt.y = y;
+      this.session.press(slot, t, this.pt);
+    }
+    this.afterInput(performance.now());
+  }
+
+  release(slot: InputSlot, ts: number): void {
+    if (this.state !== 'playing') return;
+    const t = this.clock.play(ts);
+    if (t < 0) return;
+    this.session.release(slot, t);
+  }
+
+  escape(ts: number): void {
+    if (this.state === 'playing' || this.state === 'countdown') this.doPause(ts);
+    else if (this.state === 'paused' && !this.settings.input.rawInput) this.resume();
+  }
+
+  lockLost(ts: number): void {
+    if (this.state === 'playing' || this.state === 'countdown') this.doPause(ts);
+  }
+
+  active(): boolean {
+    return this.state === 'ready' || this.state === 'playing' || this.state === 'countdown';
+  }
+
+  /* ------------------------------------------------------------- lifecycle */
+
+  private start(ts: number): void {
+    this.state = 'playing';
+    this.clock.start(ts);
+    this.startedAt = Date.now();
+    this.audio.resume();
+    this.fx.reset();
+    this.renderer.reset();
+    this.syncCursor(ts);
+    this.penFirst = this.input.penSeen;
+    if (this.settings.input.rawInput && !this.penFirst) {
+      void this.input.lock().then((ok) => {
+        if (ok) this.everRaw = true;
+      });
+    }
+  }
+
+  /** Put the latest known cursor position into the play, so a key press before any movement lands in the right place. */
+  private syncCursor(ts: number): void {
+    const t = this.clock.play(ts);
+    this.pt.x = this.rs.cursorX;
+    this.pt.y = this.rs.cursorY;
+    this.session.move(Math.max(0, t), this.pt);
+  }
+
+  private doPause(ts: number): void {
+    if (this.state !== 'playing' && this.state !== 'countdown') return;
+    if (this.state === 'playing') {
+      const t = this.clock.play(ts);
+      this.session.advance(t);
+      this.input.releaseAll(ts);
+      this.session.notePause(t);
+      this.clock.pause(ts);
+    }
+    this.state = 'paused';
+    this.audio.quiet();
+    this.input.unlock();
+    this.callbacks.onPause(true);
+  }
+
+  resume(): void {
+    if (this.destroyed || this.finished) return;
+    if (this.state === 'needsClick') {
+      this.beginLock();
+      return;
+    }
+    if (this.state !== 'paused') return;
+    this.callbacks.onPause(false);
+    if (this.settings.input.rawInput && !this.penFirst) this.beginLock();
+    else this.startCountdown();
+  }
+
+  /** Lock the pointer again, from a click, then count down. */
+  private beginLock(): void {
+    this.state = 'locking';
+    void this.input.lock().then((ok) => {
+      if (this.destroyed || this.finished) return;
+      if (ok) {
+        this.everRaw = true;
+        this.startCountdown();
+      } else {
+        this.state = 'needsClick';
+        this.overlayT0 = performance.now();
+      }
+    });
+  }
+
+  private startCountdown(): void {
+    this.state = 'countdown';
+    this.countdownStart = performance.now();
+    this.audio.resume();
+    this.audio.countdown();
+  }
+
+  pause(): void {
+    this.doPause(performance.now());
+  }
+
+  quit(): void {
+    this.finish('quit');
+  }
+
+  setSettings(s: Settings): void {
+    this.settings = s;
+    this.rs.settings = s;
+    this.audio.setSettings(s.audio);
+    this.rs.startLabel = keyLabel(s.input.keys[0]);
+    this.syncFlags();
+  }
+
+  private syncFlags(): void {
+    const d = this.settings.display;
+    this.flags.earlyLate = d.earlyLate;
+    this.flags.crispPopups = d.crispPopups;
+    this.flags.reduceMotion = d.reduceMotion;
+  }
+
+  private onVisibility = (): void => {
+    if (document.visibilityState === 'hidden') this.doPause(performance.now());
+  };
+
+  private onBlur = (): void => {
+    this.doPause(performance.now());
+  };
+
+  private finish(status: PlayStatus): void {
+    if (this.finished || this.destroyed) return;
+    this.finished = true;
+    const wasPlaying = this.state === 'playing';
+    const now = performance.now();
+    if (wasPlaying) this.session.advance(this.clock.play(now));
+    this.state = 'done';
+    const info: InputInfo = {
+      pointer: this.input.pointerKind(),
+      rawInput: this.everRaw,
+      unadjusted: this.everRaw && this.input.unadjusted,
+      sensitivity: this.settings.input.sensitivity,
+      pointerHz: this.input.pointerHz(),
+      displayHz: this.loop.displayHz(),
+    };
+    const result = this.session.finish(status, { startedAt: this.startedAt || Date.now(), endedAt: Date.now(), input: info });
+    this.input.releaseAll(now);
+    this.input.unlock();
+    this.audio.quiet();
+    this.rs.overlay = 'none';
+    this.renderFrame(now);
+    this.loop.stop();
+    this.callbacks.onFinish(result);
+  }
+
+  destroy(): void {
+    if (this.destroyed) return;
+    this.destroyed = true;
+    this.loop.stop();
+    this.input.detach();
+    this.input.unlock();
+    this.pf.detach();
+    this.audio.destroy();
+    document.removeEventListener('visibilitychange', this.onVisibility);
+    window.removeEventListener('blur', this.onBlur);
+    this.canvas.style.cursor = '';
+  }
+
+  /* ----------------------------------------------------------- per frame */
+
+  private onEvent(e: FeedbackEvent): void {
+    this.audio.onEvent(e);
+    const obj = e.index >= 0 ? (this.session.objs[e.index]?.obj ?? null) : null;
+    const now = performance.now();
+    this.fx.onEvent(e, now, obj, this.flags);
+    if (e.type === 'setEnd' && e.setEnd) {
+      this.fx.banner = Renderer.banner(e.setEnd.direction, e.setEnd.from, e.setEnd.to, now);
+    }
+  }
+
+  private afterInput(now: number): void {
+    if (this.session.failed && this.state === 'playing') {
+      this.state = 'failing';
+      this.failStart = now;
+      this.overlayT0 = now;
+    }
+  }
+
+  private frame(ts: number): void {
+    if (this.destroyed) return;
+    const now = performance.now();
+    if (now - this.fpsAt > 500) {
+      this.fps = this.loop.displayHz();
+      this.fpsAt = now;
+    }
+    if (this.state === 'playing') {
+      this.session.advance(this.clock.play(now));
+      this.afterInput(now);
+      if (this.state === 'playing' && this.session.over) {
+        this.finish('completed');
+        return;
+      }
+    } else if (this.state === 'countdown') {
+      if (now - this.countdownStart >= COUNTDOWN_MS) {
+        this.clock.resume(now);
+        this.state = 'playing';
+        this.syncCursor(now);
+      }
+    }
+    if (this.state === 'failing' && now - this.failStart >= FAIL_BANNER_MS) {
+      this.finish('failed');
+      return;
+    }
+    void ts;
+    this.renderFrame(now);
+  }
+
+  private renderFrame(now: number): void {
+    const rs = this.rs;
+    rs.now = now;
+    rs.playT = this.clock.started ? this.clock.play(now) : 0;
+    rs.fps = this.fps;
+    rs.raw = this.settings.input.rawInput;
+    rs.drawCursor = this.input.rawActive || this.settings.input.cursor === 'drawn';
+    const o = OVERLAY_OF[this.state];
+    if (o !== rs.overlay) {
+      rs.overlay = o;
+      if (o === 'countdown') rs.overlayT0 = this.countdownStart;
+      else rs.overlayT0 = this.state === 'failing' ? this.failStart : this.overlayT0 || now;
+    }
+    const status = this.session.levelStatus();
+    if (status) {
+      rs.level = status.level;
+      rs.set = status.set;
+    }
+    // Ambient sounds follow the play.
+    if (this.state === 'playing') {
+      this.session.ambient(rs.playT, this.amb);
+      this.audio.setTracking(this.amb.tracking, Math.min(1, this.amb.speed / 1.2));
+      this.audio.setSpinning(this.amb.rpm);
+    }
+    const style = rs.drawCursor && this.state !== 'paused' ? 'none' : SYSTEM_CURSOR;
+    if (style !== this.cursorStyle) {
+      this.cursorStyle = style;
+      this.canvas.style.cursor = style;
+    }
+    this.renderer.render(rs);
+  }
+}
+
+export const createGameImpl: CreateGame = (canvas, launch, settings, callbacks) => {
+  const ctx = canvas.getContext('2d', { alpha: false, desynchronized: settings.display.lowLatency });
+  if (!ctx) {
+    callbacks.onError('This browser could not start the game canvas.');
+    return inertHandle();
+  }
+  try {
+    return new Game(canvas, launch, settings, callbacks, ctx);
+  } catch (err) {
+    callbacks.onError(err instanceof Error && err.message ? `The game could not start. ${err.message}` : 'The game could not start.');
+    return inertHandle();
+  }
+};
+
+function inertHandle(): GameHandle {
+  return { resume() {}, pause() {}, quit() {}, setSettings() {}, destroy() {} };
+}
