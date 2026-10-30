@@ -8,7 +8,6 @@
 import { MODES } from '../../shared/catalog';
 import type {
   CreatePlayback,
-  LevelStep,
   PlaybackCallbacks,
   PlaybackHandle,
   PlaybackSource,
@@ -49,7 +48,6 @@ class Playback implements PlaybackHandle {
   private runner: ReplayRunner | null = null;
   private rs: RenderState | null = null;
   private amb = { tracking: false, speed: 0, rpm: 0 };
-  private levels: LevelStep[] = [];
 
   private ready = false;
   private wantPlay = false;
@@ -104,10 +102,9 @@ class Playback implements PlaybackHandle {
         check.feedAll();
         mismatches = countMismatches(check.judgments(), replay.judgments);
       }
-      const runner = new ReplayRunner(replay, this.onEvent);
+      const runner = new ReplayRunner(replay, this.onEvent, this.onPress);
       this.runner = runner;
       this.durationMs = runner.durationMs;
-      this.levels = replay.levels;
       this.fx.spinHintShown = true;
       runner.feedTo(0);
       this.rs = this.initialState(replay, runner);
@@ -177,6 +174,7 @@ class Playback implements PlaybackHandle {
   setSettings(s: Settings): void {
     this.settings = s;
     if (this.rs) this.rs.settings = s;
+    this.renderer.setSettings(s);
     this.audio.setSettings(s.audio);
     this.syncFlags();
   }
@@ -213,6 +211,12 @@ class Playback implements PlaybackHandle {
     const obj = e.index >= 0 ? (runner.session.objs[e.index]?.obj ?? null) : null;
     this.fx.onEvent(e, e.t, obj, this.flags);
     if (this.sound) this.audio.onEvent(e);
+  };
+
+  /** A press in the trace makes a click ripple, unless the skin or reduced motion says no. */
+  private onPress = (t: number, x: number, y: number): void => {
+    if (t < this.fxFrom || !this.settings.skin.clickRipple || this.settings.display.reduceMotion) return;
+    this.fx.ripple(x, y, t);
   };
 
   /** Show time t after a jump. Rebuilds the session when it has to go back. */
@@ -301,14 +305,11 @@ class Playback implements PlaybackHandle {
       rs.cursorX = p.x;
       rs.cursorY = p.y;
     }
-    const first = s.objs[s.firstOpen]?.obj;
-    if (first && this.levels.length > 0) {
-      rs.set = first.set;
-      rs.level = null;
-      for (let i = 0; i < this.levels.length; i++) {
-        const step = this.levels[i] as LevelStep;
-        if (step.set === first.set) rs.level = step.level;
-      }
+    // The replay controller knows the level of the set being played, closed or still open at the end.
+    const status = s.levelStatus();
+    if (status) {
+      rs.set = status.set;
+      rs.level = status.level;
     }
     this.renderer.render(rs);
   }

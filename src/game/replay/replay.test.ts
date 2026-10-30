@@ -1,7 +1,7 @@
 // Determinism: a recorded play, run through a fresh session, gives the same records (PLAN-2 5.1, G1 test 1 and 2).
 
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_DIFFICULTY, LEVEL_PRESETS, MODES, TRACE } from '../../shared/catalog';
+import { DEFAULT_DIFFICULTY, LEVEL_PRESETS, MODES, TRACE, TRACE_OP } from '../../shared/catalog';
 import { decodeReplay, encodeReplay } from '../../shared/replay';
 import type { InputInfo, LaunchRequest, ModId, ModeId, PlayResult, ReplayData } from '../../shared/types';
 import type { GameSession } from '../engine/session';
@@ -77,7 +77,8 @@ function runWithAdvances(replay: ReplayData, stepMs: number): PlayResult {
   return session.finish(replay.status, INFO);
 }
 
-function expectSame(a: PlayResult, b: PlayResult, label: string, healthDigits = 9): void {
+/** `exact` is for a re-run of the logged calls as they were; the other kind adds advances, which can move drain. */
+function expectSame(a: PlayResult, b: PlayResult, label: string, exact = true): void {
   expect(b.records, label).toEqual(a.records);
   expect(b.score, label).toBe(a.score);
   expect(b.counts, label).toEqual(a.counts);
@@ -85,10 +86,11 @@ function expectSame(a: PlayResult, b: PlayResult, label: string, healthDigits = 
   expect(b.strayPresses, label).toBe(a.strayPresses);
   expect(b.sliderParts, label).toEqual(a.sliderParts);
   expect(b.playedMs, label).toBe(a.playedMs);
-  // Health depends on how drain and gains interleave. The same trace gives the same health to the last digit. Extra
+  // Health depends on how drain and gains interleave. The same trace gives the same health bit for bit. Extra
   // advances between the calls can put a 3 ms drain on the other side of a gain that is clamped at full health.
   if (a.healthAtEnd === null) expect(b.healthAtEnd, label).toBeNull();
-  else expect(b.healthAtEnd!, label).toBeCloseTo(a.healthAtEnd, healthDigits);
+  else if (exact) expect(b.healthAtEnd, label).toBe(a.healthAtEnd);
+  else expect(b.healthAtEnd!, label).toBeCloseTo(a.healthAtEnd, 2);
 }
 
 describe('replay determinism', () => {
@@ -106,9 +108,27 @@ describe('replay determinism', () => {
         expect(result.records.length, label).toBeGreaterThan(3);
         expectSame(result, runExact(decoded), `${label} exact`);
         // The original advanced every 7 ms and the re-run advances every 1 ms, or the other way round.
-        expectSame(result, runWithAdvances(decoded, stepMs === 7 ? 1 : 7), `${label} other step`, 2);
+        expectSame(result, runWithAdvances(decoded, stepMs === 7 ? 1 : 7), `${label} other step`, false);
       }
     }
+  });
+
+  it('reproduces plays that pause and resume, so ops 14 and 15 are compared too', () => {
+    let marked = 0;
+    for (const c of CASES.filter((_, i) => i % 3 === 0)) {
+      const label = `${c.label} with pauses`;
+      const { result } = runHeadless({ launch: c.launch, model: NOISY_PLAYER, stepMs: 4, pauses: [2500, 6100, 11000, 17000, 24000] });
+      const replay = decodeReplay(encodeReplay(result.replay as ReplayData));
+      const ops = Array.from(replay.trace.ops);
+      const pauseOps = ops.filter((o) => o === TRACE_OP.pause).length;
+      expect(pauseOps, label).toBeGreaterThan(2);
+      expect(ops.filter((o) => o === TRACE_OP.resume).length, label).toBe(pauseOps);
+      expect(result.pauses, label).toBe(pauseOps);
+      marked += result.records.filter((r) => r.afterPause).length;
+      expectSame(result, runExact(replay), `${label} exact`);
+      expectSame(result, runWithAdvances(replay, 1), `${label} other step`, false);
+    }
+    expect(marked).toBeGreaterThan(0);
   });
 
   it('puts every logged time on the 1/64 ms grid and every position on the 1/16 grid', () => {

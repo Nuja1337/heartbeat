@@ -5,14 +5,75 @@
 // cursor sample that came before it), so a prefix of the trace is the same set of calls whatever route led to it.
 
 import { INPUT_SLOT_ORDER, TRACE_OP } from '../../shared/catalog';
-import type { InputTrace, ReplayData, Vec2 } from '../../shared/types';
+import type { HitObject, HitRecord, InputTrace, LevelStep, ModuleId, Ms, ReplayData, Vec2 } from '../../shared/types';
 import { GameSession } from '../engine/session';
-import type { FeedbackListener } from '../engine/session';
+import type { FeedbackListener, SetController, SetEndInfo } from '../engine/session';
+import { openSetLevel } from '../modes/runner';
 
-/** A session for a replay. The session empties the object list it is given, so it gets copies. */
+/**
+ * Stands in for the mode runner during playback. The live play appended each set when the one before it closed, and
+ * session code (spinner starts, pause marks) sees only the objects it has, so the replay has to append them at the
+ * same moment. `closeSet(set)` hands back the recorded objects of the next set, or null when the play ended there.
+ */
+export class ReplayController implements SetController {
+  private bySet = new Map<number, HitObject[]>();
+  private built = 0;
+  private statusObj = { level: 0, set: 0 };
+  private info: SetEndInfo = { set: 0, module: 'jumps', from: 0, to: 0, success: 0, direction: 'hold' };
+
+  constructor(private replay: ReplayData) {
+    for (const o of replay.map.objects) {
+      if (o.set < 1) continue;
+      const list = this.bySet.get(o.set);
+      if (list) list.push(o);
+      else this.bySet.set(o.set, [o]);
+    }
+  }
+
+  closeSet(set: number, _records: readonly HitRecord[], _tClose: Ms): { objects: HitObject[] | null; info: SetEndInfo } {
+    const steps = this.replay.levels;
+    const step = steps.find((s) => s.set === set);
+    const info = this.info;
+    info.set = set;
+    if (step) info.module = step.module;
+    info.from = step ? step.level : 0;
+    info.success = step ? step.success : 0;
+    const later = step ? steps.find((s) => s.set > set && s.module === step.module) : undefined;
+    info.to = later ? later.level : info.from;
+    info.direction = info.to > info.from ? 'up' : info.to < info.from ? 'down' : 'hold';
+    const objects = this.bySet.get(set + 1) ?? null;
+    if (objects) this.built = set + 1;
+    return { objects, info };
+  }
+
+  levelSteps(): LevelStep[] {
+    return this.replay.levels;
+  }
+
+  finalLevels(): Partial<Record<ModuleId, number>> {
+    return {};
+  }
+
+  /** The set being played and its level. A set still open when the play ended has no step, so its level is rebuilt. */
+  status(): { level: number; set: number } {
+    const set = this.built;
+    const step = this.replay.levels.find((s) => s.set === set);
+    this.statusObj.set = set;
+    this.statusObj.level = step ? step.level : openSetLevel(this.replay.launch, this.replay.levels, set);
+    return this.statusObj;
+  }
+}
+
+/**
+ * A session for a replay. The session empties the object list it is given, so it gets copies. An adaptive replay
+ * starts with its first set and a controller that appends the rest the way the live play did.
+ */
 export function sessionForReplay(replay: ReplayData): GameSession {
-  const map = { ...replay.map, objects: replay.map.objects.slice(), sections: replay.map.sections.slice() };
-  return new GameSession({ map, launch: replay.launch, controller: null, progressMs: replay.progressMs, record: false });
+  const adaptive = replay.map.objects.some((o) => o.set >= 0);
+  const objects = adaptive ? replay.map.objects.filter((o) => o.set <= 0) : replay.map.objects.slice();
+  const map = { ...replay.map, objects, sections: replay.map.sections.slice() };
+  const controller = adaptive ? new ReplayController(replay) : null;
+  return new GameSession({ map, launch: replay.launch, controller, progressMs: replay.progressMs, record: false });
 }
 
 /** Make one call on the session. `pos` is scratch space for the positioned ops. */
@@ -59,6 +120,9 @@ export function countMismatches(a: string, b: string): number {
   return n;
 }
 
+/** Called for every press fed, with the time and the cursor position at it. */
+export type PressListener = (t: Ms, x: number, y: number) => void;
+
 /**
  * A session being driven through a replay. `feedTo(T)` makes every call whose time is at most T, stopping at the
  * first one that is later. A backward `seekTo` rebuilds the session and feeds again from the start.
@@ -70,10 +134,11 @@ export class ReplayRunner {
   private fed = -Infinity;
   private pos: Vec2 = { x: 0, y: 0 };
 
-  /** `listener` is attached to every session this runner builds. */
+  /** `listener` is attached to every session this runner builds. `onPress` hears every press, with its position. */
   constructor(
     readonly replay: ReplayData,
     private listener: FeedbackListener | null = null,
+    private onPress: PressListener | null = null,
   ) {
     this.durationMs = replayDuration(replay);
     this.session = this.build();
@@ -83,6 +148,17 @@ export class ReplayRunner {
     const s = sessionForReplay(this.replay);
     if (this.listener) s.on(this.listener);
     return s;
+  }
+
+  private step(trace: InputTrace, i: number): void {
+    applyTraceEvent(this.session, trace, i, this.pos);
+    if (!this.onPress) return;
+    const op = trace.ops[i] as number;
+    if (op < TRACE_OP.pressAt || op >= TRACE_OP.release) return;
+    const t = trace.t[i] as number;
+    // A press without a position uses the cursor where it is at that time.
+    if (op >= TRACE_OP.press) this.session.cursor.positionAt(t, this.pos);
+    this.onPress(t, this.pos.x, this.pos.y);
   }
 
   /** The time the runner was last fed to. */
@@ -107,7 +183,7 @@ export class ReplayRunner {
     const n = trace.count;
     let i = this.idx;
     while (i < n && (trace.t[i] as number) <= t) {
-      applyTraceEvent(this.session, trace, i, this.pos);
+      this.step(trace, i);
       i++;
     }
     this.idx = i;
@@ -117,7 +193,7 @@ export class ReplayRunner {
   /** Feed every event, including any later than the end of the play. */
   feedAll(): void {
     const trace = this.replay.trace;
-    for (let i = this.idx; i < trace.count; i++) applyTraceEvent(this.session, trace, i, this.pos);
+    for (let i = this.idx; i < trace.count; i++) this.step(trace, i);
     this.idx = trace.count;
     this.fed = Infinity;
   }

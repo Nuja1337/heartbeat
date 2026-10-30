@@ -30,8 +30,9 @@ interface Chunk {
 const newChunk = (n: number): Chunk => ({ ops: new Uint8Array(n), t: new Float64Array(n), x: new Float32Array(n), y: new Float32Array(n) });
 
 /**
- * Stores the trace in fixed chunks. The next chunk is allocated when the current one is 75% full, so `record`
- * almost never allocates and never has to grow and copy a large array.
+ * Stores the trace in fixed chunks. `prepare()` allocates the next chunk once the current one is 75% full. The game
+ * calls it from the frame path, so `record` in the input handlers has a spare to switch to and never allocates. (A
+ * caller that never calls `prepare` still works: `record` allocates the chunk itself when it runs out.)
  */
 export class TraceRecorder {
   private chunks: Chunk[] = [];
@@ -64,6 +65,10 @@ export class TraceRecorder {
     c.x[i] = x;
     c.y[i] = y;
     this.total++;
+  }
+
+  /** Allocate the spare chunk when the current one is 75% full. Call from the frame path, never from input handlers. */
+  prepare(): void {
     if (this.spare === null && this.used >= this.chunkEvents * 0.75) this.spare = newChunk(this.chunkEvents);
   }
 

@@ -11,12 +11,16 @@ import {
   MODE_ORDER,
   MODS,
   MODULE_IDS,
+  PALETTES,
   RECORD_VERSION,
   modConflicts,
 } from '../../shared/catalog';
 import { decodeReplay, encodeReplay } from '../../shared/replay';
-import type { DifficultySettings, GameHandle, LaunchRequest, ModId, ModeId, ModuleId, PlaybackHandle, PlayResult, Settings } from '../../shared/types';
+import type { ApproachStyle, CursorStyle, DifficultySettings, GameHandle, LaunchRequest, ModId, ModeId, ModuleId, PaletteId, PlaybackHandle, PlaybackSource, PlayResult, Settings } from '../../shared/types';
+import '@fontsource-variable/space-grotesk';
 import { ENGINE_VERSION, GENERATOR_VERSION, createGame, createPlayback, playTestSound, previewLaunch } from '../index';
+import { autoplayReplay } from '../replay/autoplayReplay';
+import { NOISY_PLAYER } from '../sim/autoplay';
 
 const STORE = 'flickwise-dev-harness';
 
@@ -79,6 +83,7 @@ const form = loadForm();
 let handle: GameHandle | null = null;
 let playback: PlaybackHandle | null = null;
 let lastResult: PlayResult | null = null;
+let demoMisses = false;
 
 document.body.style.cssText = 'margin:0;background:#0b0f14;color:#e5e7eb;font:13px/1.4 system-ui,sans-serif;overflow:hidden';
 const canvas = el('canvas', { style: 'position:fixed;inset:0;width:100vw;height:100vh;display:block' });
@@ -228,6 +233,15 @@ function build(): void {
   panel.append(row('Reduce motion', check(d.reduceMotion, (v) => (d.reduceMotion = v))));
   panel.append(row('Low latency canvas', check(d.lowLatency, (v) => (d.lowLatency = v))));
   panel.append(row('Show fps', check(d.showFps, (v) => (d.showFps = v))));
+  panel.append(row('Frame graph', check(d.frameGraph, (v) => (d.frameGraph = v))));
+  panel.append(row('Visual offset (ms)', number(d.visualOffsetMs, -50, 150, 1, (v) => (d.visualOffsetMs = v))));
+
+  panel.append(el('h4', { style: 'margin:10px 0 2px' }, 'Skin'));
+  panel.append(row('Palette', select(Object.entries(PALETTES).map(([id, p]) => [id, p.label] as [string, string]), s.skin.palette, (v) => (s.skin.palette = v as PaletteId))));
+  panel.append(row('Approach', select([['ring', 'Ring'], ['fill', 'Fill'], ['brackets', 'Brackets']], s.skin.approach, (v) => (s.skin.approach = v as ApproachStyle))));
+  panel.append(row('Cursor style', select([['ring', 'Ring'], ['cross', 'Cross'], ['dot', 'Dot']], s.skin.cursorStyle, (v) => (s.skin.cursorStyle = v as CursorStyle))));
+  panel.append(row('Field grid', check(s.skin.fieldGrid, (v) => (s.skin.fieldGrid = v))));
+  panel.append(row('Click ripple', check(s.skin.clickRipple, (v) => (s.skin.clickRipple = v))));
 
   panel.append(
     el(
@@ -236,6 +250,8 @@ function build(): void {
       el('button', { textContent: 'Play', style: 'padding:8px 16px;font-weight:600', click: play }),
       el('button', { textContent: 'Preview map', click: preview }),
       el('button', { textContent: 'Watch last play', click: watch }),
+      el('button', { textContent: 'Autoplay demo', click: demo }),
+      el('label', {}, check(demoMisses, (v) => (demoMisses = v)), ' demo player misses'),
       el('button', { textContent: 'Hit sound', click: () => playTestSound(form.settings, 'hit') }),
       el('button', { textContent: 'Miss sound', click: () => playTestSound(form.settings, 'miss') }),
       el('button', { textContent: 'Combo sound', click: () => playTestSound(form.settings, 'combo') }),
@@ -355,6 +371,31 @@ function watch(): void {
       status.textContent = message;
     },
   });
+}
+
+/** Watch a simulated player on this launch, looping. Used to look at the skin, and by the screenshot scripts. */
+function demo(): void {
+  saveForm(form);
+  playback?.destroy();
+  handle?.destroy();
+  showPanel(false);
+  panelButton.style.display = 'none';
+  watchBar.style.display = 'none';
+  const win = window as unknown as { __fw?: { playback: PlaybackHandle | null; launch: LaunchRequest } };
+  // A sloppy player misses now and then, which the skin needs to show.
+  const source: PlaybackSource = demoMisses
+    ? { kind: 'replay', replay: autoplayReplay(launch(), { ...NOISY_PLAYER, name: 'sloppy', sigmaT: 55, sigmaAim: 0.75, trackNoise: 0.9 }) }
+    : { kind: 'autoplay', launch: launch(), loop: true };
+  playback = createPlayback(canvas, source, structuredClone(form.settings), {
+    onReady: () => playback?.play(),
+    onTime: () => undefined,
+    onEnd: () => undefined,
+    onError: (message) => {
+      log.textContent = message;
+      showPanel(true);
+    },
+  });
+  win.__fw = { playback, launch: launch() };
 }
 
 function stopWatching(): void {

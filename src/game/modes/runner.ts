@@ -137,10 +137,7 @@ export class ModeRunner implements SetController {
     private launch: LaunchRequest,
     private mods: ModId[],
   ) {
-    const mix = launch.modeId === 'mix';
-    const chosen = launch.options.mixModules ?? (MODES.mix.defaultOptions.mixModules as ModuleId[]);
-    const valid = chosen.filter((m, i) => MODULE_IDS.includes(m) && chosen.indexOf(m) === i).slice(0, 4);
-    this.modules = mix ? (valid.length >= 2 ? valid : (MODES.mix.defaultOptions.mixModules as ModuleId[])) : [launch.modeId as ModuleId];
+    this.modules = setModules(launch);
     for (const m of this.modules) this.stairs.set(m, Staircase.startFor(launch.levels[m], DEFAULT_MODULE_LEVEL, maxLevelFor(m)));
     const first = this.build(0, 0);
     this.map = shell(launch, first.objects, [first.section], mods);
@@ -227,4 +224,26 @@ export function setupPlay(launch: LaunchRequest): PlaySetup {
   }
   const runner = new ModeRunner(launch, mods);
   return { map: runner.map, controller: runner, progressMs: launch.lengthSec * 1000 };
+}
+
+/** The modules a launch cycles through, one per set. */
+function setModules(launch: LaunchRequest): ModuleId[] {
+  if (launch.modeId !== 'mix') return [launch.modeId as ModuleId];
+  const chosen = launch.options.mixModules ?? (MODES.mix.defaultOptions.mixModules as ModuleId[]);
+  const valid = chosen.filter((m, i) => MODULE_IDS.includes(m) && chosen.indexOf(m) === i).slice(0, 4);
+  return valid.length >= 2 ? valid : (MODES.mix.defaultOptions.mixModules as ModuleId[]);
+}
+
+/**
+ * The level that `set` was played at, from the steps of the sets before it. The live runner knows it from its
+ * staircases. A replay only has the steps of closed sets, so this runs the staircases again on their success shares.
+ */
+export function openSetLevel(launch: LaunchRequest, steps: readonly LevelStep[], set: number): number {
+  const modules = setModules(launch);
+  const stairs = new Map<ModuleId, Staircase>();
+  for (const m of modules) stairs.set(m, Staircase.startFor(launch.levels[m], DEFAULT_MODULE_LEVEL, maxLevelFor(m)));
+  const done = steps.filter((s) => s.set < set).sort((a, b) => a.set - b.set);
+  for (const s of done) stairs.get(s.module)?.update(s.success);
+  const module = modules[set % modules.length] as ModuleId;
+  return (stairs.get(module) as Staircase).level;
 }

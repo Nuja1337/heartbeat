@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_DIFFICULTY, DEFAULT_SETTINGS, LEVEL_PRESETS } from '../../shared/catalog';
+import { DEFAULT_DIFFICULTY, DEFAULT_SETTINGS, LEVEL_PRESETS, TRACE_OP } from '../../shared/catalog';
 import { decodeReplay, encodeReplay } from '../../shared/replay';
-import type { GameCallbacks, GameHandle, PlayResult, Settings } from '../../shared/types';
+import type { GameCallbacks, GameHandle, ModId, PlayResult, Settings } from '../../shared/types';
 import { installFakeDom, key, pointer } from '../testing/fakeDom';
 import type { FakeEnv } from '../testing/fakeDom';
+import { ReplayRunner } from '../replay/feed';
 import { launchFor } from '../testing/fixtures';
 import { createGameImpl } from './game';
 
@@ -22,6 +23,7 @@ function start(
     rawUpdate?: boolean;
     length?: number;
     noRetry?: boolean;
+    mods?: ModId[];
   } = {},
 ) {
   const e = installFakeDom({ rawUpdate: overrides.rawUpdate });
@@ -43,7 +45,7 @@ function start(
     audio: { ...DEFAULT_SETTINGS.audio, ...overrides.audio },
   };
   const mode = overrides.mode ?? 'dynamic';
-  const launch = launchFor(mode === 'dynamic' ? LEVEL_PRESETS[2]!.difficulty : DEFAULT_DIFFICULTY, 5, overrides.length ?? 20, [], mode);
+  const launch = launchFor(mode === 'dynamic' ? LEVEL_PRESETS[2]!.difficulty : DEFAULT_DIFFICULTY, 5, overrides.length ?? 20, overrides.mods ?? [], mode);
   const handle: GameHandle = createGameImpl(e.canvas as unknown as HTMLCanvasElement, launch, settings, callbacks);
   return { e, handle, results, pauses, errors, retries };
 }
@@ -313,6 +315,21 @@ describe('quick retry', () => {
     expect(results).toHaveLength(0);
   });
 
+  it('ends a play whose health already ran out with status failed, as quit() does', () => {
+    const { e, handle, results, retries } = start({ mode: 'dynamic' });
+    begin(e);
+    // The health runs out between two frames, then the player pauses and holds the retry key.
+    const session = (handle as unknown as { session: { advance(t: number): void; now: number; failed: boolean } }).session;
+    session.advance(session.now + 60000);
+    expect(session.failed).toBe(true);
+    key(e, 'keydown', 'Escape');
+    key(e, 'keydown', 'Backquote');
+    e.run(350);
+    expect(retries).toHaveLength(1);
+    expect(retries[0]!.status).toBe('failed');
+    expect(results).toHaveLength(0);
+  });
+
   it('does nothing when the key is let go at 200 ms', () => {
     const { e, handle, results, retries } = start({ mode: 'jumps' });
     begin(e);
@@ -456,6 +473,107 @@ describe('recording in the game', () => {
     const back = decodeReplay(encodeReplay(replay));
     expect(back.trace.count).toBe(replay.trace.count);
     expect(back.judgments).toBe(replay.judgments);
+  });
+
+  for (const mode of ['dynamic', 'jumps'] as const) {
+    it(`${mode}: a ReplayRunner over the game's replay reproduces the records, through the decimator, syncCursor, pause and resume`, () => {
+      const { e, handle, results } = start({ mode, length: 60, mods: mode === 'dynamic' ? ['nofail'] : [] });
+      // The start click, a dense burst of pointer samples, hits, a pause and a resume, then more of the same.
+      pointer(e, 'pointerdown', 600, 300, 1);
+      pointer(e, 'pointerup', 600, 300, 0);
+      const burst = (n: number, x0: number) => {
+        const t0 = e.now();
+        for (let i = 0; i < n; i++) pointer(e, 'pointermove', x0 + (i % 400), 150 + (i % 200), 0, { timeStamp: t0 + i * 0.1 });
+      };
+      e.run(2200);
+      for (let round = 0; round < 3; round++) {
+        for (let i = 0; i < 25; i++) {
+          burst(30, 100 + i * 30);
+          key(e, 'keydown', i % 2 ? 'KeyZ' : 'KeyX');
+          e.run(40);
+          key(e, 'keyup', i % 2 ? 'KeyZ' : 'KeyX');
+          e.run(30);
+        }
+        // Pause with a key held, move while paused, resume through the countdown.
+        key(e, 'keydown', 'KeyZ');
+        e.run(20);
+        key(e, 'keydown', 'Escape');
+        pointer(e, 'pointermove', 333, 222, 0);
+        e.run(400);
+        handle.resume();
+        e.run(1200);
+      }
+      handle.quit();
+      const r = results[0]!;
+      const replay = r.replay!;
+      const ops = Array.from(replay.trace.ops);
+      expect(ops.filter((o) => o === TRACE_OP.pause)).toHaveLength(3);
+      expect(ops.filter((o) => o === TRACE_OP.resume)).toHaveLength(3);
+      expect(ops.filter((o) => o === TRACE_OP.move).length).toBeGreaterThan(300);
+      expect(r.records.length).toBeGreaterThan(5);
+      const run = new ReplayRunner(decodeReplay(encodeReplay(replay)));
+      run.feedAll();
+      const again = run.session.finish(r.status, { startedAt: 0, endedAt: 0, input: r.input });
+      expect(again.records).toEqual(r.records);
+      expect(again.score).toBe(r.score);
+      expect(again.counts).toEqual(r.counts);
+      expect(again.maxCombo).toBe(r.maxCombo);
+      expect(again.strayPresses).toBe(r.strayPresses);
+      expect(again.pauses).toBe(r.pauses);
+      expect(again.healthAtEnd).toBe(r.healthAtEnd);
+      expect(run.judgments()).toBe(replay.judgments);
+    });
+  }
+
+  it('writes the 99th percentile frame time into the result', () => {
+    const { e, handle, results } = start({ mode: 'jumps' });
+    key(e, 'keydown', 'KeyZ');
+    key(e, 'keyup', 'KeyZ');
+    // 240 Hz is 4.17 ms a frame.
+    e.run(1500, 240);
+    handle.quit();
+    const p99 = results[0]!.input.frameP99Ms;
+    expect(p99).toBeGreaterThan(4);
+    expect(p99).toBeLessThan(4.4);
+  });
+
+  it('leaves frameP99Ms null for a play too short to measure', () => {
+    const { e, handle, results } = start({ mode: 'jumps' });
+    key(e, 'keydown', 'KeyZ');
+    e.run(60, 240);
+    handle.quit();
+    expect(results[0]!.input.frameP99Ms).toBeNull();
+  });
+
+  it('makes a click ripple on a press, unless the skin or reduced motion turns it off', () => {
+    const ripples = (opts: Parameters<typeof start>[0], skin: Partial<Settings['skin']> = {}) => {
+      const { e, handle } = start(opts);
+      if (Object.keys(skin).length > 0) handle.setSettings({ ...DEFAULT_SETTINGS, display: { ...DEFAULT_SETTINGS.display, ...opts?.display }, skin: { ...DEFAULT_SETTINGS.skin, ...skin } });
+      key(e, 'keydown', 'KeyZ');
+      key(e, 'keyup', 'KeyZ');
+      e.run(300);
+      pointer(e, 'pointermove', 500, 300, 0);
+      key(e, 'keydown', 'KeyX');
+      const fx = (handle as unknown as { fx: { live: { ripples: number } } }).fx;
+      const n = fx.live.ripples;
+      handle.destroy();
+      return n;
+    };
+    expect(ripples({ mode: 'jumps' })).toBeGreaterThanOrEqual(1);
+    expect(ripples({ mode: 'jumps' }, { clickRipple: false })).toBe(0);
+    expect(ripples({ mode: 'jumps', display: { reduceMotion: true } })).toBe(0);
+  });
+
+  it('takes a new palette from setSettings', () => {
+    const { e, handle } = start({ mode: 'jumps' });
+    e.run(100);
+    const renderer = (handle as unknown as { renderer: { currentSkin: { palette: string } } }).renderer;
+    expect(renderer.currentSkin.palette).toBe('flickwise');
+    handle.setSettings({ ...DEFAULT_SETTINGS, skin: { ...DEFAULT_SETTINGS.skin, palette: 'contrast' } });
+    expect(renderer.currentSkin.palette).toBe('contrast');
+    e.run(50);
+    expect(renderer.currentSkin.palette).toBe('contrast');
+    handle.destroy();
   });
 
   it('feeds the session at most one move per 0.5 ms and draws the newest sample', () => {

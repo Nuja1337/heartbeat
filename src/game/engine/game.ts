@@ -7,6 +7,7 @@ import { setupPlay } from '../modes/runner';
 import { SYSTEM_CURSOR } from '../render/cursor';
 import { Effects } from '../render/effects';
 import type { DisplayFlags } from '../render/effects';
+import { FrameStats } from '../render/frameStats';
 import { Renderer } from '../render/renderer';
 import type { OverlayKind, RenderState } from '../render/renderer';
 import { keyLabel, STRINGS } from '../render/strings';
@@ -66,6 +67,9 @@ class Game implements GameHandle, InputSink {
   private lengthMs = 0;
   private fpsAt = 0;
   private fps: number | null = null;
+  /** Frame times while playing, for the frame graph and InputInfo.frameP99Ms. */
+  private frames = new FrameStats();
+  private lastTs = 0;
   /** When the retry key went down, or -1 when it is not held. */
   private retryAt = -1;
 
@@ -109,6 +113,7 @@ class Game implements GameHandle, InputSink {
       set: status ? status.set : null,
       lengthMs: this.lengthMs,
       retry: 0,
+      frames: this.frames,
     };
     document.addEventListener('visibilitychange', this.onVisibility);
     window.addEventListener('blur', this.onBlur);
@@ -144,6 +149,8 @@ class Game implements GameHandle, InputSink {
     const t = this.clock.play(ts);
     if (t < 0) return;
     this.dec.press(slot, t, x, y);
+    const skin = this.settings.skin;
+    if (skin.clickRipple && !this.settings.display.reduceMotion) this.fx.ripple(x ?? this.rs.cursorX, y ?? this.rs.cursorY, performance.now());
     this.afterInput(performance.now());
   }
 
@@ -202,6 +209,7 @@ class Game implements GameHandle, InputSink {
     this.fx.reset();
     this.renderer.reset();
     this.syncCursor(ts);
+    this.frames.reset();
     this.penFirst = this.input.penSeen;
     if (this.rawWanted()) {
       const seq = ++this.lockSeq;
@@ -296,6 +304,7 @@ class Game implements GameHandle, InputSink {
     this.rs.settings = s;
     this.audio.setSettings(s.audio);
     this.rs.startLabel = keyLabel(s.input.keys[0]);
+    this.renderer.setSettings(s);
     this.syncFlags();
   }
 
@@ -336,6 +345,7 @@ class Game implements GameHandle, InputSink {
       displayHz: this.loop.displayHz(),
       visualOffsetMs: this.settings.display.visualOffsetMs,
       audioOffsetMs: this.settings.audio.offsetMs,
+      frameP99Ms: this.frames.p99(),
     };
     const result = this.session.finish(status, { startedAt: this.startedAt || Date.now(), endedAt: Date.now(), input: info });
     this.input.releaseAll(now);
@@ -393,12 +403,14 @@ class Game implements GameHandle, InputSink {
       if (!this.retryAllowed()) this.retryAt = -1;
       else if (now - this.retryAt >= RETRY_HOLD_MS) {
         this.retryAt = -1;
-        this.finish('quit', true);
+        // A hold that completes after the health ran out is a failed play, as in quit().
+        this.finish(this.session.failed ? 'failed' : 'quit', true);
         return;
       }
     }
     this.rs.retry = this.retryAt >= 0 ? Math.min(1, (now - this.retryAt) / RETRY_HOLD_MS) : 0;
     if (this.state === 'playing') {
+      if (this.lastTs > 0) this.frames.push(ts - this.lastTs);
       this.dec.advance(this.clock.play(now));
       this.afterInput(now);
       if (this.state === 'playing' && this.session.over) {
@@ -417,7 +429,7 @@ class Game implements GameHandle, InputSink {
       this.finish('failed');
       return;
     }
-    void ts;
+    this.lastTs = ts;
     this.renderFrame(now);
   }
 

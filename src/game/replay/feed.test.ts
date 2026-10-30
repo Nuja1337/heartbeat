@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DEFAULT_DIFFICULTY, LEVEL_PRESETS, MODES, TRACE_OP } from '../../shared/catalog';
 import type { LaunchRequest, ReplayData } from '../../shared/types';
+import { GameSession } from '../engine/session';
 import { NOISY_PLAYER } from '../sim/autoplay';
 import { runHeadless } from '../sim/headless';
 import { launchFor } from '../testing/fixtures';
@@ -88,6 +89,38 @@ describe('seeking', () => {
   });
 });
 
+describe('advance calls', () => {
+  for (const [name, launch] of [['Dynamic', dyn], ['Mix', mix]] as const) {
+    it(`${name}: advance is called once for each op 13 event fed, and never outside the trace`, () => {
+      const { replay } = record(launch);
+      const spy = vi.spyOn(GameSession.prototype, 'advance');
+      try {
+        const run = new ReplayRunner(replay);
+        const op13Before = (n: number) => {
+          let c = 0;
+          for (let i = 0; i < n; i++) if (replay.trace.ops[i] === TRACE_OP.advance) c++;
+          return c;
+        };
+        expect(spy).toHaveBeenCalledTimes(0);
+        for (const frac of [0.2, 0.5, 0.9]) {
+          run.feedTo(run.durationMs * frac);
+          expect(spy, `${name} at ${frac}`).toHaveBeenCalledTimes(op13Before(run.eventsFed));
+        }
+        // A backward seek rebuilds and feeds again from the start: the count restarts with the new session.
+        spy.mockClear();
+        run.seekTo(run.durationMs * 0.3);
+        expect(spy).toHaveBeenCalledTimes(op13Before(run.eventsFed));
+        const fedBefore = run.eventsFed;
+        spy.mockClear();
+        run.feedAll();
+        expect(spy).toHaveBeenCalledTimes(op13Before(replay.trace.count) - op13Before(fedBefore));
+      } finally {
+        spy.mockRestore();
+      }
+    });
+  }
+});
+
 describe('replay duration', () => {
   it('is the end time, or the last logged time when that is later', () => {
     const { replay } = record(dyn);
@@ -113,12 +146,45 @@ describe('building the session', () => {
     expect(replay.map.sections).toHaveLength(sections);
   });
 
-  it('has every object of every set from the start, with no controller', () => {
+  it('starts an adaptive replay with its first set only, and appends the others as the live play did', () => {
     const { replay } = record(mix);
+    const sets = Math.max(...replay.map.objects.map((o) => o.set));
+    expect(sets).toBeGreaterThan(2);
+    const s = sessionForReplay(replay);
+    expect(s.objs).toHaveLength(replay.map.objects.filter((o) => o.set === 0).length);
+    expect(s.objs.length).toBeLessThan(replay.map.objects.length);
+    expect(s.moreSets).toBe(true);
+    expect(s.progressMs).toBe(replay.progressMs);
+    // A set shows up only after the one before it closed.
+    const run = new ReplayRunner(replay);
+    let most = 0;
+    for (let t = 0; t <= run.durationMs; t += 20) {
+      run.feedTo(t);
+      const open = Math.max(...run.session.objs.map((o) => o.obj.set));
+      expect(open).toBeLessThanOrEqual(most + 1);
+      for (let set = 0; set < open; set++) {
+        expect(run.session.objs.filter((o) => o.obj.set === set && !o.done)).toHaveLength(0);
+      }
+      most = Math.max(most, open);
+    }
+    run.feedAll();
+    expect(run.session.objs).toHaveLength(replay.map.objects.length);
+    expect(run.session.levelStatus()?.set).toBe(sets);
+  });
+
+  it('hands the recorded level steps to the session', () => {
+    const { replay } = record(mix);
+    const run = new ReplayRunner(replay);
+    run.feedAll();
+    expect(run.session.finish(replay.status, { startedAt: 0, endedAt: 0, input: { pointer: 'mouse', rawInput: false, unadjusted: false, sensitivity: 1, pointerHz: 1000, displayHz: 240 } }).levels).toEqual(replay.levels);
+  });
+
+  it('has every object from the start for a map without sets, and no controller', () => {
+    const { replay } = record(dyn);
     const s = sessionForReplay(replay);
     expect(s.objs).toHaveLength(replay.map.objects.length);
     expect(s.moreSets).toBe(false);
-    expect(s.progressMs).toBe(replay.progressMs);
+    expect(s.levelStatus()).toBeNull();
   });
 });
 

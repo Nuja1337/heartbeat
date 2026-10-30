@@ -52,6 +52,8 @@ export const STRINGS = {
   timing: (side: 'early' | 'late', ms: number) => `${side} ${Math.round(ms)} ms`,
   accuracy: (a: number) => `${(a * 100).toFixed(1)}%`,
   fps: (n: number) => `${Math.round(n)} fps`,
+  /** The 99th percentile frame time under the frame graph. */
+  p99: (ms: number) => `p99 ${ms.toFixed(1)} ms`,
   rpmLabel: 'rpm',
   /** Shown under the combo while the retry key is held. */
   retrying: 'Restarting',

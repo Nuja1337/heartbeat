@@ -75,18 +75,29 @@ describe('TraceRecorder', () => {
     expect(rec.toTrace().count).toBe(2);
   });
 
-  it('allocates the next chunk before the current one is full', () => {
+  it('allocates the spare chunk in prepare(), never in record()', () => {
     const rec = new TraceRecorder(100);
     const spareOf = () => (rec as unknown as { spare: unknown }).spare;
     for (let i = 0; i < 74; i++) rec.record(13, i, 0, 0);
+    rec.prepare();
     expect(spareOf()).toBeNull();
     rec.record(13, 74, 0, 0);
-    expect(spareOf()).not.toBeNull();
-    for (let i = 75; i < 100; i++) rec.record(13, i, 0, 0);
-    const spare = spareOf();
-    rec.record(13, 100, 0, 0);
-    // The chunk that was ready is the one in use now, and a new spare is not made until 75% of it is used.
-    expect((rec as unknown as { cur: unknown }).cur).toBe(spare);
+    // record() alone leaves the spare for the frame path.
     expect(spareOf()).toBeNull();
+    rec.prepare();
+    expect(spareOf()).not.toBeNull();
+    const spare = spareOf();
+    for (let i = 75; i < 100; i++) rec.record(13, i, 0, 0);
+    rec.record(13, 100, 0, 0);
+    // The chunk that was ready is the one in use now, and a new spare waits for the next prepare().
+    expect((rec as unknown as { cur: unknown }).cur).toBe(spare);
+    rec.prepare();
+    expect(spareOf()).toBeNull();
+  });
+
+  it('still works for a caller that never calls prepare()', () => {
+    const rec = new TraceRecorder(10);
+    for (let i = 0; i < 35; i++) rec.record(13, i, 0, 0);
+    expect(Array.from(rec.toTrace().t)).toEqual(Array.from({ length: 35 }, (_, i) => i));
   });
 });

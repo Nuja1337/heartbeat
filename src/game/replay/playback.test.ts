@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_SETTINGS, LEVEL_PRESETS } from '../../shared/catalog';
-import type { PlaybackCallbacks, PlaybackHandle, PlaybackInfo, PlaybackSource, ReplayData, Settings } from '../../shared/types';
+import { DEFAULT_DIFFICULTY, DEFAULT_SETTINGS, LEVEL_PRESETS, MODES, TRACE_OP } from '../../shared/catalog';
+import type { LaunchRequest, PlaybackCallbacks, PlaybackHandle, PlaybackInfo, PlaybackSource, ReplayData, Settings } from '../../shared/types';
 import { AudioEngine } from '../audio/audio';
 import { NOISY_PLAYER } from '../sim/autoplay';
 import { runHeadless } from '../sim/headless';
@@ -223,6 +223,55 @@ describe('createPlayback', () => {
     handle.play();
     e.run(1500);
     expect(ends()).toBe(1);
+  });
+
+  it('shows the level of an adaptive set, also one that was still open when the play ended', async () => {
+    const mix: LaunchRequest = {
+      ...launchFor(DEFAULT_DIFFICULTY, 8, 60, [], 'mix'),
+      options: { ...MODES.mix.defaultOptions, mixModules: ['jumps', 'streams', 'tracking'] },
+      levels: { jumps: 4, streams: 4, tracking: 3 },
+    };
+    const live = runHeadless({ launch: mix, model: NOISY_PLAYER, stepMs: 4, maxMs: 26000 });
+    const { e, handle, infos } = await open({ kind: 'replay', replay: live.result.replay as ReplayData });
+    const rs = (handle as unknown as { rs: { level: number | null; set: number | null } }).rs;
+    const status = live.session.levelStatus() as { level: number; set: number };
+    expect(status.set).toBeGreaterThan(1);
+    // The play ended inside this set, so it has no level step of its own.
+    expect(live.result.levels.some((s) => s.set === status.set)).toBe(false);
+    handle.seek(infos[0]!.durationMs);
+    e.run(50);
+    expect(rs.set).toBe(status.set);
+    expect(rs.level).toBe(status.level);
+    // Earlier in the play, an earlier set shows its own level.
+    handle.seek(3000);
+    e.run(50);
+    expect(rs.set).toBe(0);
+    expect(rs.level).toBe(live.result.levels[0]!.level);
+  });
+
+  it('makes a click ripple for a press in the trace', async () => {
+    const { e, handle } = await open({ kind: 'replay', replay: replay() });
+    const fx = (handle as unknown as { fx: { live: { ripples: number } } }).fx;
+    const r = replay();
+    let firstPress = -1;
+    for (let i = 0; i < r.trace.count; i++) {
+      const op = r.trace.ops[i] as number;
+      if (op >= TRACE_OP.pressAt && op < TRACE_OP.release) {
+        firstPress = r.trace.t[i] as number;
+        break;
+      }
+    }
+    expect(firstPress).toBeGreaterThan(0);
+    handle.seek(firstPress + 20);
+    e.run(30);
+    expect(fx.live.ripples).toBeGreaterThanOrEqual(1);
+    // Not with the skin option off.
+    handle.setSettings({ ...DEFAULT_SETTINGS, skin: { ...DEFAULT_SETTINGS.skin, clickRipple: false } });
+    handle.seek(firstPress + 3000);
+    e.run(2000);
+    handle.seek(firstPress + 20);
+    e.run(30);
+    expect(fx.live.ripples).toBe(0);
   });
 
   it('takes new settings and stops drawing after destroy', async () => {

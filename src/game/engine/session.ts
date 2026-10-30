@@ -577,6 +577,7 @@ export class GameSession {
    * The call is logged only when it moves the clock, so a replay needs no more calls than the play made.
    */
   advance(nowIn: Ms): void {
+    this.recorder?.prepare();
     const now = qt(nowIn);
     if (now <= this.now) return;
     this.recorder?.record(TRACE_OP.advance, now, 0, 0);

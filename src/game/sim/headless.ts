@@ -1,5 +1,6 @@
 // Runs a whole play in Node: runner, session and a simulated player. No DOM, no real time.
 
+import { INPUT_SLOT_ORDER } from '../../shared/catalog';
 import type { InputInfo, LaunchRequest, PlayResult, PlayStatus, Vec2 } from '../../shared/types';
 import { GameSession } from '../engine/session';
 import type { FeedbackListener } from '../engine/session';
@@ -20,6 +21,11 @@ export interface HeadlessOptions {
   stepMs?: number;
   /** Log the input so the result carries a replay. Default true. */
   record?: boolean;
+  /**
+   * Play times at which the player pauses and resumes at once, like the game does: advance, let go of held keys,
+   * notePause, then (play time stands still) noteResume and a cursor move that puts the cursor where it is.
+   */
+  pauses?: number[];
   listener?: FeedbackListener;
   /** Called about every 16 ms of play time, for tests that draw. */
   onFrame?: (t: number, session: GameSession) => void;
@@ -42,6 +48,8 @@ export function runHeadless(opts: HeadlessOptions): HeadlessRun {
   let planned = 0;
   const limit = opts.maxMs ?? launch.lengthSec * 1000 * 3 + 60000;
   const step = Math.max(1, opts.stepMs ?? 1);
+  const pauses = (opts.pauses ?? []).slice().sort((a, b) => a - b);
+  let nextPause = 0;
   let t = 0;
   let nextFrame = 16;
   while (t < limit && !session.over && !session.failed) {
@@ -54,6 +62,13 @@ export function runHeadless(opts: HeadlessOptions): HeadlessRun {
     session.move(t, pos);
     player.drain(t, (e) => (e.kind === 'press' ? session.press(e.slot, e.t, null) : session.release(e.slot, e.t)));
     session.advance(t);
+    if (nextPause < pauses.length && t >= (pauses[nextPause] as number)) {
+      nextPause++;
+      for (let i = 0; i < INPUT_SLOT_ORDER.length; i++) if (session.mask & (1 << i)) session.release(INPUT_SLOT_ORDER[i] as (typeof INPUT_SLOT_ORDER)[number], t);
+      session.notePause(t);
+      session.noteResume(t);
+      session.move(t, pos);
+    }
     if (opts.onFrame && t >= nextFrame) {
       opts.onFrame(t, session);
       nextFrame = t - (t % 16) + 16;
