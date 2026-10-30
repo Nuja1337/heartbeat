@@ -1126,7 +1126,7 @@ PLAN §7 rules 1 to 7 stay. Rule 8 ("no stacks") is replaced by rule 9, and rule
 10. Inside a section, a jump is at most 1.6× the previous jump's distance at the same gap, except on a bar downbeat.
 11. At most 3 consecutive 1/4-beat notes outside stream, cut stream, spaced stream and burst motifs.
 12. Motifs start on a beat. At least 60% start on a bar downbeat over 50 seeds.
-13. Neighbouring phrases differ in intensity by 0.2 or less, except into or out of a rest.
+13. Neighbouring phrases differ in intensity by 0.2 or less, except into or out of a rest and into the outro. The outro is a cool-down after the last peak, so its drop is intended.
 14. The planned spinner count equals the placed count. No spinner sits in the first 8 s or the last 5 s, and content follows each one.
 
 The speed budget stays: a 300 s Level 8 map in under 50 ms on desktop, and under 200 ms in the test.
