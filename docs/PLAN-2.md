@@ -890,6 +890,8 @@ These override §4, §5.2, §8.3 and the Phase 0.4 tests wherever they differ.
 - Every live response already carries `Cache-Control: public, max-age=0, must-revalidate`, so `sw.js` is revalidated on each navigation and the kill switch takes effect at once.
 
 **Playback (add to §5.2).**
+- Adaptive replays append sets the way the live play did. The playback session starts with the objects whose `set <= 0` and gets a replay controller whose `closeSet(set)` returns the recorded objects of `set + 1` (or null when there are none) and whose `levelSteps()` returns `replay.levels`. This replaces "all set objects are present from the start", which let a replay see a set before the live play did.
+- Playback never calls `advance` outside the trace.
 - Playback copies `map.objects` and `map.sections`, because the `GameSession` constructor empties the array it gets.
 - `progressMs` comes from the replay.
 - Ops are fed in trace order even when t decreases.
