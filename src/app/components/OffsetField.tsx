@@ -1,8 +1,20 @@
 // A timing offset in milliseconds: a slider, a number box for exact values, and a link to the calibration screen.
 
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router';
+
+/**
+ * The value typed into the number box, or null while it isn't a number yet ("", "-", "1e", words). A number
+ * is rounded to the step and clamped to the range. A true minus sign or the typographic one both count.
+ */
+export function parseOffsetText(text: string, min: number, max: number, step = 1): number | null {
+  const t = text.trim().replace('\u2212', '-');
+  if (!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(t)) return null;
+  const v = Number(t);
+  if (!Number.isFinite(v)) return null;
+  return Math.min(max, Math.max(min, Math.round(v / step) * step)) || 0;
+}
 
 export function OffsetField({
   label,
@@ -25,10 +37,17 @@ export function OffsetField({
   onChange(v: number): void;
 }) {
   const id = useId();
+  // What is typed in the number box while it has focus. null shows the saved value.
+  const [draft, setDraft] = useState<string | null>(null);
   const helpId = `${id}-help`;
   const fill = max > min ? Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100)) : 0;
   const set = (v: number) => {
     if (Number.isFinite(v)) onChange(Math.min(max, Math.max(min, Math.round(v / step) * step)));
+  };
+  const commit = () => {
+    const v = draft === null ? null : parseOffsetText(draft, min, max, step);
+    if (v !== null) onChange(v);
+    setDraft(null);
   };
   return (
     <div className="py-2">
@@ -37,15 +56,24 @@ export function OffsetField({
         <div className="flex items-center gap-2">
           <input
             id={`${id}-number`}
-            type="number"
-            inputMode="numeric"
+            type="text"
+            autoComplete="off"
+            spellCheck={false}
             aria-label={`${label}, in milliseconds`}
             className="w-20 text-right"
-            min={min}
-            max={max}
-            step={step}
-            value={value}
-            onChange={(e) => set(Number(e.target.value))}
+            value={draft ?? String(value)}
+            onFocus={(e) => e.currentTarget.select()}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                commit();
+              } else if (e.key === 'Escape' && draft !== null) {
+                e.stopPropagation();
+                setDraft(null);
+              }
+            }}
           />
           <span className="text-sm text-ink-2">ms</span>
         </div>

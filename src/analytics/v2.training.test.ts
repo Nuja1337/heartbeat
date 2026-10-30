@@ -8,6 +8,7 @@ import { getInsightSnooze, getMeta, getMilestones, snoozeInsight } from '../data
 import { getSummary, savePlay } from '../data/plays';
 import type { Drill, PlaySummary } from '../data/schema';
 import { GRADES, LEVEL_PRESETS, MILESTONES, MODES, gradeFor } from '../shared/catalog';
+import { dailySeed } from '../shared/codes';
 import type { LaunchSource, MilestoneId, SkillId } from '../shared/types';
 import { dayNumberKey, dayNumberStart, keyDayNumber, localDayNumber, mondayOf, weekdayOf } from './calendar';
 import { makeFixture } from './fixtures';
@@ -49,7 +50,7 @@ function play(startedAt: number, over: Partial<PlaySummary> = {}): PlaySummary {
   return { ...s, startedAt, endedAt: startedAt + 90_000, playedMs: 90_000, ...over };
 }
 const daily = (startedAt: number, date: string, over: Partial<PlaySummary> = {}): PlaySummary =>
-  play(startedAt, { status: 'completed', ...over, launch: { ...play(0).launch, source: { kind: 'daily', date } } });
+  play(startedAt, { status: 'completed', ...over, launch: { ...play(0).launch, seed: dailySeed(date), source: { kind: 'daily', date } } });
 
 describe('local calendar days', () => {
   it('numbers days from local dates and round-trips through keys and midnights', () => {
@@ -155,11 +156,16 @@ describe('play streak', () => {
     });
   });
 
-  it('only counts plays of 60 s or more and reports the longest run', () => {
+  it('counts a completed 60 s play whose played time ends just under 60 s', () => {
+    const plays = [play(at(2026, 5, 7, 12), { status: 'completed', playedMs: 56_064 }), play(at(2026, 5, 6, 12), { status: 'quit', playedMs: 56_064 })];
+    expect(playStreak(plays, at(2026, 5, 7, 22))).toMatchObject({ current: 1, longest: 1 });
+  });
+
+  it('only counts plays that completed or ran 60 s, and reports the longest run', () => {
     inZones(() => {
       const plays = [
         ...run([[2026, 5, 1], [2026, 5, 2], [2026, 5, 3], [2026, 5, 4]], 12),
-        play(at(2026, 5, 5, 12), { playedMs: 59_999 }),
+        play(at(2026, 5, 5, 12), { playedMs: 59_999, status: 'quit' }),
         ...run([[2026, 5, 6], [2026, 5, 7]], 12),
         play(at(2026, 5, 7, 18), { playedMs: 60_000 }),
       ];
@@ -290,7 +296,9 @@ describe('milestones', () => {
       expect(check({}, today, days(29))).toContain('streak-30');
       expect(check({}, today, days(28))).not.toContain('streak-30');
       // A short play on a new day does not make the streak.
-      expect(check({}, play(at(2026, 3, 12, 9), { playedMs: 30_000 }), days(6))).not.toContain('streak-7');
+      expect(check({}, play(at(2026, 3, 12, 9), { playedMs: 30_000, status: 'quit' }), days(6))).not.toContain('streak-7');
+      // A completed play of any length does count.
+      expect(check({}, play(at(2026, 3, 12, 9), { playedMs: 30_000, status: 'completed' }), days(6))).toContain('streak-7');
     });
   });
 
@@ -302,10 +310,10 @@ describe('milestones', () => {
   });
 
   it('no-miss needs a Dynamic play of a minute or more that finished without a miss', () => {
-    const clean = { modeId: 'dynamic' as const, counts: { crisp: 40, solid: 5, rough: 2, miss: 0 }, playedMs: 60_000 };
+    const clean = { modeId: 'dynamic' as const, counts: { crisp: 40, solid: 5, rough: 2, miss: 0 }, playedMs: 56_064, launch: { ...play(0).launch, lengthSec: 60 } };
     expect(check({}, base(clean))).toContain('no-miss');
     expect(check({}, base({ ...clean, counts: { ...clean.counts, miss: 1 } }))).not.toContain('no-miss');
-    expect(check({}, base({ ...clean, playedMs: 59_000 }))).not.toContain('no-miss');
+    expect(check({}, base({ ...clean, launch: { ...clean.launch, lengthSec: 45 } }))).not.toContain('no-miss');
     expect(check({}, base({ ...clean, modeId: 'jumps' }))).not.toContain('no-miss');
     expect(check({}, base({ ...clean, status: 'failed' }))).not.toContain('no-miss');
   });
@@ -317,6 +325,9 @@ describe('milestones', () => {
     expect(check({}, today, dates(5))).not.toContain('daily-7');
     // The same date twice is one map.
     expect(check({}, today, [...dates(5), daily(NOW - 3 * HOUR, dayNumberKey(localDayNumber(NOW)))])).not.toContain('daily-7');
+    // A new map started from a daily has another seed and does not count.
+    const fresh = (i: number) => play(NOW - (i + 1) * DAY, { status: 'completed', launch: { ...play(0).launch, seed: 12345, source: { kind: 'daily', date: dayNumberKey(localDayNumber(NOW) - (i + 1)) } } });
+    expect(check({}, today, [...dates(5), fresh(5)])).not.toContain('daily-7');
     // Only a daily play can reach it.
     expect(check({}, base(), dates(8))).not.toContain('daily-7');
   });

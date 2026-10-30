@@ -6,7 +6,7 @@ The repository is private for now.
 
 ## What it does
 
-You click targets in time with a beat. Every click is saved with its position, its timing and the movement that led to it. The stats pages turn that into ratings, trends and specific advice. The first time you open the app, a short setup covers your input, your timing and a placement test (see Calibration).
+You click targets in time with a beat. Every click is saved with its position, its timing and the movement that led to it. The stats pages turn that into ratings, trends and specific advice. Home offers a short setup for your input, your timing and a placement test (see Calibration).
 
 Targets come in three kinds.
 
@@ -67,9 +67,9 @@ Each saved play keeps a summary and, for a while, a record of every object. A su
 
 ## Practice habits
 
-- **Daily plan.** Each day has a plan of four steps. It is a warm-up, two drills chosen from your insights and ratings, and a Dynamic play at a suggested level. Each step ticks off when you play it.
-- **Daily map.** One Dynamic map a day, the same for everyone who picks the same level, and it changes at local midnight. The Daily page keeps your history and daily streak.
-- **Streaks and weekly goal.** A streak counts days in a row with at least one saved play of 60 seconds or more. The weekly goal counts minutes from Monday to Sunday against the target you set in Settings, which is 60 by default.
+- **Daily plan.** Each day has a plan of four steps. It is a warm-up, two drills chosen from your insights and ratings, and a Dynamic play at a suggested level. A step is ticked off when you finish it or play it for at least a minute.
+- **Daily map.** Each day has one Dynamic map, made from the date, and it changes at your local midnight. Players who pick the same level on the same date start from the same seed, though another browser can build it a little differently. The Daily page keeps your history and daily streak.
+- **Streaks and weekly goal.** A streak counts days in a row with at least one saved play that you finished or played for at least a minute. The weekly goal counts minutes from Monday to Sunday against the target you set in Settings, which is 60 by default.
 - **Milestones.** Plays, hours, streaks, combos, daily maps, a drill that worked, the placement test and clearing each level 1 to 8 with 90% accuracy are marked the first time you reach them.
 - **Share links.** Share map on the play setup, the results and the Daily page copies a link. Opening it fills in the setup with the same mode, difficulty, mods, length and seed. It never starts a play by itself, and module links use the receiver's own levels. A map made by a different generator version shows a note, because the map can differ.
 
@@ -92,7 +92,7 @@ Everything is stored in this browser with IndexedDB. There is no account and not
 
 - Play summaries are kept forever.
 - Per-object detail is kept for 365 days by default. You can change this in Settings. Removing old detail doesn't change ratings, trends or bests.
-- Replays are stored compressed. The newest 100 are kept by default, and Settings offers 25, 100, 300 or all. Replays you mark to keep are never removed. Older ones are removed the next time Flickwise starts.
+- Replays are stored compressed. The newest 100 are kept by default, and Settings offers 25, 100, 300 or all. Replays you mark to keep, and replays of new bests, are never removed. Older ones are removed after your next play or the next time Flickwise starts.
 - Settings can export everything as a .json or .json.gz file and import it again. The export has a checkbox to include replays, and without them the file is much smaller. Importing skips plays that are already there.
 - Data from Flickwise 1.0 upgrades automatically the first time 2.0 opens. 1.0 export files still import.
 - The browser can clear site data. Settings shows whether it has agreed to keep it, and a regular export is the safe copy.
@@ -136,3 +136,12 @@ Folders:
 - `docs/PLAN.md` holds the 1.0 design and `docs/PLAN-2.md` the 2.0 design.
 
 The site is a static Worker deployed with Wrangler. See `wrangler.jsonc`.
+
+### Retiring the service worker
+
+`public/sw-kill.js` is a worker that removes itself, deletes the `fw-` caches and reloads the open pages. Nothing uses it now. If a released worker ever breaks the app, ship a build where:
+
+1. `public/sw-kill.js` is served as `/sw.js`, for example by copying it over `public/sw.js` before `npm run build`.
+2. `src/app/pwa.ts` no longer calls `serviceWorker.register`, so the page stops installing a new worker.
+
+Browsers check `/sw.js` for changes on their own, so players pick it up on their next visit.

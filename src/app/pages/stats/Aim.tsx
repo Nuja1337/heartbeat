@@ -24,7 +24,7 @@ const MOVEMENT = [
     value: (s) => (s.movement?.leaveFrac != null ? s.movement.leaveFrac * 100 : null), weight: (s) => s.movement?.n ?? 1,
   }),
   metric({
-    key: 'first', label: 'First motion, short or past', unit: '% of a width', decimals: 1, better: null,
+    key: 'first', label: 'Where your first motion stops', unit: '% of a width', decimals: 1, better: null,
     value: (s) => (s.movement?.primaryAlong != null ? s.movement.primaryAlong * 50 : null), weight: (s) => s.movement?.n ?? 1,
   }),
   metric({
@@ -69,7 +69,7 @@ export function Aim() {
       ) : (
         <div className="space-y-8">
           <section>
-            <SectionTitle aside="Your plays from the last 30 days">Throughput by jump</SectionTitle>
+            <SectionTitle aside="Your newest plays from the last 30 days, up to 60">Throughput by jump</SectionTitle>
             <Card>
               {latest && (
                 <div className="mb-4 flex flex-wrap gap-x-12 gap-y-3">

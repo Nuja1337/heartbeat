@@ -10,7 +10,7 @@ export function WeeklyChanges({ changes, link = false, className = '' }: { chang
         What changed this week
       </SectionTitle>
       {changes.length === 0 ? (
-        <p className="text-ink-2">Nothing has changed clearly yet. A change shows once you have 3 plays this week and 3 before it.</p>
+        <p className="text-ink-2">Nothing has changed clearly yet. A change needs at least 3 plays in the last 7 days, 3 in the 4 weeks before, and a clear difference between them.</p>
       ) : (
         <ul className="divide-y divide-line">
           {changes.slice(0, 4).map((c) => (

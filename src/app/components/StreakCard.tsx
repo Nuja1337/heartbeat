@@ -2,6 +2,7 @@
 
 import { Link } from 'react-router';
 import type { StreakInfo, WeeklyGoal } from '../../analytics/index';
+import { count } from '../format';
 import { Count } from './Count';
 import { Panel, SectionTitle } from './ui';
 
@@ -56,7 +57,7 @@ export function StreakCard({ streak, week, goalMinutes }: { streak: StreakInfo; 
               ? 'Play for a minute to start a streak.'
               : streak.atRisk
                 ? 'Play today to keep it going.'
-                : `Longest so far is ${streak.longest}.`}
+                : `Your longest streak is ${count(streak.longest, 'day')}.`}
           </p>
           <p className="mt-2 text-sm text-ink-2">
             {goalMinutes === 0 ? (

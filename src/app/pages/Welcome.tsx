@@ -4,6 +4,8 @@ import { useLocation, useNavigate } from 'react-router';
 import { MODES, PLACEMENT } from '../../shared/catalog';
 import type { CalibrationKind } from '../../shared/types';
 import { KeyCapture } from '../components/KeyCapture';
+import { PLACEMENT_TIME } from '../copy';
+import { andList } from '../format';
 import { Button, LinkButton, Notice, PageHeader, Panel, Segmented, Slider, Stat, Toggle } from '../components/ui';
 import { placementLaunch, startPlay } from '../state/launch';
 import { useCurrentLevels } from '../state/levels';
@@ -186,11 +188,10 @@ function TimingStep({ calibrated, note, onNext, onSkip }: { calibrated: boolean;
 }
 
 function PlacementStep({ onStart, onSkip, starting, error }: { onStart(): void; onSkip(): void; starting: boolean; error: string | null }) {
-  const minutes = MODES.placement.defaultLengthSec / 60;
   return (
     <StepFrame
       title="Placement"
-      intro={`A ${minutes} minute test that sets the level each module starts at.`}
+      intro={`This short test of ${PLACEMENT_TIME} sets the level each module starts at.`}
       actions={
         <>
           <Button variant="primary" disabled={starting} onClick={onStart}>Start placement</Button>
@@ -200,7 +201,7 @@ function PlacementStep({ onStart, onSkip, starting, error }: { onStart(): void; 
     >
       <div className="space-y-3 py-3 first:pt-0 last:pb-0">
         <p className="max-w-2xl text-ink-2">
-          You play {PLACEMENT.setsPerModule} short sets of each of {PLACEMENT.modules.map((m) => MODES[m].label.toLowerCase()).join(', ')}. The difficulty follows how you do, and the results show a starting level for each module.
+          You play {PLACEMENT.setsPerModule} short sets of each of {andList(PLACEMENT.modules.map((m) => MODES[m].label.toLowerCase()))}. The difficulty follows how you do, and the results show a starting level for each module.
         </p>
         <p className="max-w-2xl text-sm text-ink-3">Without it every module starts at level 3 and moves as you train.</p>
         {error && <Notice tone="bad">{error}</Notice>}
@@ -262,7 +263,7 @@ export function Welcome() {
     <>
       <PageHeader
         title="Set up Flickwise"
-        intro="Three short steps. You can skip any of them."
+        intro="Setup has three short steps, and you can skip any of them."
         actions={<Button variant="ghost" onClick={() => void skipAll()}>Skip setup</Button>}
       />
       {error && (

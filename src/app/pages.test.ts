@@ -7,17 +7,21 @@ import { makeFixture } from '../analytics/fixtures';
 import { summarizePlay } from '../analytics/summary';
 import { buildDailyPlan, planStepsDone } from '../analytics/training';
 import { deleteDatabase } from '../data/db';
-import { getMilestones } from '../data/meta';
+import { getMilestones, getPlan, patchMilestones } from '../data/meta';
 import type { DrillEval, PlaySummary } from '../data/schema';
 import { DAILY_LENGTH_SEC } from '../shared/catalog';
 import { dailySeed, localDateKey } from '../shared/codes';
 import type { HitRecord } from '../shared/types';
+import { nextPoint } from './charts/PointNav';
 import { countAt } from './components/Count';
-import { stripBlocks } from './components/SectionStrip';
-import { shareText } from './components/ShareButton';
+import { blockName, stripBlocks } from './components/SectionStrip';
+import { previewRunning } from './components/SkinPreview';
+import { canShare, shareText } from './components/ShareButton';
+import { andList, count } from './format';
 import { bestOfDay, dailyHistory, dailyLaunch, dailyLevel } from './state/daily';
 import { recordDrillBetter } from './state/drills';
-import { planButtonLabel, planStatus } from './state/plan';
+import * as Analytics from '../analytics/index';
+import { ensurePlan, planButtonLabel, planIsStale, planStatus } from './state/plan';
 import { SEEK_LEAD_MS, markersFromJudgments, markersFromRecords, nextMissTarget, replayLink, replayMarkers, seekTarget } from './state/replayMarkers';
 
 const NOW = new Date(2026, 5, 10, 12, 0, 0).getTime();
@@ -176,9 +180,62 @@ describe('daily map', () => {
     expect(bestOfDay(rows, DATE)?.id).toBe('b');
     expect(bestOfDay(rows, '2026-01-01')).toBeNull();
   });
+
+  it('leaves out a new map started from a daily', () => {
+    const fresh = summary({ id: 'fresh', startedAt: NOW, accuracy: 0.99, launch: { ...dailyLaunch(DATE, 4, {}), seed: 1 } });
+    const real = summary({ id: 'real', startedAt: NOW - 1000, accuracy: 0.9, launch: dailyLaunch(DATE, 4, {}) });
+    const rows = dailyHistory([fresh, real]);
+    expect(rows.map((r) => r.id)).toEqual(['real']);
+    expect(bestOfDay(rows, DATE)?.id).toBe('real');
+  });
+});
+
+describe('text helpers', () => {
+  it('writes a count with its noun', () => {
+    expect(count(1, 'play')).toBe('1 play');
+    expect(count(0, 'play')).toBe('0 plays');
+    expect(count(75, 'replay')).toBe('75 replays');
+    expect(count(2, 'day')).toBe('2 days');
+    expect(count(1234, 'play')).toBe('1,234 plays');
+  });
+
+  it('joins a list with and before the last item', () => {
+    expect(andList(['jumps'])).toBe('jumps');
+    expect(andList(['jumps', 'streams'])).toBe('jumps and streams');
+    expect(andList(['jumps', 'streams', 'tracking'])).toBe('jumps, streams and tracking');
+  });
+});
+
+describe('chart point navigation', () => {
+  it('moves with the arrow keys, stops at the ends and ignores other keys', () => {
+    expect(nextPoint('ArrowRight', null, 5)).toBe(0);
+    expect(nextPoint('ArrowRight', 0, 5)).toBe(1);
+    expect(nextPoint('ArrowRight', 4, 5)).toBe(4);
+    expect(nextPoint('ArrowLeft', 0, 5)).toBe(0);
+    expect(nextPoint('ArrowUp', 3, 5)).toBe(2);
+    expect(nextPoint('Home', 3, 5)).toBe(0);
+    expect(nextPoint('End', 1, 5)).toBe(4);
+    expect(nextPoint('a', 1, 5)).toBeNull();
+    expect(nextPoint('ArrowRight', null, 0)).toBeNull();
+  });
+});
+
+describe('skin preview', () => {
+  it('stays paused under reduced motion until the player presses play', () => {
+    expect(previewRunning(null, true)).toBe(false);
+    expect(previewRunning(null, false)).toBe(true);
+    expect(previewRunning(true, true)).toBe(true);
+    expect(previewRunning(false, false)).toBe(false);
+  });
 });
 
 describe('share text', () => {
+  it('is not offered for a placement play', () => {
+    expect(canShare('placement')).toBe(false);
+    expect(canShare('dynamic')).toBe(true);
+    expect(canShare('jumps')).toBe(true);
+  });
+
   it('names the mode, the level and the mods', () => {
     expect(shareText({ modeId: 'dynamic', presetLevel: 4, mods: ['mirror'] }, 'https://x.test/s/abc')).toBe('Flickwise map: Dynamic, Level 4, Mirror. https://x.test/s/abc');
     expect(shareText({ modeId: 'jumps', presetLevel: null, mods: [] }, 'u')).toBe('Flickwise map: Jumps. u');
@@ -196,6 +253,15 @@ describe('section strip', () => {
     expect(blocks.map((b) => b.label)).toEqual(['Set 1', 'Set 2', 'Peak']);
     expect(stripBlocks(null)).toEqual([]);
   });
+
+  it('puts the role in the name of a block', () => {
+    const blocks = stripBlocks([
+      { start: 0, end: 5000, role: 'peak', focus: 'jumps', n: 10, accuracy: 0.9, misses: 1 },
+      { start: 5000, end: 9000, role: 'peak', focus: 'set', n: 8, accuracy: 0.5, misses: 2 },
+      { start: 9000, end: 12_000, role: null, focus: 'set', n: 0, accuracy: null, misses: 0 },
+    ]);
+    expect(blocks.map(blockName)).toEqual(['Peak, 90% accuracy, 1 miss', 'Set 1, Peak, 50% accuracy, 2 misses', 'Set 2, no objects']);
+  });
 });
 
 describe('drill-better milestone', () => {
@@ -211,5 +277,39 @@ describe('drill-better milestone', () => {
     expect((await getMilestones())['drill-better']).toEqual({ at: 2000, playId: null });
     await recordDrillBetter([ev('better')], 3000);
     expect((await getMilestones())['drill-better']?.at).toBe(2000);
+  });
+
+  it('does not lose milestones written at the same time', async () => {
+    await Promise.all([
+      patchMilestones((m) => ({ ...m, 'first-play': { at: 1, playId: 'a' } })),
+      recordDrillBetter([ev('better')], 2000),
+      patchMilestones((m) => ({ ...m, 'combo-100': { at: 3, playId: 'b' } })),
+    ]);
+    const stored = await getMilestones();
+    expect(Object.keys(stored).sort()).toEqual(['combo-100', 'drill-better', 'first-play']);
+  });
+
+  it('writes nothing for an analysis that was outdated by a delete', async () => {
+    await recordDrillBetter([ev('better')], 2000, () => false);
+    expect((await getMilestones())['drill-better']).toBeUndefined();
+  });
+
+  it('sees a plan from an earlier day as stale', () => {
+    expect(planIsStale({ date: DATE }, NOW)).toBe(false);
+    expect(planIsStale({ date: DATE }, NOW + 86_400_000)).toBe(true);
+  });
+
+  it('does not save a plan for an analysis that was outdated by a delete', async () => {
+    const input = { now: NOW, insights: [], ratings: {}, summaries: [], drills: [], levels: {}, dynamicLevel: 1 };
+    const plan = await ensurePlan(Analytics, { ...input, isCurrent: () => false });
+    expect(plan.steps.length).toBeGreaterThan(0);
+    expect(await getPlan(DATE)).toBeUndefined();
+    await ensurePlan(Analytics, input);
+    expect((await getPlan(DATE))?.steps.length).toBeGreaterThan(0);
+  });
+
+  it('patchMilestones leaves the record alone when the function returns null', async () => {
+    await patchMilestones(() => null);
+    expect(await getMilestones()).toEqual({});
   });
 });

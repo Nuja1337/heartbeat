@@ -1,12 +1,21 @@
 /* Flickwise service worker (PLAN-2 §8.3 and §4.11).
    The pure helpers mirror src/app/pwa.ts. src/app/pwa.test.ts runs this file against them.
 
-   Kill switch: to retire a broken worker, deploy a sw.js that calls self.registration.unregister()
-   in activate, then navigates each client to its own URL. */
+   Kill switch: public/sw-kill.js. To retire a broken worker, serve it as sw.js (see the README). */
 
 const PREFIX = 'fw-';
 const MANIFEST_URL = '/asset-manifest.json';
 const NAV_TIMEOUT_MS = 3000;
+
+/* The page registers this file as /sw.js?v=<hash of the manifest>. The same hash names the cache, so the worker
+   always knows its own cache, also after the browser stopped and restarted it. */
+function versionParam() {
+  try {
+    return new URL(self.location.href).searchParams.get('v') || '';
+  } catch {
+    return '';
+  }
+}
 
 let current = null;
 
@@ -45,7 +54,7 @@ async function clean(res) {
   return new Response(await res.blob(), { status: 200, headers: res.headers });
 }
 
-async function precache() {
+async function fill() {
   const res = await fetch(MANIFEST_URL, { cache: 'no-store' });
   if (!res.ok) throw new Error('The asset manifest could not be fetched.');
   const text = await res.text();
@@ -55,7 +64,9 @@ async function precache() {
   } catch {
     throw new Error('The asset manifest is not JSON.');
   }
-  const name = PREFIX + hashText(text);
+  const v = versionParam();
+  const name = PREFIX + (v || hashText(text));
+  current = name;
   const cache = await caches.open(name);
   for (const url of assetsFromManifest(json)) {
     const shell = url === '/' || url === '/index.html';
@@ -64,10 +75,30 @@ async function precache() {
     if (shell ? !r.ok : !isCacheable(r)) throw new Error('Could not cache ' + url);
     await cache.put(url, r.redirected ? await clean(r) : r);
   }
-  current = name;
+}
+
+/* A failed install must not leave a half-filled cache behind, or the next attempt would find it and activate
+   would keep it. */
+async function precache() {
+  try {
+    await fill();
+  } catch (e) {
+    const name = current;
+    current = null;
+    if (name) {
+      try {
+        await caches.delete(name);
+      } catch {
+        // Nothing more to do.
+      }
+    }
+    throw e;
+  }
 }
 
 async function currentName() {
+  const v = versionParam();
+  if (v) return PREFIX + v;
   if (current) return current;
   const keys = (await caches.keys()).filter((k) => k.startsWith(PREFIX));
   return keys.length > 0 ? keys[keys.length - 1] : null;

@@ -11,7 +11,7 @@ export { createDrill, evaluateDrill, refreshDrill, archiveDrill } from './drillE
 export { detectInsights, drillLaunch, playNotes } from './insights';
 export type { Insight, Recommendation } from './insights';
 export { drillText, OUTCOME_LABEL } from './insightCopy';
-export { newMilestones, recordMilestones } from './milestones';
+export { isDailyPlay, newMilestones, recordMilestones } from './milestones';
 export { allRatings, newTierEvents, recordTierEvents, skillRating, skillScoreOf } from './ratings';
 export type { RatingInfo } from './ratings';
 export { isSnoozed, snoozeUntil } from './snooze';

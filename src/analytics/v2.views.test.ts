@@ -306,6 +306,7 @@ describe('play against the average', () => {
     const peers = [peer(1, 2), peer(2, 5), peer(3, 12), peer(4, 20)];
     const r = playVsAverage(now, [now, ...peers])!;
     expect(r.n).toBe(4);
+    expect(r.text).toBe('Compared with 4 earlier plays at Level 4');
     const acc = r.deltas.find((d) => d.id === 'accuracy')!;
     expect(acc.average).toBeCloseTo(0.8, 9);
     expect(acc.diff).toBeCloseTo(0.1, 9);
@@ -329,6 +330,12 @@ describe('play against the average', () => {
     ];
     expect(playVsAverage(now, [...peers, ...noise])).toBeNull();
     expect(playVsAverage(now, [...peers, peer(8, 7)])!.n).toBe(3);
+  });
+
+  it('names the mode when the peers are a module', () => {
+    const jumps = (i: number, daysAgo: number) => peer(i, daysAgo, { modeId: 'jumps', presetLevel: null });
+    const r = playVsAverage(jumps(99, 0), [jumps(1, 1), jumps(2, 2), jumps(3, 3)])!;
+    expect(r.text).toBe('Compared with 3 earlier Jumps plays');
   });
 
   it('marks a worse play', () => {

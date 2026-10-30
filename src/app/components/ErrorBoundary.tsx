@@ -2,6 +2,7 @@
 
 import { Component, useState } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
+import { count as plural } from '../format';
 import { IconDownload, IconHome, IconRefresh } from './icons';
 import { Button, Notice, buttonClass } from './ui';
 
@@ -40,8 +41,8 @@ function Broken({ error }: { error: Error }) {
     try {
       // Loaded now, so a broken chunk can't stop the export from being offered.
       const { downloadExport } = await import('../state/exportFile');
-      const count = await downloadExport(false);
-      setMessage({ tone: 'good', text: `Exported ${count} plays.` });
+      const n = await downloadExport(false);
+      setMessage({ tone: 'good', text: `Exported ${plural(n, 'play')}.` });
     } catch (e) {
       setMessage({ tone: 'bad', text: e instanceof Error ? e.message : 'The export failed.' });
     } finally {

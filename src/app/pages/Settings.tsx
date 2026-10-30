@@ -4,7 +4,7 @@ import { ImportError, importBytes } from '../../data/exportImport';
 import type { ImportReport } from '../../data/exportImport';
 import { currentPersisted, getLastExport, storageEstimate } from '../../data/meta';
 import { deleteAllData } from '../../data/plays';
-import { replayStorage } from '../../data/replays';
+import { countReplayRemovals, replayStorage } from '../../data/replays';
 import { RETENTION_CHOICES } from '../../data/settings';
 import { PALETTES, REPLAY_LIMIT_CHOICES, RETRY_HOLD_MS, SETTING_RANGES, SHARE_CODE_VERSION, SOUND_SETS } from '../../shared/catalog';
 import type { ApproachStyle, CursorStyle, MetronomeMode, PaletteId, SoundSetId, TestSound } from '../../shared/types';
@@ -13,7 +13,7 @@ import { OffsetField } from '../components/OffsetField';
 import { SkinPreview } from '../components/SkinPreview';
 import { Button, Card, Field, Notice, PageHeader, Segmented, SectionTitle, Slider, Toggle, keyLabel } from '../components/ui';
 import { INTRO } from '../copy';
-import { bytes, dateTime } from '../format';
+import { bytes, count, dateTime } from '../format';
 import { invalidateAnalysis, useAnalysis } from '../state/analysis';
 import { loadGame, useGame } from '../state/engine';
 import { downloadExport } from '../state/exportFile';
@@ -430,6 +430,8 @@ function DataSection() {
   const [message, setMessage] = useState<{ tone: 'good' | 'bad'; text: string } | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [pendingLimit, setPendingLimit] = useState<{ value: number | null; removing: number } | null>(null);
+  const limitCheck = useRef(0);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const refresh = () => {
@@ -443,8 +445,8 @@ function DataSection() {
   const doExport = async (gzip: boolean) => {
     setBusy(true);
     try {
-      const count = await saveExport(gzip, includeReplays && (replays?.count ?? 0) > 0);
-      setMessage({ tone: 'good', text: `Exported ${count} plays.` });
+      const n = await saveExport(gzip, includeReplays && (replays?.count ?? 0) > 0);
+      setMessage({ tone: 'good', text: `Exported ${count(n, 'play')}.` });
       refresh();
     } catch (e) {
       setMessage({ tone: 'bad', text: e instanceof Error ? e.message : 'The export failed.' });
@@ -493,6 +495,24 @@ function DataSection() {
       setBusy(false);
       refresh();
     }
+  };
+
+  const saveReplayLimit = (value: number | null) => update((x) => ({ ...x, data: { ...x.data, replayLimit: value } }));
+
+  // Saving a lower limit makes the next save or start remove replays, so say how many first.
+  const chooseReplayLimit = async (v: string) => {
+    const value = v === 'null' ? null : Number(v);
+    const check = ++limitCheck.current;
+    setPendingLimit(null);
+    let removing = 0;
+    try {
+      removing = await countReplayRemovals(value);
+    } catch {
+      removing = 0;
+    }
+    if (check !== limitCheck.current) return;
+    if (removing > 0) setPendingLimit({ value, removing });
+    else saveReplayLimit(value);
   };
 
   const hasReplays = (replays?.count ?? 0) > 0;
@@ -547,13 +567,28 @@ function DataSection() {
       </dl>
       {persisted === false && <p className="mt-2 text-sm text-warn">The browser has not promised to keep this data. Export a file now and then.</p>}
 
-      <Field label="Keep the newest replays" help="Replays you mark to keep are never removed. Older ones are removed the next time Flickwise starts.">
+      <Field label="Keep the newest replays" help="Replays you mark to keep, and replays of new bests, are never removed. Older ones are removed after your next play or the next time Flickwise starts.">
         <Segmented
           legend="Replay limit"
           value={String(s.data.replayLimit)}
           options={REPLAY_LIMIT_CHOICES.map((n) => ({ value: String(n), label: REPLAY_LIMIT_LABEL(n) }))}
-          onChange={(v) => update((x) => ({ ...x, data: { ...x.data, replayLimit: v === 'null' ? null : Number(v) } }))}
+          onChange={(v) => void chooseReplayLimit(v)}
         />
+        {pendingLimit && (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="text-sm">This removes {count(pendingLimit.removing, 'replay')}.</span>
+            <Button
+              variant="danger"
+              onClick={() => {
+                saveReplayLimit(pendingLimit.value);
+                setPendingLimit(null);
+              }}
+            >
+              Remove them
+            </Button>
+            <Button variant="ghost" onClick={() => setPendingLimit(null)}>Keep the current limit</Button>
+          </div>
+        )}
       </Field>
 
       <Field label="Keep per-object detail for" help="Older detail is removed. Play summaries, ratings, trends and bests are always kept.">

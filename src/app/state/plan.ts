@@ -27,6 +27,9 @@ export function planButtonLabel(status: PlanStatus): string | null {
   return status.doneCount === 0 ? "Start today's plan" : `Next: ${status.next.title}`;
 }
 
+/** True when the plan is from an earlier day than `now`, for example a page left open past midnight. */
+export const planIsStale = (plan: Pick<DailyPlan, 'date'>, now: number): boolean => plan.date !== localDateKey(now);
+
 export interface PlanInput {
   now: number;
   insights: Parameters<typeof Analytics.buildDailyPlan>[1];
@@ -35,6 +38,8 @@ export interface PlanInput {
   drills: readonly Drill[];
   levels: Partial<Record<ModuleId, number>>;
   dynamicLevel: number;
+  /** False when the data was deleted or replaced since this analysis began. The plan is then not saved. */
+  isCurrent?: () => boolean;
 }
 
 /** Today's stored plan, or a new one that is saved first. A plan that can't be saved is still returned. */
@@ -50,6 +55,7 @@ export async function ensurePlan(A: typeof Analytics, input: PlanInput): Promise
     input.levels,
     input.now,
   );
+  if (input.isCurrent && !input.isCurrent()) return plan;
   await savePlan(plan).catch(() => undefined);
   return plan;
 }

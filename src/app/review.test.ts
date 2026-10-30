@@ -12,7 +12,7 @@ import type { LaunchRequest } from '../shared/types';
 import { rejectHitKey } from './components/KeyCapture';
 import { trendValue } from './format';
 import { invalidateAnalysis, loadAnalysis } from './state/analysis';
-import { moduleLaunch, snapLength, startWithCurrentLevels } from './state/launch';
+import { moduleLaunch, restartLaunch, snapLength, startWithCurrentLevels } from './state/launch';
 
 const DAY = 86_400_000;
 
@@ -82,6 +82,30 @@ describe('launches use the levels in the store', () => {
     await startWithCurrentLevels(navigate, stale(), '/train/jumps', false, false);
     expect(calls[0]!.launch.seed).toBe(4242);
     expect(calls[0]!.launch.levels.jumps).toBe(9);
+  });
+});
+
+describe('restarting a launch', () => {
+  const NOW = new Date(2026, 5, 10, 12).getTime();
+  const base = (source: LaunchRequest['source']): LaunchRequest => ({ ...moduleLaunch({ modeId: 'jumps', options: {}, mods: [], lengthSec: 90, seed: 4242, levels: {}, drillId: null }), source });
+  const daily = { kind: 'daily', date: '2026-06-10' } as const;
+
+  it('New map drops the source, so it is not a daily', () => {
+    const next = restartLaunch(base(daily), {}, true, NOW);
+    expect(next.source).toBeUndefined();
+    expect(next.seed).not.toBe(4242);
+  });
+
+  it('Retry keeps a daily or plan source from today', () => {
+    expect(restartLaunch(base(daily), {}, false, NOW).source).toEqual(daily);
+    const plan = { kind: 'plan', date: '2026-06-10', step: 2 } as const;
+    expect(restartLaunch(base(plan), {}, false, NOW).source).toEqual(plan);
+  });
+
+  it('Retry drops a daily or plan source from another day', () => {
+    expect(restartLaunch(base({ kind: 'daily', date: '2026-06-09' }), {}, false, NOW).source).toBeUndefined();
+    expect(restartLaunch(base({ kind: 'plan', date: '2026-06-09', step: 0 }), {}, false, NOW).source).toBeUndefined();
+    expect(restartLaunch(base({ kind: 'manual' }), {}, false, NOW).source).toEqual({ kind: 'manual' });
   });
 });
 

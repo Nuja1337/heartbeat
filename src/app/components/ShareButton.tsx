@@ -14,6 +14,9 @@ export function shareText(launch: Pick<LaunchRequest, 'modeId' | 'presetLevel' |
   return `Flickwise map: ${parts.join(', ')}. ${url}`;
 }
 
+/** The placement test is the same fixed set of rounds for everyone, so there is no map to share. */
+export const canShare = (modeId: string): boolean => modeId !== 'placement';
+
 async function copy(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);

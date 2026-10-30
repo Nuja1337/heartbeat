@@ -12,7 +12,7 @@ export const INTRO = {
   home: 'Flickwise is an aim trainer that shows where you miss and what to practice.',
   play: 'Choose how hard the map is. Each map is generated from a seed.',
   train: 'Short modules that raise or lower their difficulty after every set.',
-  daily: 'One map a day, the same for the whole day, with your history.',
+  daily: 'Each day has its own map, which stays the same until midnight at the level you pick. Your daily plays are listed here.',
   replay: 'Watch a play again, slow it down and jump to the misses.',
   aim: 'How well your clicks keep up with the distance and the time you have.',
   settings: 'Input, sound, display and your saved data.',
@@ -24,6 +24,9 @@ export const INTRO = {
   bests: 'Your best scores and module levels.',
   history: 'Every play, newest first.',
 } as const;
+
+/** How long the placement test takes. The 240 s on its mode is only the limit. */
+export const PLACEMENT_TIME = 'about a minute';
 
 export const TIER_NOTE = 'A tier is the whole-number part of a rating. Ratings marked provisional are based on fewer than 5 plays.';
 

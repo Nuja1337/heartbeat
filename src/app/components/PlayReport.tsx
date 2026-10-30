@@ -18,7 +18,18 @@ const ORDER: Judgment[] = ['crisp', 'solid', 'rough', 'miss'];
  * The numbers and small charts shared by the results screen and the play detail page.
  * `extra` goes between the headline numbers and the rest, for panels only one of the two pages shows.
  */
-export function PlayReport({ summary: s, records, extra }: { summary: PlaySummary; records: HitRecord[] | null; extra?: ReactNode }) {
+export function PlayReport({
+  summary: s,
+  records,
+  extra,
+  hideLevels = false,
+}: {
+  summary: PlaySummary;
+  records: HitRecord[] | null;
+  extra?: ReactNode;
+  /** Leaves the module levels out of the headline numbers, for a page whose `extra` already shows them. */
+  hideLevels?: boolean;
+}) {
   const isDynamic = s.modeId === 'dynamic';
   const levelEntries = Object.entries(s.finalLevels) as [string, number][];
   const total = Math.max(1, s.objectCount);
@@ -31,7 +42,7 @@ export function PlayReport({ summary: s, records, extra }: { summary: PlaySummar
         <div className="flex flex-wrap items-end gap-x-10 gap-y-4">
           {isDynamic ? (
             <StatBig label="Score" value={<Count value={s.score} format={int} />} />
-          ) : levelEntries.length > 0 ? (
+          ) : !hideLevels && levelEntries.length > 0 ? (
             levelEntries.map(([id, v]) => <StatBig key={id} label={`${MODES[id as keyof typeof MODES].label} level`} value={<Count value={v} format={level} />} />)
           ) : null}
           <Stat label="Accuracy" value={<Count value={s.accuracy * 100} format={(v) => `${v.toFixed(1)}%`} />} />

@@ -11,7 +11,7 @@ import { SKILL_ORDER } from './demand';
 import { recommendationLabel } from './insightCopy';
 import { drillLaunch } from './insights';
 import type { Insight, Recommendation } from './insights';
-import { dailyDays, streakDays } from './milestones';
+import { countsAsPlayed, dailyDays, streakDays } from './milestones';
 import type { RatingInfo } from './ratings';
 
 const DAY = 86_400_000;
@@ -35,7 +35,7 @@ function streakOf(days: ReadonlySet<number>, now: number): StreakInfo {
   return { current, longest: Math.max(longestRun(days), current), doneToday, atRisk: current > 0 && !doneToday };
 }
 
-/** Consecutive local days with at least one saved play of 60 s or more. Today keeps the streak alive until it ends. */
+/** Consecutive local days with at least one saved play that completed or ran 60 s. Today keeps the streak alive until it ends. */
 export const playStreak = (summaries: readonly PlaySummary[], now: number): StreakInfo => streakOf(streakDays(summaries), now);
 
 /** Consecutive local days with a completed daily play, by the date on the launch. */
@@ -219,7 +219,7 @@ export function buildDailyPlan(
 export function isPlanStepDone(plays: readonly PlaySummary[], date: string, step: number): boolean {
   return plays.some((p) => {
     const src = p.launch.source;
-    return src?.kind === 'plan' && src.date === date && src.step === step && (p.status === 'completed' || p.playedMs >= 60_000);
+    return src?.kind === 'plan' && src.date === date && src.step === step && countsAsPlayed(p);
   });
 }
 

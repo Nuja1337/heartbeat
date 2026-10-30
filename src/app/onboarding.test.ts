@@ -7,6 +7,7 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { deleteDatabase } from '../data/db';
 import { getOnboarding } from '../data/meta';
+import { parseOffsetText } from './components/OffsetField';
 import { Calibrate } from './pages/Calibrate';
 import { Welcome } from './pages/Welcome';
 import {
@@ -46,6 +47,28 @@ describe('stored state', () => {
     await patchOnboarding((o) => ({ ...o, input: true }));
     await patchOnboarding((o) => ({ ...o, calibrated: true }));
     expect(await getOnboarding()).toMatchObject({ done: false, input: true, calibrated: true, placed: false });
+  });
+});
+
+describe('offset box', () => {
+  it('reads negative numbers and never turns an unfinished entry into 0', () => {
+    expect(parseOffsetText('-10', -50, 150)).toBe(-10);
+    expect(parseOffsetText(String.fromCharCode(0x2212) + '10', -50, 150)).toBe(-10);
+    expect(parseOffsetText(' 12 ', -50, 150)).toBe(12);
+    expect(parseOffsetText('+7', -50, 150)).toBe(7);
+    expect(parseOffsetText('-0', -50, 150)).toBe(0);
+    expect(Object.is(parseOffsetText('-0', -50, 150), -0)).toBe(false);
+    expect(parseOffsetText('', -50, 150)).toBeNull();
+    expect(parseOffsetText('-', -50, 150)).toBeNull();
+    expect(parseOffsetText('1e3', -50, 150)).toBeNull();
+    expect(parseOffsetText('abc', -50, 150)).toBeNull();
+  });
+
+  it('clamps to the range and rounds to the step', () => {
+    expect(parseOffsetText('-200', -50, 150)).toBe(-50);
+    expect(parseOffsetText('999', -50, 150)).toBe(150);
+    expect(parseOffsetText('12.6', -50, 150)).toBe(13);
+    expect(parseOffsetText('13', -50, 150, 5)).toBe(15);
   });
 });
 

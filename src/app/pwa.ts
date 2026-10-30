@@ -1,5 +1,6 @@
 // The offline app (PLAN-2 §8.3 and §4.11). The pure helpers here mirror public/sw.js, which can't import
 // anything. pwa.test.ts runs sw.js against these helpers so the two can't drift apart.
+// Kill switch: public/sw-kill.js. Serve it as /sw.js and stop calling `register` below (see the README).
 
 import { useSyncExternalStore } from 'react';
 
@@ -54,6 +55,17 @@ export const workerUrlFor = (manifestText: string): string => `${SW_URL}?v=${has
 
 /** Only production builds register the worker. A dev server's modules must never be cached. */
 export const shouldRegister = (env: { PROD: boolean }, nav: { serviceWorker?: unknown }): boolean => env.PROD && Boolean(nav.serviceWorker);
+
+/**
+ * What the update banner's Reload button does. Another tab may already have applied the update, which leaves this
+ * tab's waiting worker activated or redundant. It will never fire another controllerchange, so the page reloads
+ * directly. Otherwise the worker is told to take over.
+ */
+export const updateAction = (worker: { state: string } | null): 'reload' | 'activate' =>
+  !worker || worker.state === 'activated' || worker.state === 'redundant' ? 'reload' : 'activate';
+
+/** A new controller while an update is pending means the update was applied, here or in another tab. */
+export const reloadOnControllerChange = (pending: { updateReady: boolean; reloadRequested: boolean }): boolean => pending.reloadRequested || pending.updateReady;
 
 /* ------------------------------------------------------------ page side */
 
@@ -123,7 +135,7 @@ export function initPwa(): void {
 
   if (!shouldRegister({ PROD: import.meta.env.PROD }, navigator)) return;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloadOnControl) window.location.reload();
+    if (reloadOnControllerChange({ updateReady: state.updateReady, reloadRequested: reloadOnControl })) window.location.reload();
   });
   const check = () => {
     registerWorker().catch(() => undefined);
@@ -150,12 +162,12 @@ async function registerWorker(): Promise<void> {
 
 /** Tells the waiting worker to take over. The page reloads when it has. */
 export function applyUpdate(): void {
-  if (!waiting) {
+  if (updateAction(waiting) === 'reload') {
     window.location.reload();
     return;
   }
   reloadOnControl = true;
-  waiting.postMessage({ type: 'skipWaiting' });
+  waiting?.postMessage({ type: 'skipWaiting' });
 }
 
 /** Shows the browser's install prompt. Resolves true when the player accepted. */

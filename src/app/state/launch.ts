@@ -3,7 +3,7 @@
 import type { NavigateFunction } from 'react-router';
 import { currentLevels } from '../../data/progress';
 import { DEFAULT_DIFFICULTY, LEVEL_PRESETS, MODES, MODS } from '../../shared/catalog';
-import { ShareCodeError, decodeShare } from '../../shared/codes';
+import { ShareCodeError, decodeShare, localDateKey } from '../../shared/codes';
 import type { DifficultySettings, LaunchRequest, ModId, ModeId, ModuleId, ModuleOptions, ObjectFeatures, PlayableMap } from '../../shared/types';
 
 export function randomSeed(): number {
@@ -212,8 +212,21 @@ export function startPlay(navigate: NavigateFunction, launch: LaunchRequest, fro
 }
 
 /**
+ * The launch for playing an earlier one again. With `newSeed` the map is new, so it no longer comes from a daily,
+ * a plan step or a share code and `source` is dropped. A retry keeps `source`, except that a daily or plan source
+ * from another day is dropped, so it can't count as today's daily or step.
+ */
+export function restartLaunch(launch: LaunchRequest, levels: LaunchRequest['levels'], newSeed: boolean, now = Date.now()): LaunchRequest {
+  const { source, ...rest } = launch;
+  const next: LaunchRequest = { ...rest, levels, seed: newSeed ? randomSeed() : launch.seed };
+  if (!source || newSeed) return next;
+  if ((source.kind === 'daily' || source.kind === 'plan') && source.date !== localDateKey(now)) return next;
+  return { ...next, source };
+}
+
+/**
  * Starts a play from an earlier launch with the module levels as they are now. The seed stays unless
- * `newSeed` is set. Rejects when the progress store can't be read, so the caller can say so.
+ * `newSeed` is set (see restartLaunch). Rejects when the progress store can't be read, so the caller can say so.
  */
 export async function startWithCurrentLevels(
   navigate: NavigateFunction,
@@ -224,5 +237,5 @@ export async function startWithCurrentLevels(
 ): Promise<void> {
   enterFullscreen(fullscreen);
   const levels = await currentLevels();
-  navigate('/session', { state: { launch: { ...launch, levels, seed: newSeed ? randomSeed() : launch.seed }, from } satisfies SessionState });
+  navigate('/session', { state: { launch: restartLaunch(launch, levels, newSeed), from } satisfies SessionState });
 }

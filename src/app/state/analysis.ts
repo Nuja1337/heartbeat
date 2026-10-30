@@ -53,7 +53,11 @@ let summariesCache: Promise<PlaySummary[]> | null = null;
 let cache: Promise<Analysis> | null = null;
 const listeners = new Set<() => void>();
 
+/** Bumped by every invalidation. A running analysis that sees a newer number is outdated and must not write. */
+let generation = 0;
+
 export function invalidateAnalysis(): void {
+  generation++;
   cache = null;
   summariesCache = null;
   listeners.forEach((l) => l());
@@ -101,6 +105,8 @@ export function useStreak(): StreakInfo | null {
 
 async function compute(): Promise<Analysis> {
   const now = Date.now();
+  const started = generation;
+  const isCurrent = () => generation === started;
   const A = await import('../../analytics/index');
   const { INSIGHT_WINDOW_DAYS } = await import('../../analytics/insights');
   const [summaries, progress, drills, tiers, snoozed] = await Promise.all([loadSummaries(), loadProgress(), listDrills(), getTierHistory(), getInsightSnooze()]);
@@ -129,10 +135,10 @@ async function compute(): Promise<Analysis> {
     for (const p of await loadPlayData(missing)) loaded.set(p.summary.id, p);
     const after = chosen.map((s) => loaded.get(s.id) ?? { summary: s, records: [] });
     const r = A.refreshDrill(drill, [...drillPlays, ...after], now, complete);
-    if (r.changed) await saveDrill(r.drill).catch(() => undefined);
+    if (r.changed && isCurrent()) await saveDrill(r.drill).catch(() => undefined);
     evaluated.push({ drill: r.drill, eval: r.eval });
   }
-  await recordDrillBetter(evaluated.map((e) => e.eval), now);
+  await recordDrillBetter(evaluated.map((e) => e.eval), now, isCurrent);
 
   const ratings = A.allRatings(summaries, now);
   const radar = A.radarData(ratings);
@@ -141,7 +147,7 @@ async function compute(): Promise<Analysis> {
   // The plan is built once a day and kept. A failure here leaves the rest of the page working.
   let plan: Analysis['plan'] = null;
   try {
-    const built = await ensurePlan(A, { now, insights, ratings, summaries, drills: evaluated.map((e) => e.drill), levels: levelsFromProgress(progress), dynamicLevel: suggestedLevel });
+    const built = await ensurePlan(A, { now, insights, ratings, summaries, drills: evaluated.map((e) => e.drill), levels: levelsFromProgress(progress), dynamicLevel: suggestedLevel, isCurrent });
     plan = { plan: built, ...planStatus(built, A.planStepsDone(built, summaries)) };
   } catch {
     plan = null;

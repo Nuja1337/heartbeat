@@ -8,7 +8,7 @@ import { DEFAULT_MODULE_LEVEL, MILESTONES, MODES, PLACEMENT, SKILLS, gradeFor } 
 import { Fatigue } from '../charts/Fatigue';
 import { PlayReport } from '../components/PlayReport';
 import { SectionStrip } from '../components/SectionStrip';
-import { ShareButton } from '../components/ShareButton';
+import { ShareButton, canShare } from '../components/ShareButton';
 import { Badge, Button, Delta, GradeBadge, LinkButton, Notice, Panel, SectionTitle, Stat } from '../components/ui';
 import { dateTime, int, level, modList, pct, playTitle, widthPct } from '../format';
 import { useAnalysis } from '../state/analysis';
@@ -159,7 +159,7 @@ export function Results() {
               Watch replay <Key>W</Key>
             </LinkButton>
           )}
-          <ShareButton launch={s.launch} />
+          {canShare(s.modeId) && <ShareButton launch={s.launch} />}
           <LinkButton to={back} variant="ghost" aria-keyshortcuts="Escape">
             Back <Key>Esc</Key>
           </LinkButton>
@@ -209,6 +209,7 @@ export function Results() {
       <PlayReport
         summary={s}
         records={records}
+        hideLevels={s.modeId === 'placement'}
         extra={
           <>
             {s.modeId === 'placement' && (
@@ -238,7 +239,7 @@ export function Results() {
 
             <div className="grid gap-6 md:grid-cols-2">
               <Panel>
-                <SectionTitle aside={average ? `${average.n} earlier plays, ${average.peers}` : undefined}>Against your average</SectionTitle>
+                <SectionTitle aside={average?.text}>Against your average</SectionTitle>
                 {!data ? (
                   <p className="text-ink-2">Loading.</p>
                 ) : !average ? (

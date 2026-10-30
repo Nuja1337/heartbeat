@@ -5,9 +5,11 @@ import { resolve } from 'node:path';
 import { runInNewContext } from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { assetsFromManifest, cacheNameFor, hashText, isCacheable, shouldRegister, workerUrlFor } from './pwa';
+import { assetsFromManifest, cacheNameFor, hashText, isCacheable, reloadOnControllerChange, shouldRegister, updateAction, workerUrlFor } from './pwa';
 
-const SW_SOURCE = readFileSync(resolve(fileURLToPath(new URL('.', import.meta.url)), '..', '..', 'public', 'sw.js'), 'utf8');
+const PUBLIC = resolve(fileURLToPath(new URL('.', import.meta.url)), '..', '..', 'public');
+const SW_SOURCE = readFileSync(resolve(PUBLIC, 'sw.js'), 'utf8');
+const KILL_SOURCE = readFileSync(resolve(PUBLIC, 'sw-kill.js'), 'utf8');
 
 /** The shape Vite writes for build.manifest. */
 const MANIFEST = {
@@ -67,6 +69,22 @@ describe('cache names and responses', () => {
   });
 });
 
+describe('update banner', () => {
+  it('reloads directly when the waiting worker was already activated or replaced', () => {
+    expect(updateAction({ state: 'installed' })).toBe('activate');
+    expect(updateAction({ state: 'activating' })).toBe('activate');
+    expect(updateAction({ state: 'activated' })).toBe('reload');
+    expect(updateAction({ state: 'redundant' })).toBe('reload');
+    expect(updateAction(null)).toBe('reload');
+  });
+
+  it('reloads on a new controller whenever an update is pending', () => {
+    expect(reloadOnControllerChange({ updateReady: true, reloadRequested: false })).toBe(true);
+    expect(reloadOnControllerChange({ updateReady: false, reloadRequested: true })).toBe(true);
+    expect(reloadOnControllerChange({ updateReady: false, reloadRequested: false })).toBe(false);
+  });
+});
+
 /* ------------------------------------------------------------------ sw.js */
 
 type Handler = (event: Record<string, unknown>) => void;
@@ -75,7 +93,7 @@ function norm(key: string | { url: string }): string {
   return new URL(typeof key === 'string' ? key : key.url, 'https://app.test').pathname;
 }
 
-function makeWorker(files: Record<string, () => Response | Promise<Response>>) {
+function makeWorker(files: Record<string, () => Response | Promise<Response>>, search = '') {
   const handlers = new Map<string, Handler>();
   const stores = new Map<string, Map<string, Response>>();
   const fetched: { url: string; cache?: string }[] = [];
@@ -106,7 +124,7 @@ function makeWorker(files: Record<string, () => Response | Promise<Response>>) {
   let claimed = false;
   let skipped = false;
   const self = {
-    location: { origin: 'https://app.test' },
+    location: { origin: 'https://app.test', href: `https://app.test/sw.js${search}` },
     clients: { claim: async () => void (claimed = true) },
     skipWaiting: () => void (skipped = true),
     addEventListener: (type: string, fn: Handler) => void handlers.set(type, fn),
@@ -155,9 +173,25 @@ describe('public/sw.js', () => {
     expect(w.fetched[0]).toEqual({ url: '/asset-manifest.json', cache: 'no-store' });
   });
 
-  it('fails the install when a file answers 200 with HTML', async () => {
+  it('fails the install when a file answers 200 with HTML, and deletes the partial cache', async () => {
     const w = makeWorker({ ...GOOD, '/assets/Results-123.js': html });
     await expect((await w.run('install')).pending).rejects.toThrow('/assets/Results-123.js');
+    expect([...w.stores.keys()]).toEqual([]);
+  });
+
+  it('names its cache from its own ?v= address and keeps using it after a restart', async () => {
+    const w = makeWorker(GOOD, '?v=abc123');
+    await (await w.run('install')).pending;
+    expect([...w.stores.keys()]).toEqual(['fw-abc123']);
+    // An older build's cache sits last in the key list, and a restarted worker has lost its memory.
+    const restarted = makeWorker({ ...GOOD, '/assets/new.js': js }, '?v=abc123');
+    restarted.stores.set('fw-abc123', new Map());
+    restarted.stores.set('fw-zzz-old', new Map());
+    await restarted.run('fetch', { request: { method: 'GET', url: 'https://app.test/assets/new.js', mode: 'cors' } }).then((r) => r.pending);
+    expect(restarted.stores.get('fw-abc123')!.has('/assets/new.js')).toBe(true);
+    expect(restarted.stores.get('fw-zzz-old')!.has('/assets/new.js')).toBe(false);
+    await (await restarted.run('activate')).pending;
+    expect([...restarted.stores.keys()]).toEqual(['fw-abc123']);
   });
 
   it('fails the install when a file is missing or the manifest is not JSON', async () => {
@@ -244,5 +278,61 @@ describe('public/sw.js', () => {
     expect(w.state().skipped).toBe(false);
     await w.run('message', { data: { type: 'skipWaiting' } });
     expect(w.state().skipped).toBe(true);
+  });
+});
+
+describe('public/sw-kill.js', () => {
+  function makeKill(navigateFails = false) {
+    const handlers = new Map<string, Handler>();
+    const deleted: string[] = [];
+    const log = { skipped: 0, unregistered: 0, navigated: [] as string[] };
+    const names = ['fw-a', 'fw-b', 'other-app'];
+    const caches = {
+      keys: async () => names,
+      delete: async (n: string) => void deleted.push(n),
+    };
+    const self = {
+      skipWaiting: () => void log.skipped++,
+      registration: { unregister: async () => void log.unregistered++ },
+      clients: {
+        matchAll: async () => [
+          { url: 'https://app.test/stats', navigate: async (u: string) => (navigateFails ? Promise.reject(new Error('no')) : void log.navigated.push(u)) },
+          { url: 'https://app.test/', navigate: async (u: string) => (navigateFails ? Promise.reject(new Error('no')) : void log.navigated.push(u)) },
+        ],
+      },
+      addEventListener: (type: string, fn: Handler) => void handlers.set(type, fn),
+    };
+    runInNewContext(KILL_SOURCE, { self, caches, Promise });
+    const run = (type: string, event: Record<string, unknown> = {}) => {
+      let pending: Promise<unknown> | undefined;
+      handlers.get(type)!({ ...event, waitUntil: (p: Promise<unknown>) => void (pending = p) });
+      return pending;
+    };
+    return { run, deleted, log, handlers };
+  }
+
+  it('skips waiting on install and on a skipWaiting message, and has no fetch handler', () => {
+    const k = makeKill();
+    k.run('install');
+    expect(k.log.skipped).toBe(1);
+    k.run('message', { data: { type: 'other' } });
+    expect(k.log.skipped).toBe(1);
+    k.run('message', { data: { type: 'skipWaiting' } });
+    expect(k.log.skipped).toBe(2);
+    expect(k.handlers.has('fetch')).toBe(false);
+  });
+
+  it('on activate deletes the fw- caches, unregisters and reloads its clients', async () => {
+    const k = makeKill();
+    await k.run('activate');
+    expect(k.deleted).toEqual(['fw-a', 'fw-b']);
+    expect(k.log.unregistered).toBe(1);
+    expect(k.log.navigated).toEqual(['https://app.test/stats', 'https://app.test/']);
+  });
+
+  it('still finishes when a client can not be navigated', async () => {
+    const k = makeKill(true);
+    await expect(k.run('activate')).resolves.toBeUndefined();
+    expect(k.log.unregistered).toBe(1);
   });
 });

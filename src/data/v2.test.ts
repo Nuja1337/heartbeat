@@ -22,7 +22,7 @@ import {
   savePlan, saveUiPrefs, setMeta, setMilestones, setOnboarding, snoozeInsight,
 } from './meta';
 import { countPlays, deleteAllData, deletePlay, getSummary, listSummaries, savePlay, upgradeSummary } from './plays';
-import { getReplay, getReplayRow, replayStorage, runReplayRetention, setReplayKeep } from './replays';
+import { countReplayRemovals, getReplay, getReplayRow, replayStorage, runReplayRetention, setReplayKeep } from './replays';
 import type { DailyPlan, PlaySummary } from './schema';
 import { sanitizeSettings, saveSettings } from './settings';
 
@@ -223,6 +223,18 @@ describe('replay retention', () => {
     expect(await countPlays()).toBe(5);
     expect(await runReplayRetention(2)).toBe(0);
     expect(await runReplayRetention(null)).toBe(0);
+    await settle();
+  });
+
+  it('counts what a lower limit would remove, without removing it', async () => {
+    const ids = await saveFive();
+    await setReplayKeep(ids[0]!, true);
+    expect(await countReplayRemovals(null)).toBe(0);
+    expect(await countReplayRemovals(100)).toBe(0);
+    expect(await countReplayRemovals(2)).toBe(2);
+    expect(await countReplayRemovals(0)).toBe(4);
+    expect(await count('replays')).toBe(5);
+    expect(await countReplayRemovals(2)).toBe(await runReplayRetention(2));
     await settle();
   });
 

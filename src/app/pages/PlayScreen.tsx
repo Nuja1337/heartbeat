@@ -69,6 +69,9 @@ function Session({ launch, from, onRestart }: { launch: LaunchRequest; from: str
       return;
     }
     pending.current = result;
+    // The saving state also hides the pause dialog, so Resume, Restart and Quit can't be used mid-save.
+    setError(null);
+    setSaving(true);
     savePlay(result).then(
       () => {
         invalidateAnalysis();
@@ -77,6 +80,7 @@ function Session({ launch, from, onRestart }: { launch: LaunchRequest; from: str
       },
       (e: unknown) => {
         if (!mounted.current) return;
+        setSaving(false);
         setError(`The play finished, but it could not be saved. ${e instanceof Error ? e.message : ''}`.trim());
       },
     );

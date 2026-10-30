@@ -11,7 +11,8 @@ import { UPDATE_READY_MESSAGE, applyUpdate, usePwa } from '../pwa';
 import { useAppState } from '../state/store';
 import { StreakChip } from './StreakChip';
 
-const BAR = '-mb-px flex h-14 items-center border-b-2 px-2.5 text-base transition sm:px-3';
+// On a phone the tabs are smaller, so they fit beside the wordmark, the streak chip and the settings icon at 390 px.
+const BAR = '-mb-px flex h-14 items-center border-b-2 px-1.5 text-sm transition sm:px-3 sm:text-base';
 
 export function Wordmark({ className = '' }: { className?: string }) {
   return (
@@ -24,8 +25,9 @@ export function Wordmark({ className = '' }: { className?: string }) {
 export function Shell() {
   const { storageError, outdated, blocked, dbMessage } = useAppState();
   const { updateReady } = usePwa();
+  const pathname = useLocation().pathname;
   // The first path segment, so moving between stats tabs doesn't replay the page enter.
-  const area = useLocation().pathname.split('/')[1] ?? '';
+  const area = pathname.split('/')[1] ?? '';
 
   return (
     <div className="min-h-screen">
@@ -34,7 +36,7 @@ export function Shell() {
       </a>
       <header className="sticky top-0 z-40 border-b border-line bg-bg/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-[1200px] items-center gap-1 px-4 sm:gap-2 sm:px-6">
-          <NavLink to="/" aria-label="Flickwise, home" className="mr-2 sm:mr-6">
+          <NavLink to="/" aria-label="Flickwise, home" className="mr-1 sm:mr-6">
             <Wordmark />
           </NavLink>
           <nav aria-label="Main" className="flex min-w-0 flex-1 items-center">
@@ -85,7 +87,7 @@ export function Shell() {
           )}
           {isFakeMode() && <Notice tone="accent">{FAKE_BANNER}</Notice>}
         </div>
-        <ErrorBoundary resetKey={area}>
+        <ErrorBoundary resetKey={pathname}>
           <Suspense fallback={<PageSkeleton />}>
             <div key={area} className="fw-enter">
               <Outlet />

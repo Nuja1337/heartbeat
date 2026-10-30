@@ -4,7 +4,7 @@
 // `fatigueCurve` (rolling accuracy over time) and `demandTimeline` (level-scale demand per bin of a map).
 
 import type { PlayData, PlaySummary } from '../data/schema';
-import { JUDGMENTS, SKILLS } from '../shared/catalog';
+import { JUDGMENTS, MODES, SKILLS } from '../shared/catalog';
 import type { HitRecord, MapSection, ObjectFeatures, PlayableMap, SkillId } from '../shared/types';
 import { dayNumberStart, localDayNumber } from './calendar';
 import { distinct } from './contrast';
@@ -240,6 +240,8 @@ export interface PlayVsAverage {
   n: number;
   /** Who the peers are: same mode and Dynamic level, or the same module. */
   peers: string;
+  /** The peers as a sentence for a heading, such as "Compared with 12 earlier Jumps plays". */
+  text: string;
   deltas: PlayDelta[];
 }
 
@@ -277,8 +279,20 @@ export function playVsAverage(summary: PlaySummary, summaries: readonly PlaySumm
     deltas.push({ id: d.id, label: d.label, value: own, average, diff: own - average, better: d.better === 'up' ? own > average : own < average });
   }
   if (deltas.length === 0) return null;
-  const peersText = summary.modeId === 'dynamic' ? (summary.presetLevel !== null ? `Level ${summary.presetLevel}` : 'custom Dynamic') : summary.modeId;
-  return { n: peers.length, peers: peersText, deltas };
+  const n = peers.length;
+  let peersText: string;
+  let text: string;
+  if (summary.modeId !== 'dynamic') {
+    peersText = MODES[summary.modeId].label;
+    text = `Compared with ${n} earlier ${peersText} plays`;
+  } else if (summary.presetLevel !== null) {
+    peersText = `Level ${summary.presetLevel}`;
+    text = `Compared with ${n} earlier plays at ${peersText}`;
+  } else {
+    peersText = 'custom Dynamic';
+    text = `Compared with ${n} earlier custom Dynamic plays`;
+  }
+  return { n, peers: peersText, text, deltas };
 }
 
 /* ---------------------------------------------------------------- fatigue */

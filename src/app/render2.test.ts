@@ -56,8 +56,17 @@ describe('2.0 charts and cards render', () => {
   });
 
   it('timeline with and without replay links', () => {
-    expect(renderToString(createElement(Timeline, { records: fx.records }))).not.toContain('role="link"');
-    expect(renderToString(createElement(Timeline, { records: fx.records, onOpen: () => undefined }))).toContain('role="link"');
+    const plain = renderToString(createElement(Timeline, { records: fx.records }));
+    const linked = renderToString(createElement(Timeline, { records: fx.records, onOpen: () => undefined }));
+    expect(plain).not.toContain('Enter or Space');
+    expect(linked).toContain('Enter or Space');
+    // The points are one list outside the image, with a single tab stop, and nothing inside the image can be focused.
+    for (const html of [plain, linked]) {
+      expect(html.match(/role="listbox"/g)).toHaveLength(1);
+      expect(html.match(/tabindex="0"/g)).toHaveLength(1);
+      const svg = html.slice(html.indexOf('<svg'), html.indexOf('</svg>'));
+      expect(svg).not.toContain('tabindex');
+    }
   });
 
   it('streak card and weekly changes', () => {

@@ -3,7 +3,8 @@
 import { Link } from 'react-router';
 import { DEFAULT_MODULE_LEVEL, MODES, PLACEMENT, SKILLS } from '../../shared/catalog';
 import type { ModeId } from '../../shared/types';
-import { ago, level as levelText } from '../format';
+import { PLACEMENT_TIME } from '../copy';
+import { ago, andList, level as levelText } from '../format';
 import { Motif } from './Motif';
 import { Badge, Button, Panel } from './ui';
 
@@ -76,7 +77,7 @@ export function PlacementCard({ disabled, error, onStart }: { disabled: boolean;
         <span className="text-micro uppercase text-ink-3">Start here</span>
         <h2 className="font-display text-xl font-semibold">{mode.label}</h2>
         <p className="mt-1 max-w-2xl text-ink-2">
-          {mode.description} It takes about {mode.defaultLengthSec / 60} minutes and covers {PLACEMENT.modules.map((m) => MODES[m].label.toLowerCase()).join(', ')}.
+          {mode.description} It takes {PLACEMENT_TIME} and covers {andList(PLACEMENT.modules.map((m) => MODES[m].label.toLowerCase()))}.
         </p>
         {error && (
           <p role="alert" className="mt-2 text-sm text-danger">

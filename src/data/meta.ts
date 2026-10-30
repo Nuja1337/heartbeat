@@ -61,6 +61,22 @@ export function mergeMilestones(a: Milestones, b: Milestones): Milestones {
 export const getMilestones = async (): Promise<Milestones> => cleanMilestones(await getMeta('milestones'));
 export const setMilestones = (m: Milestones) => setMeta('milestones', m);
 
+/**
+ * Reads the milestones, applies `fn` and writes the result in one transaction, so two writers can't overwrite each
+ * other. `fn` must be synchronous. Returning null leaves the stored record alone. Resolves with what is stored after.
+ */
+export async function patchMilestones(fn: (current: Milestones) => Milestones | null): Promise<Milestones> {
+  return withTx('meta', 'readwrite', async (tx) => {
+    const store = tx.objectStore('meta');
+    const row = await req<MetaRow | undefined>(store.get('milestones'));
+    const current = cleanMilestones(row?.value);
+    const next = fn(current);
+    if (next === null) return current;
+    store.put({ key: 'milestones', value: next } satisfies MetaRow);
+    return next;
+  });
+}
+
 /* Onboarding state. It survives "delete all data". */
 
 export function cleanOnboarding(raw: unknown): Onboarding | undefined {

@@ -83,6 +83,15 @@ export async function replayStorage(): Promise<{ count: number; bytes: number }>
   return { count: rows.length, bytes: rows.reduce((sum, r) => sum + (Number.isFinite(r.size) ? r.size : 0), 0) };
 }
 
+/** How many replays runReplayRetention(limit) would remove right now. Reads metadata only. */
+export async function countReplayRemovals(limit: number | null): Promise<number> {
+  if (limit === null) return 0;
+  const loose = await withTx('replays', 'readonly', (tx) =>
+    req<number>(tx.objectStore('replays').index('keep_startedAt').count(IDBKeyRange.bound([0, -Infinity], [0, Infinity]))),
+  );
+  return Math.max(0, loose - Math.max(0, Math.floor(limit)));
+}
+
 /**
  * Keeps every replay with keep = 1 plus the newest `limit` of the others. The rest are deleted from both
  * stores and their summaries get hasReplay false. `limit` null keeps everything. Returns how many were removed.

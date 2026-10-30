@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import type { DailyPlan } from '../../data/schema';
 import { duration } from '../format';
-import { planButtonLabel } from '../state/plan';
+import { invalidateAnalysis } from '../state/analysis';
+import { planButtonLabel, planIsStale } from '../state/plan';
 import type { PlanStatus } from '../state/plan';
 import { startWithCurrentLevels } from '../state/launch';
 import { getAppState } from '../state/store';
@@ -17,6 +18,13 @@ export function PlanCard({ plan, status }: { plan: DailyPlan; status: PlanStatus
   const label = planButtonLabel(status);
   const start = () => {
     if (!status.next) return;
+    // The page may have been open past midnight. Its steps would not count for today, so load today's plan instead.
+    if (planIsStale(plan, Date.now())) {
+      setError('A new day has started. Your plan is being updated, then you can start it.');
+      invalidateAnalysis();
+      return;
+    }
+    setError(null);
     startWithCurrentLevels(navigate, status.next.launch, '/', getAppState().prefs.fullscreen, false).catch((e: unknown) =>
       setError(e instanceof Error ? e.message : 'Could not read your module levels.'),
     );

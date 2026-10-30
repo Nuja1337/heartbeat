@@ -2,6 +2,7 @@
 
 import type { PlaySummary } from '../../data/schema';
 import { DAILY_LENGTH_SEC, gradeFor } from '../../shared/catalog';
+import { isDailyPlay } from '../../analytics/index';
 import { dailySeed } from '../../shared/codes';
 import type { GradeId, LaunchRequest, ModuleId } from '../../shared/types';
 import { dynamicLaunch, presetDifficulty } from './launch';
@@ -31,12 +32,12 @@ export interface DailyRow {
   completed: boolean;
 }
 
-/** Plays started from the daily map, newest first. */
+/** Plays made from the daily map of their date, newest first. A new map started from a daily has another seed and is left out. */
 export function dailyHistory(summaries: readonly PlaySummary[]): DailyRow[] {
   const rows: DailyRow[] = [];
   for (const s of summaries) {
     const source = s.launch.source;
-    if (source?.kind !== 'daily') continue;
+    if (source?.kind !== 'daily' || !isDailyPlay(s)) continue;
     rows.push({
       id: s.id,
       date: source.date,

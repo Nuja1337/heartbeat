@@ -14,7 +14,8 @@ export function StreakChip() {
       to="/"
       aria-label={label}
       title={label}
-      className={`flex h-7 shrink-0 items-center gap-1 rounded-full border px-2.5 font-display text-sm tabular-nums transition ${
+      // Hidden on the narrowest phones, where the tabs need the room. The streak is on Home as well.
+      className={`flex h-7 shrink-0 items-center max-[380px]:hidden gap-1 rounded-full border px-2.5 font-display text-sm tabular-nums transition ${
         streak.atRisk ? 'border-line-2 text-ink-2 hover:text-ink' : 'border-accent/40 bg-accent/10 text-accent'
       }`}
     >

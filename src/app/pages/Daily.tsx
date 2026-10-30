@@ -3,7 +3,7 @@ import { AnalysisError } from '../components/AnalysisError';
 import { DailyCard } from '../components/DailyCard';
 import { Badge, GradeBadge, PageHeader, Panel, SectionTitle } from '../components/ui';
 import { INTRO } from '../copy';
-import { dateOf, pct } from '../format';
+import { count, dateOf, pct } from '../format';
 import { useAnalysis } from '../state/analysis';
 import { dailyHistory } from '../state/daily';
 
@@ -44,7 +44,7 @@ export function Daily() {
             <SectionTitle
               aside={
                 <span>
-                  Best streak {data.dailyStreak.longest} {data.dailyStreak.longest === 1 ? 'day' : 'days'}
+                  Longest streak, {count(data.dailyStreak.longest, 'day')}
                 </span>
               }
             >

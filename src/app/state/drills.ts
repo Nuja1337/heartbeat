@@ -3,7 +3,7 @@
 import type { NavigateFunction } from 'react-router';
 import type { Insight } from '../../analytics/insights';
 import { saveDrill } from '../../data/drills';
-import { getMilestones, setMilestones } from '../../data/meta';
+import { patchMilestones } from '../../data/meta';
 import type { Drill, DrillEval, PlayData } from '../../data/schema';
 import type { ModuleId } from '../../shared/types';
 import { invalidateAnalysis } from './analysis';
@@ -37,15 +37,16 @@ export async function trainThis(
 
 /**
  * Writes the "drill-better" milestone the first time any drill measures better. It does nothing when the
- * milestone is already stored, and a failed write is tried again on the next analysis.
+ * milestone is already stored, and a failed write is tried again on the next analysis. The read and the write are one
+ * transaction, so a play saved at the same time can't lose its milestones. `isCurrent` turns the write off for an
+ * analysis that was started before the data was deleted.
  */
-export async function recordDrillBetter(evals: readonly DrillEval[], now = Date.now()): Promise<void> {
+export async function recordDrillBetter(evals: readonly DrillEval[], now = Date.now(), isCurrent: () => boolean = () => true): Promise<void> {
   if (!evals.some((e) => e.outcome === 'better')) return;
   try {
-    const history = await getMilestones();
-    if (history['drill-better']) return;
     const { recordMilestones } = await import('../../analytics/milestones');
-    await setMilestones(recordMilestones(history, ['drill-better'], now, null));
+    if (!isCurrent()) return;
+    await patchMilestones((history) => (history['drill-better'] ? null : recordMilestones(history, ['drill-better'], now, null)));
   } catch {
     // Storage problems are shown elsewhere.
   }

@@ -2,6 +2,7 @@
 // and `recordMilestones` adds ids to the stored record. Names and descriptions come from MILESTONES in the catalog.
 
 import type { Milestones, PlaySummary } from '../data/schema';
+import { dailySeed } from '../shared/codes';
 import type { MilestoneId } from '../shared/types';
 import { keyDayNumber, localDayNumber, runEndingAt } from './calendar';
 
@@ -11,19 +12,31 @@ const HOUR = 3_600_000;
 export const CLEAR_LEVELS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 export const CLEAR_ACCURACY = 0.9;
 
-/** The calendar days that hold a saved play of 60 s or more, by local start time. */
+/**
+ * A play counts toward the streak and the plan when it completed or ran 60 s. A 60 s map ends just before 60 s of
+ * played time, so completing it has to count on its own.
+ */
+export const countsAsPlayed = (p: Pick<PlaySummary, 'status' | 'playedMs'>): boolean => p.status === 'completed' || p.playedMs >= STREAK_MIN_MS;
+
+/** The calendar days that hold a saved play that counts (see countsAsPlayed), by local start time. */
 export function streakDays(plays: readonly PlaySummary[]): Set<number> {
   const days = new Set<number>();
-  for (const p of plays) if (p.playedMs >= STREAK_MIN_MS) days.add(localDayNumber(p.startedAt));
+  for (const p of plays) if (countsAsPlayed(p)) days.add(localDayNumber(p.startedAt));
   return days;
 }
 
-/** Local dates (as day numbers) of completed daily plays, from the launch source. */
+/** True when the play was made from the daily map of its date, not from a new map started after it. */
+export const isDailyPlay = (p: PlaySummary): boolean => {
+  const src = p.launch.source;
+  return src?.kind === 'daily' && p.launch.seed === dailySeed(src.date);
+};
+
+/** Local dates (as day numbers) of completed daily plays, from the launch source and seed. */
 export function dailyDays(plays: readonly PlaySummary[]): Set<number> {
   const days = new Set<number>();
   for (const p of plays) {
     const src = p.launch.source;
-    if (p.status !== 'completed' || src?.kind !== 'daily') continue;
+    if (p.status !== 'completed' || src?.kind !== 'daily' || !isDailyPlay(p)) continue;
     const day = keyDayNumber(src.date);
     if (day !== null) days.add(day);
   }
@@ -56,7 +69,7 @@ export function newMilestones(history: Milestones, summary: PlaySummary, all: re
   add('hours-5', hours >= 5);
   add('hours-25', hours >= 25);
 
-  if (summary.playedMs >= STREAK_MIN_MS) {
+  if (countsAsPlayed(summary)) {
     const run = runEndingAt(streakDays(plays), localDayNumber(summary.startedAt));
     add('streak-7', run >= 7);
     add('streak-30', run >= 30);
@@ -64,9 +77,9 @@ export function newMilestones(history: Milestones, summary: PlaySummary, all: re
 
   add('combo-100', summary.maxCombo >= 100);
   add('combo-500', summary.maxCombo >= 500);
-  add('no-miss', done && summary.modeId === 'dynamic' && summary.playedMs >= STREAK_MIN_MS && summary.counts.miss === 0);
+  add('no-miss', done && summary.modeId === 'dynamic' && summary.launch.lengthSec >= 60 && summary.counts.miss === 0);
 
-  add('daily-7', done && summary.launch.source?.kind === 'daily' && dailyDays(plays).size >= 7);
+  add('daily-7', done && isDailyPlay(summary) && dailyDays(plays).size >= 7);
   add('drill-better', options.drillBetter === true);
   add('placement', done && summary.modeId === 'placement');
 

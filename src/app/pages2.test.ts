@@ -84,7 +84,9 @@ describe('share route', () => {
   });
 
   it('says so when the code is from a newer version', () => {
-    const code = Buffer.from([2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 0]).toString('base64url');
+    // A well-formed code: a version above ours, a header, and the checksum byte (the sum of the bytes before it, xor 0xa5).
+    const body = [2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4];
+    const code = Buffer.from([...body, (body.reduce((a, b) => a + b, 0) & 255) ^ 0xa5]).toString('base64url');
     expect(() => decodeShare(code)).toThrow();
     expect(readShareLink(code)).toEqual({ ok: false, kind: 'newer', message: 'This code was made by a newer version of Flickwise.' });
   });

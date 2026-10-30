@@ -4,6 +4,13 @@ import { MODES, MODS } from '../shared/catalog';
 import type { ModId } from '../shared/types';
 import type { PlaySummary } from '../data/schema';
 
+/** "1 play", "2 plays". Pass `many` for an irregular plural. */
+export const count = (n: number, one: string, many = `${one}s`): string => `${n.toLocaleString('en-GB')} ${n === 1 ? one : many}`;
+
+const AND = new Intl.ListFormat('en-GB', { style: 'long', type: 'conjunction' });
+/** "a", "a and b", "a, b and c". */
+export const andList = (items: readonly string[]): string => AND.format(items);
+
 /** A share 0..1 as a percentage. */
 export const pct = (v: number, digits = 1): string => `${(v * 100).toFixed(digits)}%`;
 export const pct0 = (v: number): string => `${Math.round(v * 100)}%`;
