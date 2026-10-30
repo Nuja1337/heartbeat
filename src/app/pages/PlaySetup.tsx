@@ -1,7 +1,5 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
-import { itemsFromMap, mapDemand, PREVIEW_MIN_N } from '../../analytics/demand';
-import type { SkillDemand } from '../../analytics/demand';
+import { useId, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import {
   DEFAULT_DIFFICULTY,
   DIFFICULTY_LIMITS,
@@ -18,56 +16,67 @@ import {
 } from '../../shared/catalog';
 import type { DifficultySettings, LaunchRequest, ModId, SkillId } from '../../shared/types';
 import { DemandBars } from '../components/DemandBars';
-import { Button, Card, Field, Notice, PageHeader, SectionTitle, Segmented, Slider, Toggle } from '../components/ui';
-import type { GameModule } from '../state/engine';
+import { MapPreview, useMapPreview } from '../components/MapPreview';
+import { Button, Card, Field, Notice, PageHeader, SectionTitle, Slider, Toggle } from '../components/ui';
 import { useGame } from '../state/engine';
 import { INTRO, PREVIEW_UNAVAILABLE } from '../copy';
 import { useCurrentLevels } from '../state/levels';
-import { cleanMods, dynamicLaunch, presetDifficulty, randomSeed, snapLength, startPlay } from '../state/launch';
+import { cleanMods, dynamicLaunch, presetDifficulty, randomSeed, sharedFrom, snapLength, startPlay } from '../state/launch';
+import { getAppState, updatePrefs } from '../state/store';
+import { SharedBanner } from './Share';
 
 const snapDynamicLength = (sec: number): number => snapLength(sec, MODES.dynamic.lengthOptions);
-import { getAppState, updatePrefs } from '../state/store';
 
 const KEYS = Object.keys(DIFFICULTY_LIMITS) as (keyof DifficultySettings)[];
 const DYNAMIC_MODS = MODES.dynamic.allowedMods;
 
-interface Preview {
-  demand: Partial<Record<SkillId, Pick<SkillDemand, 'level'>>>;
-  full: boolean;
+/** What the settings alone determine, for when the map can't be built. */
+function settingsDemand(launch: LaunchRequest): Partial<Record<SkillId, { level: number }>> {
+  const d = launch.difficulty;
+  const tight = launch.mods.includes('tight');
+  const wide = launch.mods.includes('wide');
+  const radius = d.radius * (tight ? MOD_SCALE.tight.radius : wide ? MOD_SCALE.wide.radius : 1);
+  const scale = tight ? MOD_SCALE.tight.windows : wide ? MOD_SCALE.wide.windows : 1;
+  return {
+    precision: { level: levelForDemand('precision', precisionDemand(radius)) },
+    timing: { level: levelForDemand('timing', timingDemand(windowsForTiming(d.timing).crisp * scale)) },
+    reading: { level: levelForDemand('reading', readingDemand(d.approachMs, launch.mods)) },
+  };
 }
 
-function previewFor(launch: LaunchRequest, game: GameModule | null): Preview {
-  try {
-    if (!game) throw new Error('The game has not loaded.');
-    const p = game.previewLaunch(launch);
-    return { demand: mapDemand(itemsFromMap(p.map, p.features), launch.mods, PREVIEW_MIN_N), full: true };
-  } catch {
-    // Without the engine, show what the settings alone determine.
-    const d = launch.difficulty;
-    const tight = launch.mods.includes('tight');
-    const wide = launch.mods.includes('wide');
-    const radius = d.radius * (tight ? MOD_SCALE.tight.radius : wide ? MOD_SCALE.wide.radius : 1);
-    const scale = tight ? MOD_SCALE.tight.windows : wide ? MOD_SCALE.wide.windows : 1;
-    return {
-      demand: {
-        precision: { level: levelForDemand('precision', precisionDemand(radius)) },
-        timing: { level: levelForDemand('timing', timingDemand(windowsForTiming(d.timing).crisp * scale)) },
-        reading: { level: levelForDemand('reading', readingDemand(d.approachMs, launch.mods)) },
-      },
-      full: false,
-    };
-  }
+/** Radio buttons drawn like the segmented control, but sharing the width so a long row never wraps. */
+function LengthPicker({ value, options, onChange }: { value: number; options: readonly number[]; onChange(v: number): void }) {
+  const name = useId();
+  return (
+    <fieldset className="min-w-0 border-0 p-0">
+      <legend className="sr-only">Length</legend>
+      <div className="grid gap-0.5 rounded-[18px] border border-line bg-bg-2 p-0.5" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
+        {options.map((n) => (
+          <label key={n} className="cursor-pointer">
+            <input type="radio" name={name} className="peer sr-only" checked={n === value} onChange={() => onChange(n)} />
+            <span className="flex h-7 items-center justify-center whitespace-nowrap rounded-[14px] px-1 text-sm text-ink-2 transition hover:text-ink peer-checked:bg-surface-3 peer-checked:text-ink peer-focus-visible:outline-2 peer-focus-visible:outline-accent">
+              {n} s
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
 }
 
 export function PlaySetup() {
   const navigate = useNavigate();
   const { levels: loadedLevels, error: levelsError } = useCurrentLevels();
+  const shared = sharedFrom(useLocation().state, 'dynamic');
   const [initial] = useState(() => getAppState().prefs);
-  const [preset, setPreset] = useState<number | null>(initial.dynamic.presetLevel);
-  const [difficulty, setDifficulty] = useState<DifficultySettings>(initial.dynamic.difficulty ?? { ...DEFAULT_DIFFICULTY });
-  const [mods, setMods] = useState<ModId[]>(() => cleanMods(initial.dynamic.mods, 'dynamic'));
-  const [lengthSec, setLengthSec] = useState<number>(() => snapDynamicLength(initial.dynamic.lengthSec ?? LEVEL_PRESETS[(initial.dynamic.presetLevel ?? 4) - 1]?.lengthSec ?? 90));
-  const [seed, setSeed] = useState<number>(() => randomSeed());
+  const [prefill] = useState(() => shared?.prefill ?? null);
+  const [preset, setPreset] = useState<number | null>(prefill ? prefill.presetLevel : initial.dynamic.presetLevel);
+  const [difficulty, setDifficulty] = useState<DifficultySettings>(prefill?.difficulty ?? initial.dynamic.difficulty ?? { ...DEFAULT_DIFFICULTY });
+  const [mods, setMods] = useState<ModId[]>(() => cleanMods(prefill ? prefill.mods : initial.dynamic.mods, 'dynamic'));
+  const [lengthSec, setLengthSec] = useState<number>(() =>
+    snapDynamicLength(prefill?.lengthSec ?? initial.dynamic.lengthSec ?? LEVEL_PRESETS[(initial.dynamic.presetLevel ?? 4) - 1]?.lengthSec ?? 90),
+  );
+  const [seed, setSeed] = useState<number>(() => prefill?.seed ?? randomSeed());
   const [fullscreen, setFullscreen] = useState(initial.fullscreen);
 
   const levels = useMemo(() => loadedLevels ?? {}, [loadedLevels]);
@@ -76,7 +85,8 @@ export function PlaySetup() {
     [preset, difficulty, mods, lengthSec, seed, levels],
   );
   const { game, failed } = useGame();
-  const preview = useMemo(() => previewFor(launch, game), [launch, game]);
+  const { data: preview, pending, failed: previewFailed } = useMapPreview(launch, game);
+  const fallbackDemand = useMemo(() => settingsDemand(launch), [launch]);
 
   const tight = mods.includes('tight');
   const wide = mods.includes('wide');
@@ -101,6 +111,11 @@ export function PlaySetup() {
   return (
     <>
       <PageHeader title="Play" intro={INTRO.play} />
+      {shared && (
+        <div className="mb-6">
+          <SharedBanner generatorVersion={shared.shared.generatorVersion} />
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
         <div className="space-y-6">
@@ -145,6 +160,8 @@ export function PlaySetup() {
               </div>
             </Card>
           )}
+
+          <MapPreview launch={launch} data={preview} pending={pending} failed={previewFailed} />
 
           <Card>
             <SectionTitle aside={`Score multiplier x${modMultiplier(mods).toFixed(2)}`}>Mods</SectionTitle>
@@ -199,8 +216,8 @@ export function PlaySetup() {
 
           <Card>
             <SectionTitle>Demand</SectionTitle>
-            <DemandBars demand={preview.demand} />
-            {!preview.full && (game !== null || failed) && (
+            <DemandBars demand={preview?.demand ?? fallbackDemand} />
+            {!preview && (previewFailed || failed) && (
               <div className="mt-3">
                 <Notice>{PREVIEW_UNAVAILABLE}</Notice>
               </div>
@@ -209,12 +226,7 @@ export function PlaySetup() {
 
           <Card>
             <SectionTitle>Length and seed</SectionTitle>
-            <Segmented
-              legend="Length"
-              value={lengthSec}
-              options={MODES.dynamic.lengthOptions.map((n) => ({ value: n, label: `${n} s` }))}
-              onChange={setLengthSec}
-            />
+            <LengthPicker value={lengthSec} options={MODES.dynamic.lengthOptions} onChange={setLengthSec} />
             {presetLength !== null && !MODES.dynamic.lengthOptions.includes(presetLength) && (
               <p className="mt-2 text-sm text-ink-2">
                 This level is {presetLength} s by design. The closest option, {snapDynamicLength(presetLength)} s, is selected.

@@ -7,15 +7,16 @@ import { Button, Card, Field, LinkButton, Notice, PageHeader, Segmented, Section
 import { level } from '../format';
 import { useAnalysis } from '../state/analysis';
 import { useCurrentLevels } from '../state/levels';
-import { cleanMods, moduleLaunch, randomSeed, startPlay } from '../state/launch';
+import { cleanMods, moduleLaunch, randomSeed, sharedFrom, startPlay } from '../state/launch';
 import { getAppState, updatePrefs } from '../state/store';
+import { SharedBanner } from './Share';
 
 const cap = (s: string) => s[0]!.toUpperCase() + s.slice(1);
 
 export function ModuleSetup() {
   const { mode } = useParams();
   const info = mode && mode in MODES ? MODES[mode as ModeId] : null;
-  if (!info || info.id === 'dynamic') return <Navigate to="/train" replace />;
+  if (!info || info.id === 'dynamic' || info.id === 'placement') return <Navigate to="/train" replace />;
   return <Setup key={info.id} modeId={info.id} />;
 }
 
@@ -26,6 +27,7 @@ function Setup({ modeId }: { modeId: ModeId }) {
   const { data } = useAnalysis();
   const prefill = (location.state as { prefill?: LaunchRequest } | null)?.prefill;
   const drill = prefill && prefill.modeId === modeId ? prefill : null;
+  const shared = sharedFrom(location.state, modeId);
   const [stored] = useState(() => getAppState().prefs.modules[modeId]);
 
   const [options, setOptions] = useState<ModuleOptions>(() => ({ ...info.defaultOptions, ...(drill ? drill.options : stored?.options) }));
@@ -61,6 +63,11 @@ function Setup({ modeId }: { modeId: ModeId }) {
         intro={info.description}
         actions={<LinkButton to="/train" variant="ghost">All modules</LinkButton>}
       />
+      {shared && (
+        <div className="mb-6">
+          <SharedBanner generatorVersion={shared.shared.generatorVersion} />
+        </div>
+      )}
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <div className="space-y-6">
           {drill?.drillId && (

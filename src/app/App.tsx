@@ -28,6 +28,7 @@ const Results = lazyNamed(() => import('./pages/Results'), 'Results');
 const Replay = lazyNamed(() => import('./pages/Replay'), 'Replay');
 const Daily = lazyNamed(() => import('./pages/Daily'), 'Daily');
 const Settings = lazyNamed(() => import('./pages/Settings'), 'Settings');
+const Share = lazyNamed(() => import('./pages/Share'), 'Share');
 const StatsLayout = lazyNamed(() => import('./pages/stats/Layout'), 'StatsLayout');
 const Overview = lazyNamed(() => import('./pages/stats/Overview'), 'Overview');
 const Trends = lazyNamed(() => import('./pages/stats/Trends'), 'Trends');
@@ -105,6 +106,7 @@ export function App() {
           <Route path="replay/:id" element={<Replay />} />
           <Route path="daily" element={<Daily />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="s/:code" element={<Share />} />
           <Route path="stats" element={<StatsLayout />}>
             <Route index element={<Overview />} />
             <Route path="trends" element={<Trends />} />
