@@ -25,11 +25,14 @@ const Train = lazyNamed(() => import('./pages/Train'), 'Train');
 const ModuleSetup = lazyNamed(() => import('./pages/ModuleSetup'), 'ModuleSetup');
 const PlayScreen = lazyNamed(() => import('./pages/PlayScreen'), 'PlayScreen');
 const Results = lazyNamed(() => import('./pages/Results'), 'Results');
+const Replay = lazyNamed(() => import('./pages/Replay'), 'Replay');
+const Daily = lazyNamed(() => import('./pages/Daily'), 'Daily');
 const Settings = lazyNamed(() => import('./pages/Settings'), 'Settings');
 const StatsLayout = lazyNamed(() => import('./pages/stats/Layout'), 'StatsLayout');
 const Overview = lazyNamed(() => import('./pages/stats/Overview'), 'Overview');
 const Trends = lazyNamed(() => import('./pages/stats/Trends'), 'Trends');
 const Patterns = lazyNamed(() => import('./pages/stats/Patterns'), 'Patterns');
+const Aim = lazyNamed(() => import('./pages/stats/Aim'), 'Aim');
 const Timing = lazyNamed(() => import('./pages/stats/Timing'), 'Timing');
 const Bests = lazyNamed(() => import('./pages/stats/Bests'), 'Bests');
 const History = lazyNamed(() => import('./pages/stats/History'), 'History');
@@ -99,11 +102,14 @@ export function App() {
           <Route path="train" element={<Train />} />
           <Route path="train/:mode" element={<ModuleSetup />} />
           <Route path="results/:id" element={<Results />} />
+          <Route path="replay/:id" element={<Replay />} />
+          <Route path="daily" element={<Daily />} />
           <Route path="settings" element={<Settings />} />
           <Route path="stats" element={<StatsLayout />}>
             <Route index element={<Overview />} />
             <Route path="trends" element={<Trends />} />
             <Route path="patterns" element={<Patterns />} />
+            <Route path="aim" element={<Aim />} />
             <Route path="timing" element={<Timing />} />
             <Route path="bests" element={<Bests />} />
             <Route path="history" element={<History />} />

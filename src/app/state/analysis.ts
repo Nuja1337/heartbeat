@@ -1,15 +1,19 @@
 // Loads everything the dashboards need once, and keeps it until a play or a delete changes it.
+// The summaries load on their own first, because the streak chip in the top bar needs only those.
 
 import { useCallback, useEffect, useState } from 'react';
 // The analytics modules load on first use, so Home's first paint doesn't wait for them.
-import type { Insight } from '../../analytics/insights';
-import type { RatingInfo } from '../../analytics/ratings';
+import type { Insight, RadarAxis, RatingInfo, StreakInfo, WeeklyChange, WeeklyGoal } from '../../analytics/index';
 import { listDrills, saveDrill } from '../../data/drills';
-import { getTierHistory } from '../../data/meta';
+import { getInsightSnooze, getTierHistory } from '../../data/meta';
 import { listSummaries, loadPlayData } from '../../data/plays';
-import { loadProgress } from '../../data/progress';
-import type { Drill, DrillEval, PlayData, PlaySummary, ProgressRow, TierHistory } from '../../data/schema';
+import { levelsFromProgress, loadProgress } from '../../data/progress';
+import type { DailyPlan, Drill, DrillEval, InsightSnooze, PlayData, PlaySummary, ProgressRow, TierHistory } from '../../data/schema';
 import type { ModuleId, SkillId } from '../../shared/types';
+import { recordDrillBetter } from './drills';
+import { ensurePlan, planStatus } from './plan';
+import type { PlanStatus } from './plan';
+import { getSettings } from './store';
 
 const DAY = 86_400_000;
 /** Plays whose detail is read for insights and drills. */
@@ -24,34 +28,88 @@ export interface Analysis {
   progress: Partial<Record<ModuleId, ProgressRow>>;
   ratings: Record<SkillId, RatingInfo | null>;
   insights: Insight[];
+  /** The insight keys hidden by "Not now", with the time they come back. */
+  snoozed: InsightSnooze;
   /** The plays insights were found in, with their records. */
   windowPlays: PlayData[];
   drills: { drill: Drill; eval: DrillEval }[];
   tiers: TierHistory;
+  streak: StreakInfo;
+  dailyStreak: StreakInfo;
+  /** Minutes this week. The goal is read from the settings when it is shown, so a change there shows at once. */
+  week: WeeklyGoal;
+  changes: WeeklyChange[];
+  radar: RadarAxis[];
+  radarMax: number;
+  /** The Dynamic level to suggest, 1 to 8. */
+  suggestedLevel: number;
+  /** Today's plan with its progress, or null when it could not be read or saved. */
+  plan: (PlanStatus & { plan: DailyPlan }) | null;
 }
 
+/* ---------------------------------------------------------------- summaries */
+
+let summariesCache: Promise<PlaySummary[]> | null = null;
 let cache: Promise<Analysis> | null = null;
 const listeners = new Set<() => void>();
 
 export function invalidateAnalysis(): void {
   cache = null;
+  summariesCache = null;
   listeners.forEach((l) => l());
 }
 
+export function loadSummaries(): Promise<PlaySummary[]> {
+  if (!summariesCache) {
+    summariesCache = listSummaries();
+    summariesCache.catch(() => {
+      summariesCache = null;
+    });
+  }
+  return summariesCache;
+}
+
+function useInvalidation(): number {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const bump = () => setTick((t) => t + 1);
+    listeners.add(bump);
+    return () => {
+      listeners.delete(bump);
+    };
+  }, []);
+  return tick;
+}
+
+/** The current play streak for the top bar. It reads summaries only and stays null until they are in. */
+export function useStreak(): StreakInfo | null {
+  const tick = useInvalidation();
+  const [streak, setStreak] = useState<StreakInfo | null>(null);
+  useEffect(() => {
+    let alive = true;
+    Promise.all([loadSummaries(), import('../../analytics/training')])
+      .then(([summaries, { playStreak }]) => alive && setStreak(playStreak(summaries, Date.now())))
+      .catch(() => alive && setStreak(null));
+    return () => {
+      alive = false;
+    };
+  }, [tick]);
+  return streak;
+}
+
+/* ----------------------------------------------------------------- analysis */
+
 async function compute(): Promise<Analysis> {
   const now = Date.now();
-  const [{ refreshDrill }, { detectInsights, INSIGHT_WINDOW_DAYS }, { allRatings }] = await Promise.all([
-    import('../../analytics/drillEval'),
-    import('../../analytics/insights'),
-    import('../../analytics/ratings'),
-  ]);
-  const [summaries, progress, drills, tiers] = await Promise.all([listSummaries(), loadProgress(), listDrills(), getTierHistory()]);
+  const A = await import('../../analytics/index');
+  const { INSIGHT_WINDOW_DAYS } = await import('../../analytics/insights');
+  const [summaries, progress, drills, tiers, snoozed] = await Promise.all([loadSummaries(), loadProgress(), listDrills(), getTierHistory(), getInsightSnooze()]);
 
   // Insights read the newest plays only. Drills load their own data below, outside this cap.
   const windowStart = now - INSIGHT_WINDOW_DAYS * DAY;
   const wanted = summaries.filter((s) => s.startedAt >= windowStart && s.hasDetail).slice(0, MAX_DETAIL_PLAYS);
   const windowPlays: PlayData[] = await loadPlayData(wanted);
-  const insights = detectInsights(windowPlays, now);
+  const insights = A.detectInsights(windowPlays, now, { snoozed });
 
   const loaded = new Map(windowPlays.map((p) => [p.summary.id, p]));
   const evaluated: Analysis['drills'] = [];
@@ -70,11 +128,44 @@ async function compute(): Promise<Analysis> {
     const missing = chosen.filter((s) => s.hasDetail && !loaded.has(s.id));
     for (const p of await loadPlayData(missing)) loaded.set(p.summary.id, p);
     const after = chosen.map((s) => loaded.get(s.id) ?? { summary: s, records: [] });
-    const r = refreshDrill(drill, [...drillPlays, ...after], now, complete);
+    const r = A.refreshDrill(drill, [...drillPlays, ...after], now, complete);
     if (r.changed) await saveDrill(r.drill).catch(() => undefined);
     evaluated.push({ drill: r.drill, eval: r.eval });
   }
-  return { now, summaries, progress, ratings: allRatings(summaries, now), insights, windowPlays, drills: evaluated, tiers };
+  await recordDrillBetter(evaluated.map((e) => e.eval), now);
+
+  const ratings = A.allRatings(summaries, now);
+  const radar = A.radarData(ratings);
+  const suggestedLevel = A.suggestedDynamicLevel(summaries, ratings, now);
+
+  // The plan is built once a day and kept. A failure here leaves the rest of the page working.
+  let plan: Analysis['plan'] = null;
+  try {
+    const built = await ensurePlan(A, { now, insights, ratings, summaries, drills: evaluated.map((e) => e.drill), levels: levelsFromProgress(progress), dynamicLevel: suggestedLevel });
+    plan = { plan: built, ...planStatus(built, A.planStepsDone(built, summaries)) };
+  } catch {
+    plan = null;
+  }
+
+  return {
+    now,
+    summaries,
+    progress,
+    ratings,
+    insights,
+    snoozed,
+    windowPlays,
+    drills: evaluated,
+    tiers,
+    streak: A.playStreak(summaries, now),
+    dailyStreak: A.dailyStreak(summaries, now),
+    week: A.weeklyGoal(summaries, getSettings().goals.weeklyMinutes, now),
+    changes: A.weeklyChanges(summaries, now),
+    radar,
+    radarMax: A.radarMax(radar),
+    suggestedLevel,
+    plan,
+  };
 }
 
 export function loadAnalysis(): Promise<Analysis> {
@@ -96,15 +187,7 @@ export interface AnalysisState {
 export function useAnalysis(): AnalysisState {
   const [data, setData] = useState<Analysis | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [tick, setTick] = useState(0);
-
-  useEffect(() => {
-    const bump = () => setTick((t) => t + 1);
-    listeners.add(bump);
-    return () => {
-      listeners.delete(bump);
-    };
-  }, []);
+  const tick = useInvalidation();
 
   useEffect(() => {
     let alive = true;

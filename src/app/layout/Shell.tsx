@@ -43,7 +43,8 @@ export function Shell() {
                 key={n.to}
                 to={n.to}
                 end={n.end}
-                className={({ isActive }) => `${BAR} ${isActive ? 'border-accent text-ink' : 'border-transparent text-ink-2 hover:text-ink'}`}
+                // The wordmark already links home, so the Home tab gives way on a phone to make room for the others.
+                className={({ isActive }) => `${BAR} ${n.to === '/' ? 'max-sm:hidden' : ''} ${isActive ? 'border-accent text-ink' : 'border-transparent text-ink-2 hover:text-ink'}`}
               >
                 {n.label}
               </NavLink>

@@ -3,7 +3,8 @@
 import type { NavigateFunction } from 'react-router';
 import type { Insight } from '../../analytics/insights';
 import { saveDrill } from '../../data/drills';
-import type { Drill, PlayData } from '../../data/schema';
+import { getMilestones, setMilestones } from '../../data/meta';
+import type { Drill, DrillEval, PlayData } from '../../data/schema';
 import type { ModuleId } from '../../shared/types';
 import { invalidateAnalysis } from './analysis';
 import { randomSeed } from './launch';
@@ -32,4 +33,20 @@ export async function trainThis(
   }
   const prefill = drillLaunch(insight.recommendation, levels, drill?.id ?? null, randomSeed());
   navigate(`/train/${insight.recommendation.modeId}`, { state: { prefill } });
+}
+
+/**
+ * Writes the "drill-better" milestone the first time any drill measures better. It does nothing when the
+ * milestone is already stored, and a failed write is tried again on the next analysis.
+ */
+export async function recordDrillBetter(evals: readonly DrillEval[], now = Date.now()): Promise<void> {
+  if (!evals.some((e) => e.outcome === 'better')) return;
+  try {
+    const history = await getMilestones();
+    if (history['drill-better']) return;
+    const { recordMilestones } = await import('../../analytics/milestones');
+    await setMilestones(recordMilestones(history, ['drill-better'], now, null));
+  } catch {
+    // Storage problems are shown elsewhere.
+  }
 }

@@ -1,82 +1,136 @@
 import { Link } from 'react-router';
+import { gradeFor } from '../../shared/catalog';
+import type { PlaySummary } from '../../data/schema';
 import { AnalysisError } from '../components/AnalysisError';
+import { DailyCard } from '../components/DailyCard';
 import { InsightCard } from '../components/InsightCard';
-import { Ratings } from '../components/Ratings';
-import { Card, LinkButton, PageHeader, SectionTitle, Stat } from '../components/ui';
+import { PlanCard } from '../components/PlanCard';
+import { Radar } from '../components/Radar';
+import { StreakCard } from '../components/StreakCard';
+import { WeeklyChanges } from '../components/WeeklyChanges';
+import { Badge, GradeBadge, LinkButton, Notice, PageHeader, Panel, SectionTitle } from '../components/ui';
 import { INTRO } from '../copy';
-import { ago, int, pct, playTitle } from '../format';
+import { ago, pct, playTitle } from '../format';
 import { useAnalysis } from '../state/analysis';
+import { useSettings } from '../state/store';
+
+function PlayRow({ s }: { s: PlaySummary }) {
+  const grade = gradeFor(s.accuracy, s.counts.miss, s.status);
+  return (
+    <li>
+      <Link to={`/results/${s.id}`} className="flex items-center gap-3 rounded-md py-2.5 transition hover:bg-surface-2 sm:-mx-2 sm:px-2">
+        <span className="w-24 shrink-0">
+          {grade ? <GradeBadge grade={grade} size="chip" /> : <Badge tone="warn">{s.status === 'failed' ? 'Failed' : 'Quit'}</Badge>}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate">{playTitle(s)}</span>
+          <span className="block text-sm text-ink-3">{ago(s.endedAt)}</span>
+        </span>
+        <span className="shrink-0 font-display tabular-nums">{pct(s.accuracy)}</span>
+      </Link>
+    </li>
+  );
+}
+
+function Loading() {
+  return (
+    <div role="status" aria-busy="true" className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="fw-skeleton h-72" />
+        <div className="fw-skeleton h-72" />
+        <div className="fw-skeleton h-72" />
+      </div>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="fw-skeleton h-72" />
+        <div className="fw-skeleton h-72" />
+        <div className="fw-skeleton h-72" />
+      </div>
+      <span className="sr-only">Loading.</span>
+    </div>
+  );
+}
 
 export function Home() {
   const { data, error, reload } = useAnalysis();
-  const last = data?.summaries[0];
+  const [settings] = useSettings();
   const top = data?.insights[0];
 
   return (
     <>
-      <PageHeader title="Flickwise" intro={INTRO.home} />
-      <div className="mb-8 flex flex-wrap gap-3">
-        <LinkButton to="/play" variant="primary" size="lg">
-          Play
-        </LinkButton>
-        <LinkButton to="/train" size="lg">
-          Train
-        </LinkButton>
-      </div>
+      <PageHeader
+        title="Flickwise"
+        intro={INTRO.home}
+        actions={
+          <>
+            <LinkButton to="/play" variant="primary">Play</LinkButton>
+            <LinkButton to="/train">Train</LinkButton>
+          </>
+        }
+      />
 
-      {error && <AnalysisError message={error} onRetry={reload} />}
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-6">
-          <section>
-            <SectionTitle>Top insight</SectionTitle>
-            {top ? (
-              <InsightCard insight={top} />
-            ) : (
-              <Card>
-                <p className="text-ink-2">
-                  {data && data.summaries.length > 0
-                    ? 'Insights need at least 3 plays in the last 30 days and enough clicks to see a pattern. Keep playing and the first one will show up here.'
-                    : 'Play a few maps and Flickwise will point out where you lose accuracy and suggest a module for it.'}
-                </p>
-              </Card>
-            )}
-          </section>
-
-          <section>
-            <SectionTitle>Last play</SectionTitle>
-            {last ? (
-              <Card>
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <div className="font-medium">{playTitle(last)}</div>
-                    <div className="text-sm text-ink-2">{ago(last.endedAt)}</div>
-                  </div>
-                  <div className="flex gap-8">
-                    {last.modeId === 'dynamic' && <Stat label="Score" value={int(last.score)} />}
-                    <Stat label="Accuracy" value={pct(last.accuracy)} />
-                    <Stat label="Combo" value={int(last.maxCombo)} />
-                  </div>
-                </div>
-                <div className="mt-3">
-                  <Link to={`/results/${last.id}`} className="text-sm text-accent hover:underline">
-                    See the results
-                  </Link>
-                </div>
-              </Card>
-            ) : (
-              <Card>
-                <p className="text-ink-2">No plays yet.</p>
-              </Card>
-            )}
-          </section>
+      {error && (
+        <div className="mb-6">
+          <AnalysisError message={error} onRetry={reload} />
         </div>
+      )}
 
-        <section>
-          <SectionTitle aside={<Link to="/stats" className="text-accent hover:underline">All stats</Link>}>Ratings</SectionTitle>
-          {data ? <Ratings ratings={data.ratings} compact /> : <p className="text-ink-2">Loading.</p>}
-        </section>
-      </div>
+      {!data ? (
+        !error && <Loading />
+      ) : (
+        <div className="space-y-6">
+          {data.summaries.length === 0 && (
+            <Panel marks className="flex flex-wrap items-center justify-between gap-4">
+              <div className="min-w-0">
+                <h2 className="text-xl">Set up Flickwise</h2>
+                <p className="mt-1 text-ink-2">Choose your input, calibrate your timing and find your starting levels.</p>
+              </div>
+              <LinkButton to="/welcome" variant="primary">Set up Flickwise</LinkButton>
+            </Panel>
+          )}
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            {data.plan ? <PlanCard plan={data.plan.plan} status={data.plan} /> : <Notice tone="warn">Today's plan could not be loaded.</Notice>}
+            <DailyCard data={data} />
+            <StreakCard streak={data.streak} week={data.week} goalMinutes={settings.goals.weeklyMinutes} />
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            <Panel>
+              <SectionTitle aside={<Link to="/stats" className="text-accent hover:underline">Ratings</Link>}>Your skills</SectionTitle>
+              <Radar axes={data.radar} max={data.radarMax} />
+            </Panel>
+
+            <div className="space-y-6">
+              {top ? (
+                <InsightCard insight={top} />
+              ) : (
+                <Panel>
+                  <SectionTitle>Top insight</SectionTitle>
+                  <p className="text-ink-2">
+                    {data.summaries.length > 0
+                      ? 'Insights need at least 3 plays in the last 30 days and enough clicks to see a pattern. Keep playing and the first one will show up here.'
+                      : 'Play a few maps and Flickwise will point out where you lose accuracy and suggest a module for it.'}
+                  </p>
+                </Panel>
+              )}
+              <WeeklyChanges changes={data.changes} link />
+            </div>
+
+            <Panel>
+              <SectionTitle aside={<Link to="/stats/history" className="text-accent hover:underline">History</Link>}>Recent plays</SectionTitle>
+              {data.summaries.length === 0 ? (
+                <p className="text-ink-2">No plays yet.</p>
+              ) : (
+                <ul className="divide-y divide-line">
+                  {data.summaries.slice(0, 5).map((s) => (
+                    <PlayRow key={s.id} s={s} />
+                  ))}
+                </ul>
+              )}
+            </Panel>
+          </div>
+        </div>
+      )}
     </>
   );
 }

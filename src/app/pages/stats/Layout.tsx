@@ -9,6 +9,7 @@ const TABS = [
   { to: '/stats', label: 'Overview', end: true },
   { to: '/stats/trends', label: 'Trends', end: false },
   { to: '/stats/patterns', label: 'Patterns', end: false },
+  { to: '/stats/aim', label: 'Aim', end: false },
   { to: '/stats/timing', label: 'Timing', end: false },
   { to: '/stats/bests', label: 'Bests', end: false },
   { to: '/stats/history', label: 'History', end: false },

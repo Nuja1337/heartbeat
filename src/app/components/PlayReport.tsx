@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { JUDGMENTS, MODES } from '../../shared/catalog';
 import type { Judgment } from '../../shared/types';
 import type { PlaySummary } from '../../data/schema';
@@ -13,8 +14,11 @@ import { Card, SectionTitle, Stat, StatBig } from './ui';
 
 const ORDER: Judgment[] = ['crisp', 'solid', 'rough', 'miss'];
 
-/** The numbers and small charts shared by the results screen and the play detail page. */
-export function PlayReport({ summary: s, records }: { summary: PlaySummary; records: HitRecord[] | null }) {
+/**
+ * The numbers and small charts shared by the results screen and the play detail page.
+ * `extra` goes between the headline numbers and the rest, for panels only one of the two pages shows.
+ */
+export function PlayReport({ summary: s, records, extra }: { summary: PlaySummary; records: HitRecord[] | null; extra?: ReactNode }) {
   const isDynamic = s.modeId === 'dynamic';
   const levelEntries = Object.entries(s.finalLevels) as [string, number][];
   const total = Math.max(1, s.objectCount);
@@ -30,7 +34,7 @@ export function PlayReport({ summary: s, records }: { summary: PlaySummary; reco
           ) : levelEntries.length > 0 ? (
             levelEntries.map(([id, v]) => <StatBig key={id} label={`${MODES[id as keyof typeof MODES].label} level`} value={<Count value={v} format={level} />} />)
           ) : null}
-          <Stat label="Accuracy" value={pct(s.accuracy)} />
+          <Stat label="Accuracy" value={<Count value={s.accuracy * 100} format={(v) => `${v.toFixed(1)}%`} />} />
           <Stat label="Max combo" value={int(s.maxCombo)} />
           <Stat label="Time played" value={duration(s.playedMs)} />
           <Stat label="Objects" value={int(s.objectCount)} />
@@ -58,6 +62,8 @@ export function PlayReport({ summary: s, records }: { summary: PlaySummary; reco
           </ul>
         </div>
       </Card>
+
+      {extra}
 
       {s.levels.length > 0 && (
         <Card>

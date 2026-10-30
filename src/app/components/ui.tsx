@@ -172,12 +172,13 @@ const GRADE_COLOR: Record<GradeId, string> = {
   scattered: 'var(--color-danger)',
 };
 
-/** The grade name in the display font, inside reticle corners. */
-export function GradeBadge({ grade, large = false }: { grade: GradeId; large?: boolean }) {
+/** The grade name in the display font, inside reticle corners. `chip` is the small form for lists. */
+export function GradeBadge({ grade, size = 'md' }: { grade: GradeId; size?: 'chip' | 'md' | 'lg' }) {
   const label = GRADES.find((g) => g.id === grade)?.label ?? grade;
+  const box = size === 'lg' ? 'h-12 px-4 text-2xl' : size === 'chip' ? 'h-6 px-2.5 text-sm' : 'h-8 px-4 text-lg';
   return (
     <span
-      className={`fw-marks fw-marks-sm relative inline-flex items-center px-4 font-display font-semibold ${large ? 'h-12 text-2xl' : 'h-8 text-lg'}`}
+      className={`fw-marks fw-marks-sm relative inline-flex items-center font-display font-semibold ${box}`}
       style={{ color: GRADE_COLOR[grade], '--mark': 'currentColor' } as CSSProperties}
     >
       {label}

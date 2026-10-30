@@ -4,6 +4,7 @@ export const NAV = [
   { to: '/', label: 'Home', end: true },
   { to: '/play', label: 'Play', end: false },
   { to: '/train', label: 'Train', end: false },
+  { to: '/daily', label: 'Daily', end: false },
   { to: '/stats', label: 'Stats', end: false },
 ] as const;
 
@@ -11,6 +12,9 @@ export const INTRO = {
   home: 'Flickwise is an aim trainer that shows where you miss and what to practice.',
   play: 'Choose how hard the map is. Each map is generated from a seed.',
   train: 'Short modules that raise or lower their difficulty after every set.',
+  daily: 'One map a day, the same for the whole day, with your history.',
+  replay: 'Watch a play again, slow it down and jump to the misses.',
+  aim: 'How well your clicks keep up with the distance and the time you have.',
   settings: 'Input, sound, display and your saved data.',
   stats: 'Ratings, trends and the patterns in how you aim and time your clicks.',
   overview: 'Your ratings and the next thing to practice.',

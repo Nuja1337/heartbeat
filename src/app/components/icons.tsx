@@ -79,3 +79,10 @@ export function Reticle({ size = 20 }: { size?: number }) {
     </svg>
   );
 }
+
+/** A flame, for the streak chip. */
+export const IconFlame = (p: P) => (
+  <Icon {...p}>
+    <path d="M10 2.5c.4 2.6 3.8 4.2 3.8 8a3.8 3.8 0 0 1-7.6 0c0-1.5.6-2.5 1.4-3.3.2 1 .7 1.6 1.2 1.9C8.4 7 8.6 4.5 10 2.5Z" />
+  </Icon>
+);

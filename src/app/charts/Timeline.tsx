@@ -7,8 +7,11 @@ const W = 720;
 const H = 240;
 const M = { l: 48, r: 12, t: 12, b: 26 };
 
-/** Timing error of every tap through the play. Misses with no press are red ticks along the bottom. */
-export function Timeline({ records }: { records: readonly HitRecord[] }) {
+/**
+ * Timing error of every tap through the play. Misses with no press are red ticks along the bottom.
+ * With `onOpen`, a tap can be selected to open the replay at that object's time.
+ */
+export function Timeline({ records, onOpen }: { records: readonly HitRecord[]; onOpen?(time: number): void }) {
   const [active, setActive] = useState<number | null>(null);
   const taps = records.filter((r) => r.kind !== 'spinner');
   if (taps.length === 0) return <p className="text-ink-2">No taps in this play.</p>;
@@ -54,7 +57,17 @@ export function Timeline({ records }: { records: readonly HitRecord[] }) {
             height={H - M.t - M.b}
             fill="transparent"
             tabIndex={0}
-            aria-label={`Object ${r.index + 1}, ${JUDGMENTS[r.judgment].label}${r.timingError === null ? ', no press' : `, ${Math.round(r.timingError)} milliseconds`}`}
+            role={onOpen ? 'link' : undefined}
+            style={onOpen ? { cursor: 'pointer' } : undefined}
+            aria-label={`Object ${r.index + 1}, ${JUDGMENTS[r.judgment].label}${r.timingError === null ? ', no press' : `, ${Math.round(r.timingError)} milliseconds`}${onOpen ? ', watch the replay' : ''}`}
+            onClick={onOpen ? () => onOpen(r.time) : undefined}
+            onKeyDown={
+              onOpen
+                ? (e) => {
+                    if (e.key === 'Enter') onOpen(r.time);
+                  }
+                : undefined
+            }
             onMouseEnter={() => setActive(i)}
             onMouseLeave={() => setActive(null)}
             onFocus={() => setActive(i)}
@@ -69,7 +82,7 @@ export function Timeline({ records }: { records: readonly HitRecord[] }) {
             {a.timingError === null ? ', no press' : `, ${a.timingError > 0 ? '+' : ''}${Math.round(a.timingError)} ms`}
           </>
         ) : (
-          'Above zero is late and below zero is early.'
+          `Above zero is late and below zero is early.${onOpen ? ' Select a tap to watch it in the replay.' : ''}`
         )}
       </figcaption>
     </figure>
