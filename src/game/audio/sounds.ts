@@ -5,14 +5,19 @@ export interface Bus {
   hits: GainNode;
   effects: GainNode;
   ambient: GainNode;
+  /** The metronome's own gain (metronomeVolume squared). */
+  metronome: GainNode;
   noise: AudioBuffer;
   /** Live voices. Capped so a long stream cannot pile up nodes. */
   live: { n: number; max: number };
 }
 
-type Out = 'hits' | 'effects' | 'ambient';
+export type Out = 'hits' | 'effects' | 'ambient' | 'metronome';
 
-/** An oscillator with an exponential glide, a 1 ms attack and an exponential decay. */
+/**
+ * An oscillator with an exponential glide, a 1 ms attack and an exponential decay. A `lowpass` above 0 (Hz) puts a
+ * lowpass filter between the oscillator and its gain.
+ */
 export function blip(
   bus: Bus,
   out: Out,
@@ -22,6 +27,7 @@ export function blip(
   dur: number,
   gain: number,
   delay = 0,
+  lowpass = 0,
 ): void {
   if (bus.live.n >= bus.live.max) return;
   const ctx = bus.ctx;
@@ -34,12 +40,22 @@ export function blip(
   g.gain.setValueAtTime(0.0001, t);
   g.gain.linearRampToValueAtTime(gain, t + 0.001);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.connect(g);
+  let f: BiquadFilterNode | null = null;
+  if (lowpass > 0) {
+    f = ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.value = lowpass;
+    o.connect(f);
+    f.connect(g);
+  } else {
+    o.connect(g);
+  }
   g.connect(bus[out]);
   bus.live.n++;
   o.onended = () => {
     bus.live.n--;
     o.disconnect();
+    f?.disconnect();
     g.disconnect();
   };
   o.start(t);
@@ -98,7 +114,7 @@ export const sounds = {
     blip(bus, 'hits', 'sine', 190, 80, 0.14, 0.4);
     noise(bus, 'hits', 'lowpass', 500, 0.7, 0.07, 0.2);
   },
-  comboBreak(bus: Bus): void {
+  comboBreak(bus: Bus, wave: OscillatorType = 'triangle'): void {
     if (bus.live.n >= bus.live.max - 1) return;
     const ctx = bus.ctx;
     const t = ctx.currentTime;
@@ -114,7 +130,7 @@ export const sounds = {
     g.connect(bus.effects);
     for (const hz of [520, 523]) {
       const o = ctx.createOscillator();
-      o.type = 'triangle';
+      o.type = wave;
       o.frequency.setValueAtTime(hz, t);
       o.frequency.exponentialRampToValueAtTime(260, t + 0.28);
       o.connect(f);

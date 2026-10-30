@@ -7,13 +7,14 @@ import type { GameSession, ObjState } from '../engine/session';
 import { tangentAt } from '../map/path';
 import type { FlatPath } from '../map/path';
 import { ballPos } from '../rules/slider';
-import { approachShape, APPROACH, followAlpha, followReveal, followSegment, followWanted, reversePulse } from './approach';
+import { followAlpha, followReveal, followSegment, followWanted, reversePulse } from './approach';
 import type { ApproachShape, FollowSegment } from './approach';
 import { drawCursor } from './cursor';
 import type { Effects } from './effects';
 import type { FrameStats } from './frameStats';
 import { Hud } from './hud';
 import type { HudData } from './hud';
+import { drawApproachIndicator } from './indicator';
 import { buildFieldBackground, defaultCanvasFactory, FIELD_PAD, SpriteCache } from './objects';
 import type { CanvasFactory } from './objects';
 import { groupOf, resolveSkin } from './skin';
@@ -373,55 +374,7 @@ export class Renderer {
 
   /** One approach indicator in the style of the skin. */
   private drawApproach(x: number, y: number, r: number, group: number, u: number, isNext: boolean): void {
-    const ctx = this.ctx;
-    const skin = this.skin;
-    const g4 = groupOf(group);
-    const sh = approachShape(skin.approach, u, r, this.shape);
-    const emphasis = isNext ? 1 : 0.8;
-    if (skin.approach === 'fill') {
-      if (sh.size < 0.5) return;
-      ctx.globalAlpha = emphasis;
-      ctx.fillStyle = skin.groupFill[g4] as string;
-      ctx.beginPath();
-      ctx.arc(x, y, sh.size, 0, TAU);
-      ctx.fill();
-      ctx.globalAlpha = 0.55 * emphasis;
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = skin.groups[g4] as string;
-      ctx.stroke();
-      return;
-    }
-    ctx.globalAlpha = sh.alpha * emphasis;
-    ctx.lineWidth = isNext ? 3 : 2.5;
-    ctx.strokeStyle = skin.groups[g4] as string;
-    ctx.beginPath();
-    if (skin.approach === 'brackets') {
-      // Four corner brackets of a square that turns as it closes.
-      const h = sh.size;
-      const arm = APPROACH.bracketArm * r;
-      const c = Math.cos(sh.rot);
-      const sn = Math.sin(sh.rot);
-      for (let q = 0; q < 4; q++) {
-        const sx = q === 0 || q === 3 ? -1 : 1;
-        const sy = q < 2 ? -1 : 1;
-        // The corner, and the two ends of its arms, in the square's own axes, then turned.
-        const px = sx * h;
-        const py = sy * h;
-        const ax = px - sx * arm;
-        const by = py - sy * arm;
-        ctx.moveTo(x + ax * c - py * sn, y + ax * sn + py * c);
-        ctx.lineTo(x + px * c - py * sn, y + px * sn + py * c);
-        ctx.lineTo(x + px * c - by * sn, y + px * sn + by * c);
-      }
-      ctx.lineCap = 'butt';
-      ctx.lineJoin = 'miter';
-      ctx.stroke();
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      return;
-    }
-    ctx.arc(x, y, sh.size, 0, TAU);
-    ctx.stroke();
+    drawApproachIndicator(this.ctx, this.skin, this.shape, x, y, r, group, u, isNext);
   }
 
   private drawSliderBody(st: ObjState, o: SliderObject, tv: number, fade: boolean, ppu: number, pulse: number): void {

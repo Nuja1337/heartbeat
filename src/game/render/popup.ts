@@ -16,6 +16,17 @@ export const MISS_X = { half: 0.5, stroke: 3, rotFrom: (20 * Math.PI) / 180 } as
 /** The label sits this many radii above the centre of its target. The old 0.2r put it on top of the miss mark. */
 export const LABEL_DY = 1.35;
 
+/** Space kept between the label and the top edge of the field, in playfield units. */
+export const FIELD_MARGIN = 2;
+
+/**
+ * True when the label of a pop-up on a target at height `targetY` would reach above the field, into the HUD band, so
+ * it goes below the target instead. The check allows for the rise of the pop-up, so it does not change mid-life.
+ */
+export function labelBelow(targetY: number, r: number): boolean {
+  return targetY - LABEL_DY * r - FX.popupRise - POP_BOX.labelH / 2 < FIELD_MARGIN;
+}
+
 export interface Box {
   /** Centre, relative to the target centre. */
   cx: number;
@@ -38,10 +49,12 @@ export function newLayout(): PopupLayout {
 /**
  * The boxes of a pop-up for a target of radius `r`, at the start of its life (no rise yet), relative to the target
  * centre. The label is at -1.35r and the early or late text is under it. The miss mark is a square around the centre.
+ * With `targetY` (the height of the target in the field) a label that would leave the field goes to +1.35r instead.
  */
-export function popupLayout(r: number, labelW: number, subW: number, out: PopupLayout = newLayout()): PopupLayout {
+export function popupLayout(r: number, labelW: number, subW: number, out: PopupLayout = newLayout(), targetY?: number): PopupLayout {
+  const below = targetY !== undefined && labelBelow(targetY, r);
   out.label.cx = 0;
-  out.label.cy = -LABEL_DY * r;
+  out.label.cy = (below ? LABEL_DY : -LABEL_DY) * r;
   out.label.w = labelW;
   out.label.h = POP_BOX.labelH;
   out.sub.cx = 0;

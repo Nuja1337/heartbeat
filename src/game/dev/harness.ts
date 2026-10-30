@@ -13,12 +13,13 @@ import {
   MODULE_IDS,
   PALETTES,
   RECORD_VERSION,
+  SOUND_SETS,
   modConflicts,
 } from '../../shared/catalog';
 import { decodeReplay, encodeReplay } from '../../shared/replay';
-import type { ApproachStyle, CursorStyle, DifficultySettings, GameHandle, LaunchRequest, ModId, ModeId, ModuleId, PaletteId, PlaybackHandle, PlaybackSource, PlayResult, Settings } from '../../shared/types';
+import type { ApproachStyle, CalibrationHandle, CalibrationKind, CursorStyle, DifficultySettings, GameHandle, LaunchRequest, MetronomeMode, ModId, ModeId, ModuleId, PaletteId, PlaybackHandle, PlaybackSource, PlayResult, Settings, SoundSetId, TestSound } from '../../shared/types';
 import '@fontsource-variable/space-grotesk';
-import { ENGINE_VERSION, GENERATOR_VERSION, createGame, createPlayback, playTestSound, previewLaunch } from '../index';
+import { ENGINE_VERSION, GENERATOR_VERSION, createCalibration, createGame, createPlayback, playTestSound, previewLaunch } from '../index';
 import { autoplayReplay } from '../replay/autoplayReplay';
 import { NOISY_PLAYER } from '../sim/autoplay';
 
@@ -82,6 +83,7 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Attrs = {}, ..
 const form = loadForm();
 let handle: GameHandle | null = null;
 let playback: PlaybackHandle | null = null;
+let calibration: CalibrationHandle | null = null;
 let lastResult: PlayResult | null = null;
 let demoMisses = false;
 
@@ -223,6 +225,22 @@ function build(): void {
   panel.append(row('Effects', number(s.audio.effects, 0, 1, 0.05, (v) => (s.audio.effects = v))));
   panel.append(row('Ambient', number(s.audio.ambient, 0, 1, 0.05, (v) => (s.audio.ambient = v))));
   panel.append(row('Muted', check(s.audio.muted, (v) => (s.audio.muted = v))));
+  panel.append(row('Sound set', select(Object.entries(SOUND_SETS).map(([id, x]) => [id, x.label] as [string, string]), s.audio.soundSet, (v) => (s.audio.soundSet = v as SoundSetId))));
+  const tests: [TestSound, string][] = [['hit', 'Hit'], ['miss', 'Miss'], ['combo', 'Combo'], ['tick', 'Tick'], ['metronome', 'Metronome'], ['countdown', 'Countdown']];
+  panel.append(
+    el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;margin:4px 0' }, ...tests.map(([id, label]) => el('button', { textContent: label, click: () => playTestSound(form.settings, id) }))),
+  );
+  panel.append(row('Metronome', select([['off', 'Off'], ['beat', 'Every beat'], ['bar', 'Every bar']], s.audio.metronome, (v) => (s.audio.metronome = v as MetronomeMode))));
+  panel.append(row('Metronome volume', number(s.audio.metronomeVolume, 0, 1, 0.05, (v) => (s.audio.metronomeVolume = v))));
+  panel.append(row('Audio offset (ms)', number(s.audio.offsetMs, -100, 300, 1, (v) => (s.audio.offsetMs = v))));
+  panel.append(
+    el(
+      'div',
+      { style: 'display:flex;gap:6px;flex-wrap:wrap;margin:4px 0' },
+      el('button', { textContent: 'Visual calibration', click: () => calibrate('visual') }),
+      el('button', { textContent: 'Audio calibration', click: () => calibrate('audio') }),
+    ),
+  );
 
   panel.append(el('h4', { style: 'margin:10px 0 2px' }, 'Display'));
   const d = s.display;
@@ -252,9 +270,6 @@ function build(): void {
       el('button', { textContent: 'Watch last play', click: watch }),
       el('button', { textContent: 'Autoplay demo', click: demo }),
       el('label', {}, check(demoMisses, (v) => (demoMisses = v)), ' demo player misses'),
-      el('button', { textContent: 'Hit sound', click: () => playTestSound(form.settings, 'hit') }),
-      el('button', { textContent: 'Miss sound', click: () => playTestSound(form.settings, 'miss') }),
-      el('button', { textContent: 'Combo sound', click: () => playTestSound(form.settings, 'combo') }),
     ),
   );
   panel.append(log, json);
@@ -302,8 +317,48 @@ function play(): void {
 }
 
 panelButton.addEventListener('click', () => {
+  if (calibration) {
+    stopCalibration();
+    return;
+  }
   handle?.quit();
 });
+
+/** Run a calibration screen on the canvas. A finished run puts its median into the matching offset setting. */
+function calibrate(kind: CalibrationKind): void {
+  saveForm(form);
+  playback?.destroy();
+  playback = null;
+  handle?.destroy();
+  handle = null;
+  calibration?.destroy();
+  watchBar.style.display = 'none';
+  showPanel(false);
+  log.textContent = '';
+  calibration = createCalibration(canvas, kind, structuredClone(form.settings), {
+    onTap: (taps, needed) => {
+      log.textContent = `${kind} calibration, ${taps} of ${needed} taps`;
+    },
+    onDone: (r) => {
+      const offset = Math.round(r.offsetMs);
+      if (r.kind === 'visual') form.settings.display.visualOffsetMs = Math.max(-50, Math.min(150, offset));
+      else form.settings.audio.offsetMs = Math.max(-100, Math.min(300, offset));
+      log.textContent = `${kind} calibration done. Median ${r.offsetMs.toFixed(1)} ms, spread ${r.sdMs.toFixed(1)} ms, ${r.taps} taps. Applied ${offset} ms.`;
+    },
+    onError: (message) => {
+      log.textContent = message;
+      stopCalibration();
+    },
+  });
+  (window as unknown as { __fwCal?: CalibrationHandle }).__fwCal = calibration;
+}
+
+function stopCalibration(): void {
+  calibration?.destroy();
+  calibration = null;
+  showPanel(true);
+  build();
+}
 
 /** Play the last play's replay back. The replay goes through the codec first, like a saved one does. */
 function watch(): void {

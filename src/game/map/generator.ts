@@ -273,5 +273,7 @@ export function generateDynamic(launch: LaunchRequest, rate = 1): GeneratedMap {
     health: healthRulesFor(p.density, []),
     objects,
     sections,
+    // Beat 0 of the grid, before the rate. applyMods divides it.
+    beatOffsetMs: t0,
   };
 }

@@ -131,6 +131,32 @@ describe('replay determinism', () => {
     expect(marked).toBeGreaterThan(0);
   });
 
+  it('reproduces placement plays, and Bullseye plays once the mode allows the mod', () => {
+    const placement = (seed: number): LaunchRequest => ({ ...launchFor(DEFAULT_DIFFICULTY, seed, 240, [], 'placement'), options: {}, levels: { jumps: 4 } });
+    const cases: Case[] = [
+      { label: 'placement a', launch: placement(81) },
+      { label: 'placement b', launch: placement(82) },
+      // modsForMode drops Bullseye until the main session adds it to ALL_MODS.
+      ...(MODES.dynamic.allowedMods.includes('bullseye') ? [{ label: 'dynamic bullseye', launch: dynamic(4, 83, ['bullseye']) }] : []),
+    ];
+    for (const c of cases) {
+      for (const stepMs of [1, 7]) {
+        const label = `${c.label} (step ${stepMs} ms)`;
+        const { result } = runHeadless({ launch: c.launch, model: NOISY_PLAYER, stepMs });
+        const decoded = roundTrip(result.replay as ReplayData);
+        if (c.launch.modeId === 'placement') {
+          expect(result.levels, label).toHaveLength(10);
+          expect(result.status, label).toBe('completed');
+        } else {
+          expect(result.records.some((r) => r.judgment === 'rough'), label).toBe(true);
+        }
+        expectSame(result, runExact(decoded), `${label} exact`);
+        expectSame(result, runWithAdvances(decoded, stepMs === 7 ? 1 : 7), `${label} other step`, false);
+        expect(runExact(decoded).levels, label).toEqual(result.levels);
+      }
+    }
+  });
+
   it('puts every logged time on the 1/64 ms grid and every position on the 1/16 grid', () => {
     for (const c of CASES.slice(0, 8)) {
       const replay = runHeadless({ launch: c.launch, model: NOISY_PLAYER, stepMs: 3 }).result.replay as ReplayData;

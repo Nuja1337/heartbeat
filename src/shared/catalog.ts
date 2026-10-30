@@ -72,8 +72,8 @@ export const MOD_SCALE = {
   wide: { radius: 1.25, windows: 1.3 },
 } as const;
 
-// 'bullseye' joins ALL_MODS when the engine judges it.
-const ALL_MODS: ModId[] = ['fade', 'spotlight', 'fast', 'slow', 'tight', 'wide', 'mirror', 'nofail', 'onelife', 'norings'];
+// Every mod is live. New mods are appended here once the engine supports them.
+const ALL_MODS: ModId[] = ['fade', 'spotlight', 'fast', 'slow', 'tight', 'wide', 'mirror', 'nofail', 'onelife', 'norings', 'bullseye'];
 const MODULE_MODS: ModId[] = ['fade', 'spotlight', 'mirror', 'norings'];
 
 export const MODS: Record<ModId, ModInfo> = {

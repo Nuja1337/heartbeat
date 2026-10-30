@@ -115,3 +115,26 @@ describe('mode helpers', () => {
     expect(modsForMode('dynamic', ['fast'])).toEqual(['fast']);
   });
 });
+
+describe('applyMods and the beat offset', () => {
+  const withOffset = () => ({ ...sample(), beatOffsetMs: 2000 });
+
+  it('divides beatOffsetMs by the rate, like the times it sits among', () => {
+    expect(applyMods(withOffset(), ['fast']).beatOffsetMs).toBeCloseTo(1600, 9);
+    expect(applyMods(withOffset(), ['slow']).beatOffsetMs).toBeCloseTo(2500, 9);
+    expect(applyMods(withOffset(), []).beatOffsetMs).toBe(2000);
+    expect(applyMods(withOffset(), ['mirror']).beatOffsetMs).toBe(2000);
+  });
+
+  it('leaves it absent when the map has none', () => {
+    expect('beatOffsetMs' in applyMods(sample(), ['fast'])).toBe(false);
+  });
+
+  it('keeps beat 0 on the first object of the grid through Fast and Slow', () => {
+    for (const mod of ['fast', 'slow'] as const) {
+      const m = applyMods(withOffset(), [mod]);
+      // The first object sat on beat 0 and still does.
+      expect(m.objects[0]!.time).toBeCloseTo(m.beatOffsetMs!, 9);
+    }
+  });
+});

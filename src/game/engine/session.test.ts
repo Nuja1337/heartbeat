@@ -431,3 +431,73 @@ describe('recording', () => {
     expect(plain.map.beatOffsetMs).toBeUndefined();
   });
 });
+
+describe('Bullseye judging', () => {
+  function bullseyeSession(objects: HitObject[], mods: ('bullseye' | 'mirror')[] = ['bullseye']) {
+    const map: PlayableMap = { ...makeMap(objects), mods, rate: 1 };
+    const s = new GameSession({ map, launch: launchFor() });
+    const events: FeedbackEvent[] = [];
+    s.on((e) => events.push(e));
+    return { s, events };
+  }
+
+  // Radius 50: the inner half is 25 units. The press is 30 ms late, which is Crisp.
+  it('keeps Crisp when the press is 0.49r from the centre', () => {
+    const { s, events } = bullseyeSession([makeCircle(0, 1000, 100, 100, 50)]);
+    run(s, 0, 999, 124.5, 100);
+    press(s, 1030, 124.5, 100);
+    expect(events.find((e) => e.type === 'hit')!.judgment).toBe('crisp');
+    expect(s.records[0]!.judgment).toBe('crisp');
+  });
+
+  it('turns Crisp into Rough when the press is 0.51r from the centre', () => {
+    const { s, events } = bullseyeSession([makeCircle(0, 1000, 100, 100, 50)]);
+    run(s, 0, 999, 125.5, 100);
+    press(s, 1030, 125.5, 100);
+    expect(events.find((e) => e.type === 'hit')!.judgment).toBe('rough');
+    expect(s.records[0]!.judgment).toBe('rough');
+    expect(s.records[0]!.headJudgment).toBe('rough');
+    expect(s.scoring.counts.rough).toBe(1);
+  });
+
+  it('turns Solid into Rough, and leaves Rough alone', () => {
+    const { s } = bullseyeSession([makeCircle(0, 1000, 100, 100), makeCircle(1, 2000, 100, 100)]);
+    run(s, 0, 999, 140, 100);
+    press(s, 1070, 140, 100);
+    run(s, 1071, 1999, 140, 100);
+    press(s, 1890, 140, 100, 'key2');
+    expect(s.records.map((r) => r.judgment)).toEqual(['rough', 'rough']);
+  });
+
+  it('does not change a miss', () => {
+    const { s } = bullseyeSession([makeCircle(0, 1000, 100, 100)]);
+    run(s, 0, 1300, 140, 100);
+    expect(s.records[0]!.judgment).toBe('miss');
+    expect(s.records[0]!.headJudgment).toBe('miss');
+  });
+
+  it('does nothing without the mod', () => {
+    const { s } = bullseyeSession([makeCircle(0, 1000, 100, 100, 50)], ['mirror']);
+    run(s, 0, 999, 125.5, 100);
+    press(s, 1030, 125.5, 100);
+    expect(s.records[0]!.judgment).toBe('crisp');
+  });
+
+  it('caps the head of a slider and carries it into the slider judgment', () => {
+    const slider = () => makeSlider(0, 1000, { x: 100, y: 100 }, [{ type: 'line', to: { x: 300, y: 100 } }], { spanMs: 500 });
+    const { s } = bullseyeSession([slider()]);
+    run(s, 0, 999, 130, 100);
+    press(s, 1030, 130, 100);
+    expect(s.objs[0]!.headJudgment).toBe('rough');
+    // Follow the ball to the end, so the slider closes with its head judgment.
+    for (let t = 1031; t <= 1700; t++) run(s, t, t, Math.min(300, 100 + (200 * (t - 1000)) / 500), 100);
+    expect(s.records[0]!.headJudgment).toBe('rough');
+    expect(s.records[0]!.judgment).toBe('rough');
+    const plain = sessionFor([slider()]);
+    run(plain.s, 0, 999, 130, 100);
+    press(plain.s, 1030, 130, 100);
+    for (let t = 1031; t <= 1700; t++) run(plain.s, t, t, Math.min(300, 100 + (200 * (t - 1000)) / 500), 100);
+    expect(plain.s.records[0]!.headJudgment).toBe('crisp');
+    expect(plain.s.records[0]!.judgment).toBe('crisp');
+  });
+});

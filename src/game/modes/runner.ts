@@ -1,6 +1,6 @@
 // Builds the map and set controller for a launch (PLAN section 8).
 
-import { DEFAULT_MODULE_LEVEL, MAP_FORMAT, MODES, MODULE_IDS, PLAYFIELD_CENTER } from '../../shared/catalog';
+import { DEFAULT_MODULE_LEVEL, MAP_FORMAT, MODES, MODULE_IDS, PLACEMENT, PLAYFIELD_CENTER } from '../../shared/catalog';
 import type {
   GeneratedMap,
   HitObject,
@@ -132,13 +132,18 @@ export class ModeRunner implements SetController {
   private indexCount = 0;
   private groupCount = 0;
   private lastSet = 0;
+  private readonly placement: boolean;
+  /** Sets in a placement play: every module, PLACEMENT.setsPerModule times. */
+  private readonly placementSets: number;
 
   constructor(
     private launch: LaunchRequest,
     private mods: ModId[],
   ) {
+    this.placement = launch.modeId === 'placement';
     this.modules = setModules(launch);
-    for (const m of this.modules) this.stairs.set(m, Staircase.startFor(launch.levels[m], DEFAULT_MODULE_LEVEL, maxLevelFor(m)));
+    this.placementSets = this.modules.length * PLACEMENT.setsPerModule;
+    for (const m of this.modules) this.stairs.set(m, startStaircase(launch, m));
     const first = this.build(0, 0);
     this.map = shell(launch, first.objects, [first.section], mods);
   }
@@ -153,7 +158,8 @@ export class ModeRunner implements SetController {
     this.playedLevel.set(set, level);
     this.lastSet = set;
     const approach = paramsAtLevel(module, level).approachMs;
-    const options = { ...MODES[module].defaultOptions, ...this.launch.options };
+    // Placement uses each module's defaults. The launch options belong to the mode, not to the modules.
+    const options = { ...MODES[module].defaultOptions, ...(this.placement ? {} : this.launch.options) };
     // The set is built first and mirrored after, so a direction the player picked is flipped in advance.
     if (this.mods.includes('mirror') && typeof options.directionFocus === 'number') {
       options.directionFocus = (4 - options.directionFocus + 8) % 8;
@@ -167,6 +173,7 @@ export class ModeRunner implements SetController {
       startTime: set === 0 ? leadIn(approach) : startTime + SET_REST_MS + approach,
       indexBase: this.indexCount,
       groupBase: this.groupCount,
+      size: this.placement ? PLACEMENT.setSize[module] : undefined,
     };
     const built = buildSet(spec);
     built.objects = applyModsToObjects(built.objects, this.mods);
@@ -183,7 +190,8 @@ export class ModeRunner implements SetController {
     const st = stair.update(success);
     this.steps.push({ set, module, level: played, success, objects: records.length });
     const info: SetEndInfo = { set, module, from: played, to: st.next, success, direction: st.direction };
-    if (tClose >= this.launch.lengthSec * 1000) return { objects: null, info };
+    // Placement ends after its last set. Every other adaptive mode ends at its length.
+    if (this.placement ? set + 1 >= this.placementSets : tClose >= this.launch.lengthSec * 1000) return { objects: null, info };
     const next = this.build(set + 1, tClose);
     if (next.objects.length === 0) return { objects: null, info };
     this.map.sections.push(next.section);
@@ -226,8 +234,17 @@ export function setupPlay(launch: LaunchRequest): PlaySetup {
   return { map: runner.map, controller: runner, progressMs: launch.lengthSec * 1000 };
 }
 
+/** A module's staircase at the start of a play. Placement starts at the saved level (or 3) and takes a full step. */
+function startStaircase(launch: LaunchRequest, module: ModuleId): Staircase {
+  if (launch.modeId !== 'placement') return Staircase.startFor(launch.levels[module], DEFAULT_MODULE_LEVEL, maxLevelFor(module));
+  const s = new Staircase(launch.levels[module] ?? PLACEMENT.startLevel, maxLevelFor(module));
+  s.step = PLACEMENT.firstStep;
+  return s;
+}
+
 /** The modules a launch cycles through, one per set. */
 function setModules(launch: LaunchRequest): ModuleId[] {
+  if (launch.modeId === 'placement') return [...PLACEMENT.modules];
   if (launch.modeId !== 'mix') return [launch.modeId as ModuleId];
   const chosen = launch.options.mixModules ?? (MODES.mix.defaultOptions.mixModules as ModuleId[]);
   const valid = chosen.filter((m, i) => MODULE_IDS.includes(m) && chosen.indexOf(m) === i).slice(0, 4);
@@ -241,7 +258,7 @@ function setModules(launch: LaunchRequest): ModuleId[] {
 export function openSetLevel(launch: LaunchRequest, steps: readonly LevelStep[], set: number): number {
   const modules = setModules(launch);
   const stairs = new Map<ModuleId, Staircase>();
-  for (const m of modules) stairs.set(m, Staircase.startFor(launch.levels[m], DEFAULT_MODULE_LEVEL, maxLevelFor(m)));
+  for (const m of modules) stairs.set(m, startStaircase(launch, m));
   const done = steps.filter((s) => s.set < set).sort((a, b) => a.set - b.set);
   for (const s of done) stairs.get(s.module)?.update(s.success);
   const module = modules[set % modules.length] as ModuleId;

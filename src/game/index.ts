@@ -1,7 +1,8 @@
 // The public face of the game engine. The app imports only from here.
 
-import type { CreateGame, CreatePlayback, MapPreview, PlayTestSound, PreviewLaunch } from '../shared/types';
+import type { CreateCalibration, CreateGame, CreatePlayback, MapPreview, PlayTestSound, PreviewLaunch } from '../shared/types';
 import { playTestSound as playTest } from './audio/audio';
+import { createCalibrationImpl } from './calibrate/calibration';
 import { createGameImpl } from './engine/game';
 import { extendFeatures } from './map/features';
 import { setupPlay } from './modes/runner';
@@ -23,3 +24,6 @@ export const previewLaunch: PreviewLaunch = (launch): MapPreview => {
 };
 
 export const playTestSound: PlayTestSound = playTest;
+
+/** The calibration screens. See CalibrationHandle. The first press on the canvas starts the run. */
+export const createCalibration: CreateCalibration = createCalibrationImpl;

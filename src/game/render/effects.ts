@@ -4,7 +4,7 @@
 import { JUDGMENTS, SPINNER_RADIUS } from '../../shared/catalog';
 import type { HitObject, Judgment } from '../../shared/types';
 import type { FeedbackEvent } from '../engine/session';
-import { F_BONUS, F_POP, F_POP_SUB, LABEL_DY, MISS_X, popupScale, POP_BOX, TextWidths } from './popup';
+import { F_BONUS, F_POP, F_POP_SUB, LABEL_DY, labelBelow, MISS_X, popupScale, POP_BOX, TextWidths } from './popup';
 import { groupOf, JUDGE_INDEX, JUDGE_ORDER } from './skin';
 import type { Skin } from './skin';
 import { STRINGS } from './strings';
@@ -435,8 +435,10 @@ export class Effects {
       const r = this.uR[i] as number;
       const rise = this.uStill[i] ? 0 : FX.popupRise * easeOut(u);
       const x = this.uX[i] as number;
-      // The label sits 1.35r above the centre of its target, so it clears the miss mark.
-      const y = (this.uY[i] as number) - (kind === 1 ? 0 : LABEL_DY * r) - rise;
+      // The label sits 1.35r above the centre of its target, so it clears the miss mark. Near the top of the field it
+      // goes 1.35r below instead, so it stays out of the HUD band.
+      const ty = this.uY[i] as number;
+      const y = kind === 1 ? ty - rise : labelBelow(ty, r) ? ty + LABEL_DY * r + rise : ty - LABEL_DY * r - rise;
       const alpha = u < 0.65 ? 1 : 1 - (u - 0.65) / 0.35;
       const col = skin.fx[this.uCol[i] as number] as string;
       const scale = this.uStill[i] ? 1 : popupScale(age);

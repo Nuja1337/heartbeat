@@ -3,6 +3,7 @@
 import { MODES, RETRY_HOLD_MS } from '../../shared/catalog';
 import type { CreateGame, GameCallbacks, GameHandle, InputInfo, InputSlot, LaunchRequest, PlayStatus, Settings } from '../../shared/types';
 import { AudioEngine } from '../audio/audio';
+import type { Grid } from '../audio/metronome';
 import { setupPlay } from '../modes/runner';
 import { SYSTEM_CURSOR } from '../render/cursor';
 import { Effects } from '../render/effects';
@@ -50,6 +51,7 @@ class Game implements GameHandle, InputSink {
   private rs!: RenderState;
   private flags: DisplayFlags = { earlyLate: true, crispPopups: false, reduceMotion: false };
   private amb = { tracking: false, speed: 0, rpm: 0 };
+  private grid: Grid = { beatMs: 500, beatOffsetMs: undefined };
   private finished = false;
   private destroyed = false;
   private startedAt = 0;
@@ -456,6 +458,10 @@ class Game implements GameHandle, InputSink {
       this.session.ambient(rs.playT, this.amb);
       this.audio.setTracking(this.amb.tracking, Math.min(1, this.amb.speed / 1.2));
       this.audio.setSpinning(this.amb.rpm);
+      // The metronome clicks are scheduled on the audio clock from here. They never reach the session.
+      this.grid.beatMs = this.session.map.beatMs;
+      this.grid.beatOffsetMs = this.session.map.beatOffsetMs;
+      this.audio.tickMetronome(this.grid, rs.playT, now);
     }
     const style = rs.drawCursor && this.state !== 'paused' ? 'none' : SYSTEM_CURSOR;
     if (style !== this.cursorStyle) {

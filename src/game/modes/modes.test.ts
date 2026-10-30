@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { aimDemand, DEFAULT_MODULE_LEVEL, MODES, MODULE_IDS, rawDemandAt, readingDemand, speedDemand, spinDemand, timingDemand, trackingDemand, precisionDemand } from '../../shared/catalog';
+import { aimDemand, DEFAULT_MODULE_LEVEL, MODES, MODULE_IDS, PLACEMENT, rawDemandAt, readingDemand, speedDemand, spinDemand, timingDemand, trackingDemand, precisionDemand } from '../../shared/catalog';
 import type { HitObject, ModeId, ModuleId, SliderObject, SpinnerObject } from '../../shared/types';
 import { computeFeatures } from '../map/features';
 import { createRng } from '../map/rng';
+import { PERFECT_PLAYER, WEAK_PLAYER } from '../sim/autoplay';
+import { runHeadless } from '../sim/headless';
 import { launchFor } from '../testing/fixtures';
 import { buildSet, isSuccess, maxLevelFor, paramsAtLevel, successShare } from './modules';
 import { setupPlay } from './runner';
@@ -300,5 +302,76 @@ describe('setupPlay', () => {
     const hi = setupPlay({ ...launchFor(undefined, 2, 60, [], 'precision'), levels: { precision: 9 } });
     expect(hi.map.objects[0]!.radius).toBeLessThan(lo.map.objects[0]!.radius);
     expect(DEFAULT_MODULE_LEVEL).toBe(3);
+  });
+});
+
+describe('placement', () => {
+  const placement = (seed = 5, levels: Partial<Record<ModuleId, number>> = {}) => ({ ...launchFor(undefined, seed, 240, [], 'placement'), levels });
+
+  it('starts every module at level 3, or its saved level, with a full step', () => {
+    const setup = setupPlay(placement(5, { streams: 6.5 }));
+    expect(setup.controller).not.toBeNull();
+    expect(setup.map.health).toBeNull();
+    expect(setup.map.mods).toEqual([]);
+    expect(setup.controller!.status()).toEqual({ level: 3, set: 0 });
+    const run = runHeadless({ launch: placement(5, { streams: 6.5 }), model: PERFECT_PLAYER });
+    const steps = run.result.levels;
+    expect(steps[0]!.level).toBe(3);
+    // The second set (streams) starts at the saved level, not half a level under it.
+    expect(steps[1]!.module).toBe('streams');
+    expect(steps[1]!.level).toBe(6.5);
+  });
+
+  it('plays the five modules in order and then again, 10 sets, and ends after set 10', () => {
+    const run = runHeadless({ launch: placement(), model: PERFECT_PLAYER });
+    const steps = run.result.levels;
+    expect(steps.map((s) => s.set)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(steps.map((s) => s.module)).toEqual([...PLACEMENT.modules, ...PLACEMENT.modules]);
+    expect(run.session.over).toBe(true);
+    expect(run.result.status).toBe('completed');
+    expect(run.result.healthAtEnd).toBeNull();
+  });
+
+  it('takes a step of 1 at the start: a clean first set moves the module up a whole level', () => {
+    const run = runHeadless({ launch: placement(), model: PERFECT_PLAYER });
+    for (let m = 0; m < 5; m++) {
+      const first = run.result.levels[m]!;
+      const second = run.result.levels[m + 5]!;
+      expect(first.level).toBe(3);
+      expect(second.level).toBe(4);
+    }
+  });
+
+  it('uses the set sizes from PLACEMENT', () => {
+    const run = runHeadless({ launch: placement(), model: PERFECT_PLAYER });
+    for (const s of run.result.levels) {
+      const want = PLACEMENT.setSize[s.module]!;
+      expect(s.objects, s.module).toBeGreaterThanOrEqual(Math.floor(want * 0.85));
+      expect(s.objects, s.module).toBeLessThanOrEqual(want);
+    }
+  });
+
+  it('reports final levels for all five modules', () => {
+    const run = runHeadless({ launch: placement(), model: PERFECT_PLAYER });
+    expect(Object.keys(run.result.finalLevels).sort()).toEqual([...PLACEMENT.modules].sort());
+    for (const m of PLACEMENT.modules) expect(run.result.finalLevels[m]).toBeGreaterThanOrEqual(3);
+  });
+
+  it('does not cut the play at its length before set 10', () => {
+    // A weak player is slow to finish sets. Ten sets still all get played.
+    const run = runHeadless({ launch: { ...placement(), lengthSec: 20 }, model: WEAK_PLAYER });
+    expect(run.result.levels).toHaveLength(10);
+  });
+
+  it('gives the same sets for the same seed and a different map for another', () => {
+    const a = setupPlay(placement(5)).map.objects;
+    expect(setupPlay(placement(5)).map.objects).toEqual(a);
+    expect(setupPlay(placement(6)).map.objects).not.toEqual(a);
+  });
+
+  it('ignores mods', () => {
+    const setup = setupPlay({ ...placement(), mods: ['fast', 'mirror'] });
+    expect(setup.map.mods).toEqual([]);
+    expect(setup.map.rate).toBe(1);
   });
 });

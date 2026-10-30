@@ -1,7 +1,7 @@
 // GameSession: the headless core. Judging, combo, score, health, records and feedback events.
 // It never touches the DOM, so Node tests and the headless simulator run it directly.
 
-import { RECORD_VERSION, REPLAY_FORMAT, TRACE_OP } from '../../shared/catalog';
+import { BULLSEYE, RECORD_VERSION, REPLAY_FORMAT, TRACE_OP } from '../../shared/catalog';
 import type {
   HitObject,
   HitRecord,
@@ -195,6 +195,7 @@ export class GameSession {
   private lastSpinBonus = 0;
   private spinCompleteSent = false;
   private targetList: Target[] = [];
+  private readonly bullseye: boolean;
 
   private sink: SliderSink = {
     onPart: (kind, hit, t, x, y) => this.onSliderPart(kind, hit, t, x, y),
@@ -204,6 +205,7 @@ export class GameSession {
   constructor(init: SessionInit) {
     this.map = init.map;
     this.launch = init.launch;
+    this.bullseye = init.map.mods.includes('bullseye');
     this.controller = init.controller ?? null;
     this.moreSets = this.controller !== null;
     this.progressMs = init.progressMs ?? init.map.durationMs;
@@ -378,13 +380,15 @@ export class GameSession {
   private hitHead(i: number, t: Ms, press: PressInfo, error: Ms): void {
     const s = this.objs[i] as ObjState;
     const o = s.obj;
-    const j = classifyError(error, o.windows) as Judgment;
+    let j = classifyError(error, o.windows) as Judgment;
+    const radial = Math.hypot(press.x - o.pos.x, press.y - o.pos.y);
+    // Bullseye: a press outside the inner half of the target cannot be better than Rough. Misses are not touched.
+    if (this.bullseye && (j === 'crisp' || j === 'solid') && radial > BULLSEYE.innerRadii * o.radius) j = 'rough';
     s.target.judged = true;
     s.headJudgment = j;
     s.judgeT = t;
     s.press = press;
     s.comboBefore = this.scoring.combo;
-    const radial = Math.hypot(press.x - o.pos.x, press.y - o.pos.y);
     const ch = this.scoring.head(j, radial, o.radius);
     this.advanceHeadPtr();
     this.emit('hit', t, i, j, o.pos.x, o.pos.y, error, o.kind === 'slider');

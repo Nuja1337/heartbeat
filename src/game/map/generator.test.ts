@@ -357,3 +357,30 @@ describe('generator shape', () => {
     expect(endPosition(m.objects[0]!).x).toBeGreaterThan(0);
   });
 });
+
+describe('generator beat offset', () => {
+  it('sets beatOffsetMs to the time of beat 0, and the objects sit on that grid', () => {
+    for (const lp of LEVEL_PRESETS) {
+      const m = generateDynamic(launchFor(lp.difficulty, 5, 40));
+      expect(m.beatOffsetMs, `level ${lp.level}`).toBeDefined();
+      const off = m.beatOffsetMs!;
+      expect(off).toBeGreaterThanOrEqual(2000);
+      expect(m.objects[0]!.time).toBeGreaterThanOrEqual(off);
+      // Quarter-beat grid, to the 0.1 ms the times are rounded to.
+      const q = m.beatMs / 4;
+      let on = 0;
+      for (const o of m.objects) {
+        const k = (o.time - off) / q;
+        if (Math.abs(k - Math.round(k)) * q < 0.2) on++;
+      }
+      expect(on / m.objects.length, `level ${lp.level}`).toBeGreaterThan(0.9);
+    }
+  });
+
+  it('scales the offset with the rate it is generated for', () => {
+    const lp = LEVEL_PRESETS[3]!;
+    const a = generateDynamic(launchFor(lp.difficulty, 9, 40), 1);
+    const b = generateDynamic(launchFor(lp.difficulty, 9, 40), 1.25);
+    expect(b.beatOffsetMs!).toBeGreaterThan(a.beatOffsetMs!);
+  });
+});
