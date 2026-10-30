@@ -65,10 +65,18 @@ export function deriveParams(d: DifficultySettings, mods: readonly ModId[]): Gen
 
 const clamp = (x: number, lo: number, hi: number) => (x < lo ? lo : x > hi ? hi : x);
 
+/**
+ * A small extra slope on the jump distance, 1.5% per step of spacing around 5. It is what lines the 75th percentile of
+ * the aim demand up with the anchors at Levels 1 to 8 (PLAN-2 section 6.5). It does not touch slider velocity.
+ */
+export function spacingTrim(spacing: number): number {
+  return 1 + 0.015 * (spacing - 5);
+}
+
 /** Distance of a jump for a gap in beats at section intensity I. */
 export function jumpDistance(p: GenParams, gapBeats: number, intensity: number, accent = 1): number {
   const gap = Math.min(gapBeats, 1) * p.beatMs;
-  return clamp(p.vJump * gap * (0.75 + 0.35 * intensity) * accent, JUMP_MIN_RADII * p.radius, MAX_JUMP);
+  return clamp(p.vJump * gap * (0.75 + 0.35 * intensity) * accent * spacingTrim(p.spacing), JUMP_MIN_RADII * p.radius, MAX_JUMP);
 }
 
 /** Share of jumps on half beats. */
@@ -105,7 +113,13 @@ export type PatternKind =
   | 'doubles'
   | 'slider'
   | 'sliderchain'
-  | 'single';
+  | 'single'
+  | 'polygon'
+  | 'stack'
+  | 'triple'
+  | 'cutstream'
+  | 'spacedstream'
+  | 'kick';
 
 export const PATTERN_KINDS: PatternKind[] = [
   'jump',
@@ -119,6 +133,12 @@ export const PATTERN_KINDS: PatternKind[] = [
   'doubles',
   'slider',
   'sliderchain',
+  'polygon',
+  'stack',
+  'triple',
+  'cutstream',
+  'spacedstream',
+  'kick',
 ];
 
 /** Weights of the pattern table at section intensity I. */
@@ -140,6 +160,12 @@ export function patternWeights(p: GenParams, intensity: number): Record<PatternK
     slider: slider * 0.75,
     sliderchain: slider * 0.25,
     single: 0,
+    polygon: c >= 5 ? 0.1 * c * halfBeat : 0,
+    stack: c >= 3 ? 0.15 * c * (0.5 + intensity) : 0,
+    triple: p.streams >= 1 ? 0.2 * p.streams : 0,
+    cutstream: p.streams >= 4 && c >= 5 && p.streamMaxLength >= 8 ? 0.15 * p.streams * intensity : 0,
+    spacedstream: p.spacing >= 6 && intensity >= 0.85 && p.streams >= 1 ? 0.1 * p.streams : 0,
+    kick: c >= 6 && p.sliders > 0 ? 0.08 * c : 0,
   };
 }
 

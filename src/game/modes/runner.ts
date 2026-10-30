@@ -213,7 +213,9 @@ export class ModeRunner implements SetController {
 
   finalLevels(): Partial<Record<ModuleId, number>> {
     const out: Partial<Record<ModuleId, number>> = {};
-    for (const [m, s] of this.stairs) if (s.history.length > 0) out[m] = Math.round(s.finalLevel() * 100) / 100;
+    // Placement reports where the staircase moves after the last set's result, so a player who passes both sets
+    // of a module is placed above where they started. Every other mode averages the second half of its sets.
+    for (const [m, s] of this.stairs) if (s.history.length > 0) out[m] = Math.round((this.placement ? s.level : s.finalLevel()) * 100) / 100;
     return out;
   }
 }

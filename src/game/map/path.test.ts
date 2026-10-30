@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PathSegment, Vec2 } from '../../shared/types';
-import { arcThrough, cubicPoint, flattenPath, pathLength, pointAt, samplePath, selfIntersects, tangentAt } from './path';
+import { arcThrough, cubicPoint, flattenPath, maxTangentDeviation, minCurvatureRadius, pathLength, pointAt, samplePath, selfIntersects, tangentAt } from './path';
 
 describe('path', () => {
   it('measures a line', () => {
@@ -99,5 +99,44 @@ describe('path', () => {
     expect(selfIntersects(cross)).toBe(true);
     const fine = flattenPath({ x: 0, y: 0 }, [{ type: 'arc', through: { x: 50, y: 20 }, to: { x: 100, y: 0 } }]);
     expect(selfIntersects(fine)).toBe(false);
+  });
+});
+
+describe('minCurvatureRadius and maxTangentDeviation', () => {
+  it('reads the radius of an arc, the corner of a polyline and nothing for a line', () => {
+    const o = { x: 0, y: 0 };
+    expect(minCurvatureRadius(o, [{ type: 'line', to: { x: 100, y: 0 } }])).toBe(Infinity);
+    // Half circle of radius 50 through (50, 50).
+    const arc = minCurvatureRadius(o, [{ type: 'arc', through: { x: 50, y: 50 }, to: { x: 100, y: 0 } }]);
+    expect(arc).toBeCloseTo(50, 3);
+    expect(
+      minCurvatureRadius(o, [
+        { type: 'line', to: { x: 100, y: 0 } },
+        { type: 'line', to: { x: 100, y: 100 } },
+      ]),
+    ).toBe(0);
+  });
+
+  it('finds the tightest point of a cubic', () => {
+    const o = { x: 0, y: 0 };
+    const gentle = minCurvatureRadius(o, [{ type: 'cubic', c1: { x: 66, y: 10 }, c2: { x: 134, y: 10 }, to: { x: 200, y: 0 } }]);
+    const tight = minCurvatureRadius(o, [{ type: 'cubic', c1: { x: 60, y: 80 }, c2: { x: 140, y: 80 }, to: { x: 200, y: 0 } }]);
+    expect(gentle).toBeGreaterThan(tight);
+    expect(tight).toBeGreaterThan(0);
+  });
+
+  it('measures how far a path turns from its head-to-tail line', () => {
+    const o = { x: 0, y: 0 };
+    expect(maxTangentDeviation(flattenPath(o, [{ type: 'line', to: { x: 100, y: 0 } }]))).toBeCloseTo(0, 5);
+    const hook = flattenPath(o, [
+      { type: 'line', to: { x: 100, y: 0 } },
+      { type: 'line', to: { x: 100, y: 100 } },
+    ]);
+    expect(maxTangentDeviation(hook)).toBeCloseTo(45, 3);
+    const back = flattenPath(o, [
+      { type: 'line', to: { x: 100, y: 0 } },
+      { type: 'line', to: { x: 10, y: 20 } },
+    ]);
+    expect(maxTangentDeviation(back)).toBeGreaterThan(100);
   });
 });

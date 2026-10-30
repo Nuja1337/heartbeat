@@ -301,7 +301,7 @@ const d = (
 ): DifficultySettings => ({ radius, approachMs, bpm, density, spacing, complexity, streams, streamMaxLength, sliders, spinners, timing });
 
 export const LEVEL_PRESETS: readonly LevelPreset[] = [
-  { level: 1, label: 'Level 1', description: 'Large, slow targets with plenty of time to read them.', difficulty: d(64, 1500, 110, 2, 2, 1, 0, 3, 5, 3, 1), lengthSec: 60 },
+  { level: 1, label: 'Level 1', description: 'Large, slow targets with plenty of time to read them.', difficulty: d(64, 1500, 110, 3, 2, 1, 0, 3, 5, 3, 1), lengthSec: 60 },
   { level: 2, label: 'Level 2', description: 'Short jumps and the first short bursts.', difficulty: d(60, 1300, 125, 3, 3, 2, 1, 5, 5, 3, 2), lengthSec: 75 },
   { level: 3, label: 'Level 3', description: 'Medium jumps, sliders and bursts of up to seven taps.', difficulty: d(57, 1150, 140, 4, 4, 3, 2, 7, 5, 2, 3), lengthSec: 90 },
   { level: 4, label: 'Level 4', description: 'Faster jumps and streams of up to nine taps.', difficulty: d(54, 1000, 155, 5, 5, 4, 3, 9, 4, 2, 4), lengthSec: 90 },
@@ -436,7 +436,7 @@ export const DEFAULT_SETTINGS: Settings = {
 
 /** Raw demand at Dynamic levels 1..8. aim is the median measured on generated preset maps (20 seeds each); the rest follow from the presets. */
 export const DEMAND_ANCHORS: Record<SkillId, readonly number[]> = {
-  aim: [3.28, 5.91, 7.34, 8.56, 9.87, 11.27, 12.73, 14.57], // bits per second
+  aim: [4.6, 5.91, 7.34, 8.56, 9.87, 11.27, 12.73, 14.57], // bits per second
   speed: [7.3, 8.3, 9.3, 10.3, 11.3, 12.3, 13.3, 14.7], // taps per second
   tracking: [1.68, 2.31, 3.01, 3.82, 4.85, 6.1, 7.63, 9.54], // ball speed / follow radius, per second
   precision: [15.6, 16.7, 17.5, 18.5, 20.0, 21.7, 23.8, 26.3], // 1000 / radius

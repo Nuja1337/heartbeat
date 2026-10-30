@@ -357,6 +357,16 @@ describe('placement', () => {
     for (const m of PLACEMENT.modules) expect(run.result.finalLevels[m]).toBeGreaterThanOrEqual(3);
   });
 
+  it('places a player who passes both sets above where they started: the level after the last result', () => {
+    const run = runHeadless({ launch: placement(), model: PERFECT_PLAYER });
+    for (const m of PLACEMENT.modules) {
+      const played = run.result.levels.filter((s) => s.module === m);
+      // Set 1 at 3 moves up to 4, set 2 at 4 moves up to 5. The second set's own level is not the result.
+      expect(played.map((s) => s.level), m).toEqual([3, 4]);
+      expect(run.result.finalLevels[m], m).toBe(5);
+    }
+  });
+
   it('does not cut the play at its length before set 10', () => {
     // A weak player is slow to finish sets. Ten sets still all get played.
     const run = runHeadless({ launch: { ...placement(), lengthSec: 20 }, model: WEAK_PLAYER });

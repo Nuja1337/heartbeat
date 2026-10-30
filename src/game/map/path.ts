@@ -216,3 +216,91 @@ function segmentsCross(ax: number, ay: number, bx: number, by: number, cx: numbe
   const d4 = (dx - cx) * (by - cy) - (dy - cy) * (bx - cx);
   return d1 * d2 < 0 && d3 * d4 < 0;
 }
+
+/**
+ * Smallest radius of curvature along a path, worked out from the segment definitions.
+ * Infinity for a straight path. A corner between two segments counts as radius 0.
+ */
+export function minCurvatureRadius(start: Vec2, segments: readonly PathSegment[]): number {
+  let best = Infinity;
+  let cur = start;
+  let prevDir: Vec2 | null = null;
+  const corner = (d: Vec2): void => {
+    if (prevDir && prevDir.x * d.x + prevDir.y * d.y < 0.9995) best = 0;
+  };
+  for (const seg of segments) {
+    if (seg.type === 'line') {
+      const dx = seg.to.x - cur.x;
+      const dy = seg.to.y - cur.y;
+      const len = Math.hypot(dx, dy);
+      if (len > 1e-9) {
+        const d = { x: dx / len, y: dy / len };
+        corner(d);
+        prevDir = d;
+      }
+    } else if (seg.type === 'arc') {
+      const arc = arcThrough(cur, seg.through, seg.to);
+      if (!arc) {
+        const len = Math.hypot(seg.to.x - cur.x, seg.to.y - cur.y);
+        if (len > 1e-9) {
+          const d = { x: (seg.to.x - cur.x) / len, y: (seg.to.y - cur.y) / len };
+          corner(d);
+          prevDir = d;
+        }
+      } else {
+        best = Math.min(best, arc.radius);
+        const sgn = arc.sweep >= 0 ? 1 : -1;
+        const a0 = arc.startAngle;
+        const a1 = a0 + arc.sweep;
+        const d0 = { x: -Math.sin(a0) * sgn, y: Math.cos(a0) * sgn };
+        const d1 = { x: -Math.sin(a1) * sgn, y: Math.cos(a1) * sgn };
+        corner(d0);
+        prevDir = d1;
+      }
+    } else {
+      const d0 = { x: seg.c1.x - cur.x, y: seg.c1.y - cur.y };
+      const m0 = Math.hypot(d0.x, d0.y);
+      if (m0 > 1e-9) corner({ x: d0.x / m0, y: d0.y / m0 });
+      const N = 160;
+      for (let i = 0; i <= N; i++) {
+        const u = i / N;
+        const v = 1 - u;
+        const x1 = 3 * (v * v * (seg.c1.x - cur.x) + 2 * v * u * (seg.c2.x - seg.c1.x) + u * u * (seg.to.x - seg.c2.x));
+        const y1 = 3 * (v * v * (seg.c1.y - cur.y) + 2 * v * u * (seg.c2.y - seg.c1.y) + u * u * (seg.to.y - seg.c2.y));
+        const x2 = 6 * (v * (seg.c2.x - 2 * seg.c1.x + cur.x) + u * (seg.to.x - 2 * seg.c2.x + seg.c1.x));
+        const y2 = 6 * (v * (seg.c2.y - 2 * seg.c1.y + cur.y) + u * (seg.to.y - 2 * seg.c2.y + seg.c1.y));
+        const sp = Math.hypot(x1, y1);
+        if (sp < 1e-9) {
+          best = 0;
+          continue;
+        }
+        const k = Math.abs(x1 * y2 - y1 * x2) / (sp * sp * sp);
+        if (k > 1e-12) best = Math.min(best, 1 / k);
+      }
+      const d1 = { x: seg.to.x - seg.c2.x, y: seg.to.y - seg.c2.y };
+      const m1 = Math.hypot(d1.x, d1.y);
+      if (m1 > 1e-9) prevDir = { x: d1.x / m1, y: d1.y / m1 };
+    }
+    cur = seg.to;
+  }
+  return best;
+}
+
+/** Largest angle, in degrees, between the direction of travel and the straight line from the head to the tail. */
+export function maxTangentDeviation(fp: FlatPath): number {
+  if (fp.n < 2) return 0;
+  const cx = (fp.xs[fp.n - 1] as number) - (fp.xs[0] as number);
+  const cy = (fp.ys[fp.n - 1] as number) - (fp.ys[0] as number);
+  const cl = Math.hypot(cx, cy);
+  if (cl < 1e-9) return 180;
+  let worst = 0;
+  for (let i = 0; i < fp.n - 1; i++) {
+    const dx = (fp.xs[i + 1] as number) - (fp.xs[i] as number);
+    const dy = (fp.ys[i + 1] as number) - (fp.ys[i] as number);
+    const l = Math.hypot(dx, dy);
+    if (l < 1e-9) continue;
+    const dot = Math.max(-1, Math.min(1, (dx * cx + dy * cy) / (l * cl)));
+    worst = Math.max(worst, (Math.acos(dot) * 180) / Math.PI);
+  }
+  return worst;
+}

@@ -4,6 +4,7 @@ import { LEVEL_LIMITS, MODES, PLAYFIELD_CENTER, levelForDemand, rawDemandAt, win
 import type { HitObject, HitRecord, HitWindows, MapSection, ModuleId, ModuleOptions, Vec2 } from '../../shared/types';
 import { MapBuilder, angleDiff } from '../map/placement';
 import type { BuilderConfig, Motif, SliderSpec } from '../map/placement';
+import { curveFamily } from '../map/patterns';
 import { createRng } from '../map/rng';
 import type { Rng } from '../map/rng';
 
@@ -277,7 +278,8 @@ function buildTracking(spec: SetSpec, rng: Rng, p: ModuleParams): BuiltSet {
       headTurn: rng.sign() * rng.range(0, 60),
       k: rng.range(0.15, 0.5),
       alpha: rng.range(20, 60),
-      sCurve: rng.chance(0.5),
+      family: curveFamily(rng, 5),
+      legs: 2,
     };
     const m: Motif = { tag: 'slider', steps: [{ off: 0, dist: rng.range(4 * r, 8 * r), turn: rng.sign() * rng.range(0, 180), slider }], beats: 1 };
     let res = b.addMotif(m, t, { exact: true });
