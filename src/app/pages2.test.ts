@@ -35,14 +35,14 @@ const base = (over: Partial<LaunchRequest> = {}): LaunchRequest => ({
 
 describe('share text', () => {
   it('names the mode, the level and the mods before the link', () => {
-    expect(shareText(base(), 'https://x.test/s/abc')).toBe('Flickwise map: Dynamic, Level 4, Mirror. https://x.test/s/abc');
-    expect(shareText(base({ mods: [] }), 'u')).toBe('Flickwise map: Dynamic, Level 4. u');
-    expect(shareText(base({ presetLevel: null, mods: ['fade', 'fast'] }), 'u')).toBe('Flickwise map: Dynamic, custom, Fade, Fast. u');
+    expect(shareText(base(), 'https://x.test/s/abc')).toBe('Heartbeat map: Dynamic, Level 4, Mirror. https://x.test/s/abc');
+    expect(shareText(base({ mods: [] }), 'u')).toBe('Heartbeat map: Dynamic, Level 4. u');
+    expect(shareText(base({ presetLevel: null, mods: ['fade', 'fast'] }), 'u')).toBe('Heartbeat map: Dynamic, custom, Fade, Fast. u');
   });
 
   it('names a module by its label alone', () => {
     const jumps = moduleLaunch({ modeId: 'jumps', options: {}, mods: [], lengthSec: 90, seed: 5, levels: {}, drillId: null });
-    expect(shareText(jumps, 'u')).toBe('Flickwise map: Jumps. u');
+    expect(shareText(jumps, 'u')).toBe('Heartbeat map: Jumps. u');
   });
 });
 
@@ -88,7 +88,7 @@ describe('share route', () => {
     const body = [2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4];
     const code = Buffer.from([...body, (body.reduce((a, b) => a + b, 0) & 255) ^ 0xa5]).toString('base64url');
     expect(() => decodeShare(code)).toThrow();
-    expect(readShareLink(code)).toEqual({ ok: false, kind: 'newer', message: 'This code was made by a newer version of Flickwise.' });
+    expect(readShareLink(code)).toEqual({ ok: false, kind: 'newer', message: 'This code was made by a newer version of Heartbeat.' });
   });
 
   it('does not open a Placement code', () => {

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "@fontsource-variable/space-grotesk";
 
-/* Flickwise 2.0 visual system (PLAN-2 §9). A dark precision instrument: near-black blue surfaces,
+/* Heartbeat 2.0 visual system (PLAN-2 §9). A dark precision instrument: near-black blue surfaces,
    one lime signal accent, cyan for data, reticle corner marks, thin rules and no shadows. */
 
 @theme {
@@ -63,7 +63,7 @@
   --text-4xl--font-weight: 700;
 }
 
-/* The four judgment colors follow the chosen palette. The app writes --fw-* on :root from
+/* The --fw- prefix keeps the old app name on purpose. The four judgment colors follow the chosen palette. The app writes --fw-* on :root from
    settings.skin.palette. `inline` makes bg-crisp and friends read the variable directly. */
 @theme inline {
   --color-crisp: var(--fw-crisp);

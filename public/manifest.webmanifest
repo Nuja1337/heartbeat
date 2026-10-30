@@ -1,6 +1,6 @@
 {
-  "name": "Flickwise",
-  "short_name": "Flickwise",
+  "name": "Heartbeat",
+  "short_name": "Heartbeat",
   "description": "A browser aim trainer that tracks where and how you miss, and suggests drills for your weak spots.",
   "start_url": "/",
   "scope": "/",

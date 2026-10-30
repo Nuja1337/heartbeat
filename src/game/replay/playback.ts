@@ -35,7 +35,7 @@ const TIME_CALLBACK_MS = 100;
 /** A frame that took longer than this counts as this long. */
 const MAX_FRAME_MS = 100;
 
-export const NEWER_ENGINE_MESSAGE = 'This replay was made by a newer version of Flickwise.';
+export const NEWER_ENGINE_MESSAGE = 'This replay was made by a newer version of Heartbeat.';
 const COULD_NOT_PLAY = 'This replay could not be played.';
 const NO_CANVAS = 'This browser could not start the game canvas.';
 

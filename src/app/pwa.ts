@@ -4,10 +4,11 @@
 
 import { useSyncExternalStore } from 'react';
 
+// The prefix keeps the old app name on purpose: the worker finds and deletes caches by it.
 export const CACHE_PREFIX = 'fw-';
 export const SW_URL = '/sw.js';
 export const MANIFEST_URL = '/asset-manifest.json';
-export const UPDATE_READY_MESSAGE = 'A new version of Flickwise is ready.';
+export const UPDATE_READY_MESSAGE = 'A new version of Heartbeat is ready.';
 
 /** The URLs to precache from Vite's manifest: every entry's file, css and assets, plus the shell. */
 export function assetsFromManifest(json: unknown): string[] {

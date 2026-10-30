@@ -23,6 +23,7 @@ import { ENGINE_VERSION, GENERATOR_VERSION, createCalibration, createGame, creat
 import { autoplayReplay } from '../replay/autoplayReplay';
 import { NOISY_PLAYER } from '../sim/autoplay';
 
+// Keeps the old app name on purpose: the dev harness saves its fixtures under this key.
 const STORE = 'flickwise-dev-harness';
 
 interface Form {
@@ -151,7 +152,7 @@ function launch(): LaunchRequest {
 function build(): void {
   panel.replaceChildren();
   const m = MODES[form.mode];
-  panel.append(el('h3', { style: 'margin:0 0 8px' }, `Flickwise harness (engine ${ENGINE_VERSION}, generator ${GENERATOR_VERSION})`));
+  panel.append(el('h3', { style: 'margin:0 0 8px' }, `Heartbeat harness (engine ${ENGINE_VERSION}, generator ${GENERATOR_VERSION})`));
   panel.append(
     row('Mode', select(MODE_ORDER.map((id) => [id, MODES[id].label]), form.mode, (v) => {
       form.mode = v as ModeId;

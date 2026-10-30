@@ -1,4 +1,4 @@
-// Types of everything Flickwise stores in IndexedDB and writes to export files.
+// Types of everything Heartbeat stores in IndexedDB and writes to export files.
 // Ids and enum orders are permanent. Add new ones, never rename.
 
 import type {

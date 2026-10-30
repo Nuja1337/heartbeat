@@ -1,8 +1,9 @@
-/* Flickwise service worker (PLAN-2 §8.3 and §4.11).
+/* Heartbeat service worker (PLAN-2 §8.3 and §4.11).
    The pure helpers mirror src/app/pwa.ts. src/app/pwa.test.ts runs this file against them.
 
    Kill switch: public/sw-kill.js. To retire a broken worker, serve it as sw.js (see the README). */
 
+// Keeps the old app name on purpose: caches already made by earlier builds start with it.
 const PREFIX = 'fw-';
 const MANIFEST_URL = '/asset-manifest.json';
 const NAV_TIMEOUT_MS = 3000;

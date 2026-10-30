@@ -60,7 +60,7 @@ export function Home() {
   return (
     <>
       <PageHeader
-        title="Flickwise"
+        title="Heartbeat"
         intro={INTRO.home}
         actions={
           <>
@@ -83,10 +83,13 @@ export function Home() {
           {data.summaries.length === 0 && onboarding !== null && !onboarding.done && (
             <Panel marks className="flex flex-wrap items-center justify-between gap-4">
               <div className="min-w-0">
-                <h2 className="text-xl">Set up Flickwise</h2>
+                <h2 className="text-xl">Set up Heartbeat</h2>
                 <p className="mt-1 text-ink-2">Choose your input, calibrate your timing and find your starting levels.</p>
               </div>
-              <LinkButton to="/welcome" variant="primary">Set up Flickwise</LinkButton>
+              <LinkButton to="/welcome" variant="primary">Set up Heartbeat</LinkButton>
+              <p className="basis-full text-sm text-ink-2">
+                Played Flickwise before? <Link to="/settings#settings-data" className="text-accent hover:underline">Import your export file in Settings.</Link>
+              </p>
             </Panel>
           )}
 
@@ -113,7 +116,7 @@ export function Home() {
                   <p className="text-ink-2">
                     {data.summaries.length > 0
                       ? 'Insights need at least 3 plays in the last 30 days and enough clicks to see a pattern. Keep playing and the first one will show up here.'
-                      : 'Play a few maps and Flickwise will point out where you lose accuracy and suggest a module for it.'}
+                      : 'Play a few maps and Heartbeat will point out where you lose accuracy and suggest a module for it.'}
                   </p>
                 </Panel>
               )}

@@ -237,8 +237,8 @@ describe('share text', () => {
   });
 
   it('names the mode, the level and the mods', () => {
-    expect(shareText({ modeId: 'dynamic', presetLevel: 4, mods: ['mirror'] }, 'https://x.test/s/abc')).toBe('Flickwise map: Dynamic, Level 4, Mirror. https://x.test/s/abc');
-    expect(shareText({ modeId: 'jumps', presetLevel: null, mods: [] }, 'u')).toBe('Flickwise map: Jumps. u');
+    expect(shareText({ modeId: 'dynamic', presetLevel: 4, mods: ['mirror'] }, 'https://x.test/s/abc')).toBe('Heartbeat map: Dynamic, Level 4, Mirror. https://x.test/s/abc');
+    expect(shareText({ modeId: 'jumps', presetLevel: null, mods: [] }, 'u')).toBe('Heartbeat map: Jumps. u');
   });
 });
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router';
 import type { ReactNode } from 'react';
 import { ImportError, importBytes } from '../../data/exportImport';
 import type { ImportReport } from '../../data/exportImport';
@@ -15,8 +16,8 @@ import { Button, Card, Field, Notice, PageHeader, Segmented, SectionTitle, Slide
 import { INTRO } from '../copy';
 import { bytes, count, dateTime } from '../format';
 import { invalidateAnalysis, useAnalysis } from '../state/analysis';
-import { loadGame, useGame } from '../state/engine';
-import { downloadExport } from '../state/exportFile';
+import { useGame } from '../state/engine';
+import { saveExport } from '../state/exportFile';
 import { promptInstall, usePwa } from '../pwa';
 import { useSettings } from '../state/store';
 
@@ -75,6 +76,12 @@ export function Settings() {
   const lastInput = data?.summaries[0]?.input ?? null;
   const { game } = useGame();
   const { canInstall } = usePwa();
+  const { hash } = useLocation();
+
+  // A link such as /settings#settings-data lands here from another page, where the router does not scroll to the anchor.
+  useEffect(() => {
+    if (hash.length > 1) document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView();
+  }, [hash]);
 
   const test = (sound: TestSound) => {
     try {
@@ -330,7 +337,7 @@ export function Settings() {
           <AppInfo />
           {canInstall && (
             <div className="mt-4 border-t border-line pt-4">
-              <p className="text-sm text-ink-2">Install Flickwise to open it from your desktop or home screen and play without a connection.</p>
+              <p className="text-sm text-ink-2">Install Heartbeat to open it from your desktop or home screen and play without a connection.</p>
               <Button variant="primary" className="mt-3" onClick={() => void promptInstall()}>
                 Install
               </Button>
@@ -412,12 +419,6 @@ function AppInfo() {
       ))}
     </dl>
   );
-}
-
-/** Saves the export as a download. Resolves with the number of plays in it. */
-async function saveExport(gzip: boolean, includeReplays: boolean): Promise<number> {
-  const g = await loadGame();
-  return downloadExport(gzip, { includeReplays, app: { engineVersion: g.ENGINE_VERSION, generatorVersion: g.GENERATOR_VERSION } });
 }
 
 function DataSection() {
@@ -567,7 +568,7 @@ function DataSection() {
       </dl>
       {persisted === false && <p className="mt-2 text-sm text-warn">The browser has not promised to keep this data. Export a file now and then.</p>}
 
-      <Field label="Keep the newest replays" help="Replays you mark to keep, and replays of new bests, are never removed. Older ones are removed after your next play or the next time Flickwise starts.">
+      <Field label="Keep the newest replays" help="Replays you mark to keep, and replays of new bests, are never removed. Older ones are removed after your next play or the next time Heartbeat starts.">
         <Segmented
           legend="Replay limit"
           value={String(s.data.replayLimit)}

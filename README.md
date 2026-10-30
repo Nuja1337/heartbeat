@@ -1,8 +1,14 @@
-# Flickwise
+# Heartbeat
 
-Flickwise is a browser aim trainer. It records where and how you miss, then suggests drills for your weak spots.
+Heartbeat is a browser aim trainer. It records where and how you miss, then suggests drills for your weak spots. It runs at https://heartbeat.ajshaham.workers.dev.
 
 The repository is private for now.
+
+## Formerly Flickwise
+
+The app was renamed from Flickwise to Heartbeat on 29 October 2026 and moved from flickwise.ajshaham.workers.dev to heartbeat.ajshaham.workers.dev. The old address still serves the same build and shows a notice at the top of every page.
+
+Plays are saved in the browser and tied to the address, so they do not follow the move. To bring them over, open the old address, choose Export your data in the notice (or use Settings, Data), then open Heartbeat and import the file in Settings, under Data. Export files made before the rename still import.
 
 ## What it does
 
@@ -61,7 +67,7 @@ Each saved play keeps a summary and, for a while, a record of every object. A su
 
 **Insights** are rules that look at your clicks from the last 30 days, at most 3000 of them. Each rule has a minimum number of clicks and a minimum effect size, and a mean difference must also be larger than its random noise. The rules cover overshooting or stopping short on long jumps, drifting to one side in one direction, being early or late on streams, losing timing late in a stream, dropping accuracy in the second half of a play, sharp against wide turns, trailing sliders, losing sliders on curves, letting go of sliders early, a steady click offset, busy screens, clicks far from the center and failing spinners. Three rules use the movement metrics. They find leaving a target late on fast jumps, a first motion that stops short or goes past on long jumps, and a second correcting motion on many longer jumps. Each insight states its numbers and how many clicks they came from, and names a module and options to train it with.
 
-**Drills** start from the Train this button on an insight. Flickwise stores the measurement the insight was based on. After at least 3 drill sessions it measures the same thing on plays outside the drill, so you can see whether the change carried over. The result is better, no clear change or worse, and it locks after 30 days.
+**Drills** start from the Train this button on an insight. Heartbeat stores the measurement the insight was based on. After at least 3 drill sessions it measures the same thing on plays outside the drill, so you can see whether the change carried over. The result is better, no clear change or worse, and it locks after 30 days.
 
 **What changed this week** on Home compares the last 7 days with the 4 weeks before them, and reports only the changes that are clear.
 
@@ -92,9 +98,9 @@ Everything is stored in this browser with IndexedDB. There is no account and not
 
 - Play summaries are kept forever.
 - Per-object detail is kept for 365 days by default. You can change this in Settings. Removing old detail doesn't change ratings, trends or bests.
-- Replays are stored compressed. The newest 100 are kept by default, and Settings offers 25, 100, 300 or all. Replays you mark to keep, and replays of new bests, are never removed. Older ones are removed after your next play or the next time Flickwise starts.
+- Replays are stored compressed. The newest 100 are kept by default, and Settings offers 25, 100, 300 or all. Replays you mark to keep, and replays of new bests, are never removed. Older ones are removed after your next play or the next time Heartbeat starts.
 - Settings can export everything as a .json or .json.gz file and import it again. The export has a checkbox to include replays, and without them the file is much smaller. Importing skips plays that are already there.
-- Data from Flickwise 1.0 upgrades automatically the first time 2.0 opens. 1.0 export files still import.
+- Data from version 1.0, when the app was called Flickwise, upgrades automatically the first time 2.0 opens. 1.0 export files still import.
 - The browser can clear site data. Settings shows whether it has agreed to keep it, and a regular export is the safe copy.
 - Data belongs to one address. Moving the app to a new address means exporting here and importing there.
 
@@ -110,7 +116,7 @@ Everything is stored in this browser with IndexedDB. There is no account and not
 ## Browser notes
 
 - Chrome and Firefox are the main targets. Safari works with a few differences.
-- Raw input without acceleration needs a recent browser. When it isn't available, Flickwise falls back to raw input with acceleration and says so in Settings.
+- Raw input without acceleration needs a recent browser. When it isn't available, Heartbeat falls back to raw input with acceleration and says so in Settings.
 - Safari has no high-rate pointer events, and Firefox has no low latency canvas. Both play normally with slightly more delay.
 - Pens and tablets are absolute devices, so they use the normal cursor even when raw input is on.
 - The same seed can give a slightly different map in a different browser, because math functions differ a little between them. Saved plays store positions, so your stats never depend on regenerating a map.
@@ -125,6 +131,19 @@ npm run deploy    # build and publish with Wrangler
 ```
 
 `npm run dev` also serves `/dev.html`, a test page for the game engine.
+
+Some internal identifiers keep the old name on purpose, because changing them would break saved data, old export files, replays or daily maps. Each has a comment where it is defined.
+
+- The IndexedDB database name `flickwise` (`src/data/db.ts`).
+- The export `format` value `flickwise-export` (`src/data/exportImport.ts`). Import accepts it and new exports keep writing it.
+- The replay magic bytes `FWRP` (`src/shared/replay.ts`).
+- The service worker cache prefix `fw-` (`src/app/pwa.ts` and `public/sw.js`).
+- The `--fw-*` CSS variables.
+- The session storage keys that start with `fw-`, and the local storage key the dev game-engine page uses, `flickwise-dev-harness`.
+- The palette id `flickwise` in settings and export files. Its label is Heartbeat.
+- The daily seed salt `flickwise-daily:` (`src/shared/codes.ts`). Changing it would change every daily map.
+
+The old address is detected in `src/app/oldAddress.ts`. When the page is served from `flickwise.ajshaham.workers.dev`, the notice in `src/app/layout/MovedBanner.tsx` shows. The old Worker keeps serving the same build.
 
 Open the app with `?fake=1` in a dev build to replace the game engine with a stand-in. A play then ends after 3 seconds with a made-up result, which is enough to click through setup, results, stats and insights.
 

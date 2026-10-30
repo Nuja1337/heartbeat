@@ -348,15 +348,16 @@ export interface Palette {
   judgments: Record<Judgment, string>;
 }
 export const PALETTES: Record<PaletteId, Palette> = {
+  // The id keeps the old app name on purpose: it is saved in settings and in export files.
   flickwise: {
-    label: 'Flickwise',
+    label: 'Heartbeat',
     description: 'The default colours.',
     groups: ['#5ee7f2', '#ff7ab8', '#c9f25c', '#eef1f6'],
     judgments: { crisp: '#b49bff', solid: '#36d6b0', rough: '#ffb340', miss: '#ff4f6a' },
   },
   classic: {
     label: 'Classic',
-    description: 'The colours from Flickwise 1.0.',
+    description: 'The colours from version 1.0.',
     groups: ['#7dd3fc', '#f9a8d4', '#fde68a', '#e5e7eb'],
     judgments: { crisp: '#a78bfa', solid: '#2dd4bf', rough: '#f59e0b', miss: '#f43f5e' },
   },
@@ -375,7 +376,7 @@ export const PALETTES: Record<PaletteId, Palette> = {
 };
 
 export const SOUND_SETS: Record<SoundSetId, { label: string; description: string }> = {
-  glass: { label: 'Glass', description: 'Bright, short tones, as in Flickwise 1.0.' },
+  glass: { label: 'Glass', description: 'Bright, short tones, as in version 1.0.' },
   wood: { label: 'Wood', description: 'Soft clicks with little pitch.' },
   pulse: { label: 'Pulse', description: 'Square-wave blips.' },
 };

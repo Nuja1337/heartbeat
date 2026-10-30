@@ -45,7 +45,7 @@ function lift<T>(raw: unknown, target: number, steps: typeof SUMMARY_UPGRADES, w
     cur = { ...step(cur), v: v + 1 };
     v++;
   }
-  if (v > target) throw new Error(`This ${what} was written by a newer Flickwise (version ${v}).`);
+  if (v > target) throw new Error(`This ${what} was written by a newer Heartbeat (version ${v}).`);
   return cur as T;
 }
 

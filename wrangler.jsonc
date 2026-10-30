@@ -1,7 +1,8 @@
-// Static-assets-only Worker: `npm run deploy` builds to dist/ and publishes it at https://flickwise.ajshaham.workers.dev
+// Static-assets-only Worker: `npm run deploy` builds to dist/ and publishes it at https://heartbeat.ajshaham.workers.dev
+// The old Worker, flickwise, keeps serving this same build and shows a notice that points here.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "flickwise",
+  "name": "heartbeat",
   "compatibility_date": "2026-09-26",
   "workers_dev": true,
   "preview_urls": false,

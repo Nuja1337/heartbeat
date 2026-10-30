@@ -1,4 +1,4 @@
-// Shared contract for Flickwise. The game (src/game) and the app (src/app, src/data, src/analytics)
+// Shared contract for Heartbeat. The game (src/game) and the app (src/app, src/data, src/analytics)
 // both code against this file and never edit it. Changes go through the main session.
 //
 // Units: positions and lengths are playfield units (PLAYFIELD in catalog.ts: 1000 x 625, origin top-left,

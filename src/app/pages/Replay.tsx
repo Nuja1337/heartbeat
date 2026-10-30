@@ -80,7 +80,7 @@ export function Replay() {
         {loaded.kind === 'damaged' ? 'This replay is damaged and cannot be played.' : loaded.message}
       </Notice>
     );
-  else if (loaded.status === 'none') body = <Notice>This play has no replay. Flickwise keeps replays of your newest plays and your bests, plus any you chose to keep.</Notice>;
+  else if (loaded.status === 'none') body = <Notice>This play has no replay. Heartbeat keeps replays of your newest plays and your bests, plus any you chose to keep.</Notice>;
   else if (failed) body = <Notice tone="bad">The game could not load, so the replay cannot play.</Notice>;
   else if (loaded.status === 'loading' || !play || !game)
     body = (

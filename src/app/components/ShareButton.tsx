@@ -8,10 +8,10 @@ import { playTitle } from '../format';
 import { loadGame } from '../state/engine';
 import { Button } from './ui';
 
-/** "Flickwise map: Dynamic, Level 4, Mirror. {url}" */
+/** "Heartbeat map: Dynamic, Level 4, Mirror. {url}" */
 export function shareText(launch: Pick<LaunchRequest, 'modeId' | 'presetLevel' | 'mods'>, url: string): string {
   const parts = [playTitle(launch), ...launch.mods.map((m) => MODS[m].label)];
-  return `Flickwise map: ${parts.join(', ')}. ${url}`;
+  return `Heartbeat map: ${parts.join(', ')}. ${url}`;
 }
 
 /** The placement test is the same fixed set of rounds for everyone, so there is no map to share. */

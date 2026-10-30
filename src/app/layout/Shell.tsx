@@ -9,6 +9,7 @@ import { FAKE_BANNER, NAV, OUTDATED } from '../copy';
 import { isFakeMode } from '../play/mode';
 import { UPDATE_READY_MESSAGE, applyUpdate, usePwa } from '../pwa';
 import { useAppState } from '../state/store';
+import { MovedBanner } from './MovedBanner';
 import { StreakChip } from './StreakChip';
 
 // On a phone the tabs are smaller, so they fit beside the wordmark, the streak chip and the settings icon at 390 px.
@@ -17,7 +18,7 @@ const BAR = '-mb-px flex h-14 items-center border-b-2 px-1.5 text-sm transition 
 export function Wordmark({ className = '' }: { className?: string }) {
   return (
     <span className={`font-display text-xl font-bold tracking-tight text-ink ${className}`}>
-      Flick<span className="text-accent">wise</span>
+      Heart<span className="text-accent">beat</span>
     </span>
   );
 }
@@ -34,9 +35,10 @@ export function Shell() {
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-accent focus:px-3 focus:py-1 focus:text-accent-ink">
         Skip to content
       </a>
+      <MovedBanner />
       <header className="sticky top-0 z-40 border-b border-line bg-bg/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-[1200px] items-center gap-1 px-4 sm:gap-2 sm:px-6">
-          <NavLink to="/" aria-label="Flickwise, home" className="mr-1 sm:mr-6">
+          <NavLink to="/" aria-label="Heartbeat, home" className="mr-1 sm:mr-6">
             <Wordmark />
           </NavLink>
           <nav aria-label="Main" className="flex min-w-0 flex-1 items-center">

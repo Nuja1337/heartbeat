@@ -23,7 +23,7 @@ export type ReplayErrorKind = 'damaged' | 'newer';
 export class ReplayFormatError extends Error {
   readonly kind: ReplayErrorKind;
   constructor(kind: ReplayErrorKind) {
-    super(kind === 'newer' ? 'This replay was made by a newer version of Flickwise.' : 'This replay is damaged.');
+    super(kind === 'newer' ? 'This replay was made by a newer version of Heartbeat.' : 'This replay is damaged.');
     this.name = 'ReplayFormatError';
     this.kind = kind;
   }
@@ -31,6 +31,7 @@ export class ReplayFormatError extends Error {
 
 const damaged = (): ReplayFormatError => new ReplayFormatError('damaged');
 
+// The magic bytes ("FWRP") keep the old app name on purpose: stored replays and shared files start with them.
 const MAGIC = [0x46, 0x57, 0x52, 0x50] as const;
 const PREFIX_BYTES = 12;
 const MAX_OP = TRACE_OP.resume;

@@ -1,4 +1,4 @@
-// Export and import of everything Flickwise stores, as JSON or gzipped JSON.
+// Export and import of everything Heartbeat stores, as JSON or gzipped JSON.
 // Import merges by id: plays and drills that already exist are skipped, tombstones are applied.
 
 import { MODES } from '../shared/catalog';
@@ -14,6 +14,7 @@ import { upgradeDetail, upgradeSummary } from './plays';
 import { loadSettings, sanitizeSettings } from './settings';
 import type { Settings } from '../shared/types';
 
+// Keeps the old app name on purpose: old export files carry it, import must accept it and new exports keep writing it.
 export const EXPORT_FORMAT = 'flickwise-export';
 export const EXPORT_VERSION = 2;
 /** A replay larger than this after decoding is skipped on import. */
@@ -171,10 +172,10 @@ export async function parseExportBytes(bytes: Uint8Array): Promise<unknown> {
 
 export function validateExport(raw: unknown): ExportFile {
   const f = raw as Partial<ExportFile> | null;
-  if (!f || typeof f !== 'object' || f.format !== EXPORT_FORMAT) throw new ImportError('This is not a Flickwise export file.');
+  if (!f || typeof f !== 'object' || f.format !== EXPORT_FORMAT) throw new ImportError('This is not a Heartbeat export file.');
   if (typeof f.formatVersion !== 'number') throw new ImportError('The export file has no version.');
   if (f.formatVersion > EXPORT_VERSION) {
-    throw new ImportError('This file was made by a newer version of Flickwise. Update the app and try again.');
+    throw new ImportError('This file was made by a newer version of Heartbeat. Update the app and try again.');
   }
   if (!Array.isArray(f.plays)) throw new ImportError('The export file has no plays list.');
   return f as ExportFile;

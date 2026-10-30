@@ -1,4 +1,4 @@
-// Plain statistics. Nothing here knows about Flickwise.
+// Plain statistics. Nothing here knows about Heartbeat.
 
 import type { Agg } from '../data/schema';
 

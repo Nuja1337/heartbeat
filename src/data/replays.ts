@@ -48,7 +48,7 @@ export async function getReplayRow(playId: string): Promise<ReplayRow | undefine
 
 /**
  * The decoded replay, or null when the play has none. Throws ReplayFormatError when the bytes are damaged
- * or were made by a newer Flickwise.
+ * or were made by a newer Heartbeat.
  */
 export async function getReplay(playId: string): Promise<ReplayData | null> {
   const stored = await withTx(['replays', 'replayBytes'], 'readonly', async (tx) => {

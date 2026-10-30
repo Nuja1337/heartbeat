@@ -1,5 +1,7 @@
 # Flickwise 2.0 plan
 
+> Flickwise was renamed Heartbeat on 29 October 2026. This document keeps the old name.
+
 Repo: `C:\Users\Nuja\Documents\GitHub\flickwise`. This plan builds on `docs/PLAN.md`, the 1.0 design. "PLAN §n" means a 1.0 section and "§n" means a section of this file. Code comments cite "PLAN-2 §n".
 
 ## 1. Summary

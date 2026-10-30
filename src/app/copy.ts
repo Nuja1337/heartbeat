@@ -9,7 +9,7 @@ export const NAV = [
 ] as const;
 
 export const INTRO = {
-  home: 'Flickwise is an aim trainer that shows where you miss and what to practice.',
+  home: 'Heartbeat is an aim trainer that shows where you miss and what to practice.',
   play: 'Choose how hard the map is. Each map is generated from a seed.',
   train: 'Short modules that raise or lower their difficulty after every set.',
   daily: 'Each day has its own map, which stays the same until midnight at the level you pick. Your daily plays are listed here.',
@@ -32,7 +32,7 @@ export const TIER_NOTE = 'A tier is the whole-number part of a rating. Ratings m
 
 export const EMPTY_STATS = 'Nothing here yet. Play a few maps and your stats will show up.';
 
-export const OUTDATED = 'Flickwise was updated in another tab. Reload to continue.';
+export const OUTDATED = 'Heartbeat was updated in another tab. Reload to continue.';
 
 export const PREVIEW_UNAVAILABLE = 'The map preview is not available yet, so only the values set directly by your choices are shown.';
 

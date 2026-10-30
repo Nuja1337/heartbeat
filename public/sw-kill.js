@@ -1,10 +1,11 @@
-/* Flickwise kill switch. Not active: nothing registers this file.
+/* Heartbeat kill switch. Not active: nothing registers this file.
 
    To retire a broken service worker, ship a build where this file is served as /sw.js and the page no longer
    calls serviceWorker.register (see "Retiring the service worker" in the README). Browsers check /sw.js for
-   changes on their own, install this one at once, and it removes itself and the Flickwise caches.
+   changes on their own, install this one at once, and it removes itself and the Heartbeat caches.
    src/app/pwa.test.ts runs this file against fakes. */
 
+// Keeps the old app name on purpose: caches made by earlier builds start with it.
 const PREFIX = 'fw-';
 
 self.addEventListener('install', () => {

@@ -3,7 +3,7 @@
 import { PALETTES } from '../../shared/catalog';
 import type { PaletteId, Settings } from '../../shared/types';
 
-/** The CSS variables for a palette. index.css reads them through --color-crisp and its siblings. */
+/** The CSS variables for a palette. index.css reads them through --color-crisp and its siblings. The --fw- prefix keeps the old app name on purpose. */
 export function paletteVars(id: PaletteId): Record<'--fw-crisp' | '--fw-solid' | '--fw-rough' | '--fw-miss', string> {
   const j = (PALETTES[id] ?? PALETTES.flickwise).judgments;
   return { '--fw-crisp': j.crisp, '--fw-solid': j.solid, '--fw-rough': j.rough, '--fw-miss': j.miss };

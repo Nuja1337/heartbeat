@@ -1,5 +1,7 @@
 # Flickwise plan
 
+> Flickwise was renamed Heartbeat on 29 October 2026. This document keeps the old name.
+
 The design both builders worked from. Section numbers are referenced from code comments and briefs.
 
 ## 1. Steps, in dependency order

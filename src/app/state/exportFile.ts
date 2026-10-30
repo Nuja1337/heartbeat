@@ -1,6 +1,7 @@
 // Builds an export file and hands it to the browser as a download.
 
 import { buildExport, exportBytes } from '../../data/exportImport';
+import { loadGame } from './engine';
 
 export interface DownloadOptions {
   /** Put the stored replays in the file. On by default. */
@@ -17,8 +18,14 @@ export async function downloadExport(gzip: boolean, options: DownloadOptions = {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `flickwise-${new Date().toISOString().slice(0, 10)}.json${gzip ? '.gz' : ''}`;
+  a.download = `heartbeat-${new Date().toISOString().slice(0, 10)}.json${gzip ? '.gz' : ''}`;
   a.click();
   URL.revokeObjectURL(url);
   return file.plays.length;
+}
+
+/** The export the Settings page and the old-address notice offer: stamped with the engine and generator versions. */
+export async function saveExport(gzip: boolean, includeReplays: boolean): Promise<number> {
+  const g = await loadGame();
+  return downloadExport(gzip, { includeReplays, app: { engineVersion: g.ENGINE_VERSION, generatorVersion: g.GENERATOR_VERSION } });
 }

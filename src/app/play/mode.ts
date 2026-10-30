@@ -3,6 +3,7 @@
 import type { CreateGame } from '../../shared/types';
 import { loadGame } from '../state/engine';
 
+// Keeps the old app name on purpose, like the other fw- keys.
 const KEY = 'fw-fake';
 
 /** ?fake=1 turns fake mode on for this tab. It stays on until the tab closes. */

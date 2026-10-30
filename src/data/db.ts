@@ -1,5 +1,6 @@
 // IndexedDB access: open, migrate, and small promise helpers.
 
+// Keeps the old app name on purpose: it names the database that already holds people's plays.
 export const DB_NAME = 'flickwise';
 export const DB_VERSION = 2;
 
@@ -9,9 +10,9 @@ export const STORE_NAMES: StoreName[] = [
 ];
 
 /** Shown while another tab holds the old database open. */
-export const DB_BLOCKED_MESSAGE = 'Close other Flickwise tabs to finish the update.';
-/** Shown when this browser's data was written by a newer Flickwise than the running code. */
-export const DB_NEWER_MESSAGE = 'This browser has data from a newer Flickwise. Reload to update.';
+export const DB_BLOCKED_MESSAGE = 'Close other Heartbeat tabs to finish the update.';
+/** Shown when this browser's data was written by a newer Heartbeat than the running code. */
+export const DB_NEWER_MESSAGE = 'This browser has data from a newer Heartbeat. Reload to update.';
 
 /** The open failed because the stored database is newer than this code. The message can be shown as is. */
 export class DbNewerError extends Error {
@@ -75,7 +76,7 @@ export function openDb(): Promise<IDBDatabase> {
   if (dbPromise) return dbPromise;
   dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
     if (typeof indexedDB === 'undefined') {
-      reject(new Error('This browser has no IndexedDB, so Flickwise cannot save anything.'));
+      reject(new Error('This browser has no IndexedDB, so Heartbeat cannot save anything.'));
       return;
     }
     const open = indexedDB.open(DB_NAME, DB_VERSION);

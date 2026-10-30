@@ -214,7 +214,7 @@ describe('replay codec rejection', () => {
   });
 
   it('uses the two documented messages', () => {
-    expect(() => decodeReplay(withByte(4, 9))).toThrow('This replay was made by a newer version of Flickwise.');
+    expect(() => decodeReplay(withByte(4, 9))).toThrow('This replay was made by a newer version of Heartbeat.');
     expect(() => decodeReplay(withByte(0, 0))).toThrow('This replay is damaged.');
   });
 

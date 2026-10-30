@@ -32,7 +32,7 @@ const at = (path: string, element: ReactElement) =>
 
 describe('screens render', () => {
   it('Home, Train, setup and Settings', () => {
-    expect(at('/', createElement(Home))).toContain('Flickwise');
+    expect(at('/', createElement(Home))).toContain('Heartbeat');
     expect(at('/train', createElement(Train))).toContain('Jumps');
     const play = at('/play', createElement(PlaySetup));
     expect(play).toContain('Level 4');

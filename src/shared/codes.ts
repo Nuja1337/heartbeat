@@ -21,7 +21,7 @@ import type { DifficultySettings, LaunchRequest, ModId, ModeId, ModuleId, Module
 export class ShareCodeError extends Error {
   readonly kind: 'invalid' | 'newer';
   constructor(kind: 'invalid' | 'newer') {
-    super(kind === 'newer' ? 'This code was made by a newer version of Flickwise.' : "This code isn't valid.");
+    super(kind === 'newer' ? 'This code was made by a newer version of Heartbeat.' : "This code isn't valid.");
     this.name = 'ShareCodeError';
     this.kind = kind;
   }
@@ -309,6 +309,7 @@ function fnv1a32(text: string): number {
 
 /** The seed of the daily map. `date` is a localDateKey. */
 export function dailySeed(date: string): number {
+  // The salt keeps the old app name on purpose: changing it would change every daily map.
   return fnv1a32('flickwise-daily:' + date);
 }
 

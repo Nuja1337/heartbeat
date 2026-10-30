@@ -106,7 +106,7 @@ function InputStep({ onNext, onSkip }: { onNext(): void; onSkip(): void }) {
         />
         {device === 'tablet' && (
           <p className="mt-2 max-w-2xl text-sm text-ink-2">
-            A tablet is an absolute device, so it reports where the pen is and not how far it moved. Raw input needs movement, so it is turned off and Flickwise reads the pen position directly.
+            A tablet is an absolute device, so it reports where the pen is and not how far it moved. Raw input needs movement, so it is turned off and Heartbeat reads the pen position directly.
           </p>
         )}
       </div>
@@ -262,7 +262,7 @@ export function Welcome() {
   return (
     <>
       <PageHeader
-        title="Set up Flickwise"
+        title="Set up Heartbeat"
         intro="Setup has three short steps, and you can skip any of them."
         actions={<Button variant="ghost" onClick={() => void skipAll()}>Skip setup</Button>}
       />

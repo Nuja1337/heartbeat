@@ -7,6 +7,7 @@ import { App } from "./app/App";
 // at most once every 10 s so a broken deploy can't loop. Without session storage there's
 // no way to know whether we already reloaded, so the error surfaces instead.
 window.addEventListener("vite:preloadError", (event) => {
+  // The fw- key keeps the old app name on purpose, like the other session keys.
   let last: number;
   try {
     last = Number(sessionStorage.getItem("fw-reloaded-at")) || 0;

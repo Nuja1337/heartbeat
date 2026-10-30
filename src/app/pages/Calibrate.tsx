@@ -9,12 +9,12 @@ import { getSettings, updateSettings } from '../state/store';
 const COPY: Record<CalibrationKind, { title: string; intro: string; setting: string }> = {
   visual: {
     title: 'Visual calibration',
-    intro: 'Tap as the ring closes on the target, and Flickwise sets how early targets are drawn.',
+    intro: 'Tap as the ring closes on the target, and Heartbeat sets how early targets are drawn.',
     setting: 'Visual offset',
   },
   audio: {
     title: 'Audio calibration',
-    intro: 'Tap with the metronome clicks, and Flickwise sets how early the clicks play.',
+    intro: 'Tap with the metronome clicks, and Heartbeat sets how early the clicks play.',
     setting: 'Audio offset',
   },
 };

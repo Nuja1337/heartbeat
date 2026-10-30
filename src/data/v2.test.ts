@@ -556,7 +556,7 @@ describe('export v2', () => {
 
     await deleteDatabase();
     expect((await importExport({ ...file, formatVersion: 1 })).playsAdded).toBe(4);
-    await expect(importExport({ ...file, formatVersion: 3 })).rejects.toThrow('This file was made by a newer version of Flickwise. Update the app and try again.');
+    await expect(importExport({ ...file, formatVersion: 3 })).rejects.toThrow('This file was made by a newer version of Heartbeat. Update the app and try again.');
     await expect(importExport({ ...file, formatVersion: 3 })).rejects.toBeInstanceOf(ImportError);
   });
 });
@@ -595,7 +595,7 @@ describe('opening the database', () => {
     const error = await openDb().catch((e: unknown) => e);
     expect(error).toBeInstanceOf(DbNewerError);
     expect((error as Error).message).toBe(DB_NEWER_MESSAGE);
-    expect(DB_NEWER_MESSAGE).toBe('This browser has data from a newer Flickwise. Reload to update.');
-    expect(DB_BLOCKED_MESSAGE).toBe('Close other Flickwise tabs to finish the update.');
+    expect(DB_NEWER_MESSAGE).toBe('This browser has data from a newer Heartbeat. Reload to update.');
+    expect(DB_BLOCKED_MESSAGE).toBe('Close other Heartbeat tabs to finish the update.');
   });
 });
