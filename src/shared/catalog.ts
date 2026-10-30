@@ -72,9 +72,9 @@ export const MOD_SCALE = {
   wide: { radius: 1.25, windows: 1.3 },
 } as const;
 
-// 'bullseye' joins ALL_MODS and 'norings' joins ALL_MODS and MODULE_MODS when the engine supports them.
-const ALL_MODS: ModId[] = ['fade', 'spotlight', 'fast', 'slow', 'tight', 'wide', 'mirror', 'nofail', 'onelife'];
-const MODULE_MODS: ModId[] = ['fade', 'spotlight', 'mirror'];
+// 'bullseye' joins ALL_MODS when the engine judges it.
+const ALL_MODS: ModId[] = ['fade', 'spotlight', 'fast', 'slow', 'tight', 'wide', 'mirror', 'nofail', 'onelife', 'norings'];
+const MODULE_MODS: ModId[] = ['fade', 'spotlight', 'mirror', 'norings'];
 
 export const MODS: Record<ModId, ModInfo> = {
   fade: {
