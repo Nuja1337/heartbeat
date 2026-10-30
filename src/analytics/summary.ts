@@ -1,17 +1,26 @@
 // summarizePlay turns a PlayResult into the PlaySummary that is stored for every play.
 // Aim errors are kept in target radii. Records after a pause are left out of every statistic here.
 
-import type { PlaySummary, SkillScore } from '../data/schema';
+import type { MoveStat, PlaySummary, SectionStat, SkillScore } from '../data/schema';
 import { SUMMARY_VERSION } from '../data/schema';
 import { JUDGMENTS, SCORING_VERSION } from '../shared/catalog';
-import type { HitRecord, ModId, PlayResult, SkillId } from '../shared/types';
+import type { HitRecord, MapSection, ModId, PlayResult, SkillId } from '../shared/types';
 import { computeBuckets, isJump, isStreamNote, isTap, tapJudgment, tapMissed } from './buckets';
 import { itemsFromRecords, mapDemand, SKILL_ORDER } from './demand';
 import { aggOf, mean, median, sd } from './stats';
+import { playThroughput } from './throughput';
 
 const round3 = (v: number): number => Math.round(v * 1000) / 1000;
 const finite = (xs: (number | null)[]): number[] => xs.filter((x): x is number => x !== null && Number.isFinite(x));
 const weight = (r: HitRecord): number => JUDGMENTS[r.judgment].weight;
+
+/**
+ * A press within the Crisp window. This reads the timing error and not the judgment, so Bullseye can't
+ * turn a well-timed press into a worse timing score. A press that landed off the target doesn't count.
+ */
+export function isTimingCrisp(r: HitRecord): boolean {
+  return r.timingError !== null && r.missReason !== 'aim' && Math.abs(r.timingError) <= r.crispMs;
+}
 
 /** Performance 0..1 for one skill, or null when the skill has no objects in these records. */
 export function skillPerformance(skill: SkillId, records: readonly HitRecord[]): number | null {
@@ -45,7 +54,7 @@ export function skillPerformance(skill: SkillId, records: readonly HitRecord[]):
     }
     case 'timing': {
       const taps = records.filter(isTap);
-      return taps.length === 0 ? null : taps.filter((r) => tapJudgment(r) === 'crisp').length / taps.length;
+      return taps.length === 0 ? null : taps.filter(isTimingCrisp).length / taps.length;
     }
     case 'reading': {
       const taps = records.filter(isTap);
@@ -131,6 +140,70 @@ function slices(records: HitRecord[], parts: number): (number | null)[] {
   return out;
 }
 
+function roundThroughput(t: { n: number; bitsPerSec: number } | null): PlaySummary['throughput'] {
+  return t ? { n: t.n, bitsPerSec: round3(t.bitsPerSec) } : null;
+}
+
+/** Results per map section, for records with `start <= time < end`. Null when the map has no sections. */
+export function sectionStats(sections: readonly MapSection[] | undefined, records: readonly HitRecord[]): SectionStat[] | null {
+  if (!sections || sections.length === 0) return null;
+  return sections.map((s) => {
+    const inside = records.filter((r) => r.time >= s.start && r.time < s.end);
+    return {
+      start: s.start,
+      end: s.end,
+      role: s.role ?? null,
+      focus: s.focus,
+      n: inside.length,
+      accuracy: inside.length ? round3(mean(inside.map(weight))) : null,
+      misses: inside.filter((r) => r.judgment === 'miss').length,
+    };
+  });
+}
+
+/**
+ * Means over the jumps that carry 2.0 movement data (leave time, first motion or correction path), so
+ * 1.0 records give null. Distances are in target radii.
+ */
+export function moveStat(records: readonly HitRecord[]): MoveStat | null {
+  const leave: number[] = [];
+  const primary: number[] = [];
+  const path: number[] = [];
+  const corr: number[] = [];
+  const eff: number[] = [];
+  let n = 0;
+  for (const r of records.filter(isJump)) {
+    const m = r.movement;
+    const gap = r.features.gapMs;
+    if (m.leaveMs == null && m.primaryAlong == null && m.correctionPath == null) continue;
+    let seen = false;
+    if (m.leaveMs != null && Number.isFinite(m.leaveMs) && gap !== null && gap > 0) {
+      leave.push(m.leaveMs / gap);
+      seen = true;
+    }
+    if (m.primaryAlong != null && Number.isFinite(m.primaryAlong)) {
+      primary.push(m.primaryAlong / r.radius);
+      seen = true;
+    }
+    if (m.correctionPath != null && Number.isFinite(m.correctionPath)) {
+      path.push(m.correctionPath / r.radius);
+      seen = true;
+    }
+    if (m.corrections !== null) {
+      corr.push(m.corrections >= 1 ? 1 : 0);
+      seen = true;
+    }
+    if (m.efficiency !== null) {
+      eff.push(m.efficiency);
+      seen = true;
+    }
+    if (seen) n++;
+  }
+  if (n === 0) return null;
+  const avg = (xs: number[]): number | null => (xs.length ? round3(mean(xs)) : null);
+  return { n, leaveFrac: avg(leave), primaryAlong: avg(primary), correctionPath: avg(path), correctionShare: avg(corr), efficiency: avg(eff) };
+}
+
 export interface SummaryContext {
   id?: string;
   deviceId?: string;
@@ -193,11 +266,11 @@ export function summarizePlay(result: PlayResult, ctx: SummaryContext = {}): Pla
     pb: {},
     tiers: [],
     hasDetail: all.length > 0,
-    // Placeholders. The analytics builder fills the real values.
+    // savePlay sets hasReplay once the replay is stored, and milestones inside the save transaction.
     hasReplay: false,
-    sections: null,
-    movement: null,
-    throughput: null,
+    sections: sectionStats(result.map.sections, usable),
+    movement: moveStat(usable),
+    throughput: roundThroughput(playThroughput(usable)),
     scoringVersion: SCORING_VERSION,
     milestones: [],
   };

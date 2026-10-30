@@ -1,6 +1,7 @@
 // Skill ratings and tiers. A rating is a weighted mean of a skill's best scores in the last 60 days.
 
-import type { PlaySummary, TierEvent, TierHistory } from '../data/schema';
+import type { PlaySummary, SkillScore, TierEvent, TierHistory } from '../data/schema';
+import { levelForDemand } from '../shared/catalog';
 import type { SkillId } from '../shared/types';
 import { SKILL_ORDER } from './demand';
 
@@ -18,12 +19,20 @@ export interface RatingInfo {
 
 export const tierOf = (rating: number): number => Math.floor(rating);
 
+/**
+ * A play's score for a skill, recomputed from `raw` and `performance` with the current anchors.
+ * The stored `level` and `score` are ignored, so a change to the anchors reaches old plays too.
+ */
+export function skillScoreOf(skill: SkillId, sc: Pick<SkillScore, 'raw' | 'performance'>): number {
+  return levelForDemand(skill, sc.raw) * sc.performance * sc.performance;
+}
+
 export function skillRating(skill: SkillId, summaries: readonly PlaySummary[], now: number): RatingInfo | null {
   const since = now - RATING.windowDays * DAY;
   const scores: number[] = [];
   for (const s of summaries) {
     const sc = s.skills[skill];
-    if (sc && s.startedAt >= since && s.startedAt <= now) scores.push(sc.score);
+    if (sc && s.startedAt >= since && s.startedAt <= now) scores.push(skillScoreOf(skill, sc));
   }
   if (scores.length === 0) return null;
   scores.sort((a, b) => b - a);

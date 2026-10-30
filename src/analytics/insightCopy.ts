@@ -57,7 +57,7 @@ export function insightText(ruleId: RuleId, variant: string | null, p: Params): 
     case 'stream-fade':
       return `Your timing gets looser after the first five taps of a stream (${num(p, 'a')} ms spread against ${num(p, 'b')} ms).`;
     case 'second-half':
-      return `Your accuracy drops by about ${num(p, 'pp')} points in the second half of a play.`;
+      return `Your accuracy drops by about ${num(p, 'points')} points in the second half of a play.`;
     case 'sharp-wide':
       return variant === 'wide'
         ? `You miss more on wide, flowing jumps than on sharp back-and-forth ones (${num(p, 'a')}% against ${num(p, 'b')}%).`
@@ -79,7 +79,7 @@ export function insightText(ruleId: RuleId, variant: string | null, p: Params): 
     case 'late-leave':
       return `On fast jumps you leave the last target late, after about ${num(p, 'pct')}% of the time to the next one. Leaving sooner gives the move more time.`;
     case 'first-motion':
-      return variant === 'over'
+      return variant?.startsWith('over')
         ? `On long jumps your first motion goes about ${num(p, 'pct')}% of a target's width past the center before you pull back.`
         : `On long jumps your first motion stops about ${num(p, 'pct')}% of a target's width short, and a second motion makes up the rest.`;
     case 'corrections':
@@ -204,7 +204,7 @@ export function metricCopy(ruleId: RuleId, variant: string | null): MetricCopy {
   }
 }
 
-const parseOctant = (variant: string | null): number => Number(variant?.match(/^o(d)/)?.[1] ?? 0);
+const parseOctant = (variant: string | null): number => Number(variant?.match(/^o(\d)/)?.[1] ?? 0);
 
 const cap = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
 
@@ -231,9 +231,13 @@ export function drillText({ ruleId, variant, createdAt, eval: e }: DrillTextInpu
       return e.sessions < e.sessionsNeeded
         ? `Do ${plural(e.sessionsNeeded - e.sessions, 'more drill session')} to start the comparison.`
         : `Play ${plural(Math.max(1, e.morePlays), 'more map')} outside the drill to measure it.`;
-    case 'better':
-      return `Since you started this drill on ${date}, ${m.metric} went from ${before} to ${after}. That's based on ${e.nBefore} ${noun(e.nBefore)} before and ${e.nAfter} after.`;
+    case 'better': {
+      // Two values that round to the same text are not shown side by side.
+      const change = before === after ? 'improved a little' : `went from ${before} to ${after}`;
+      return `Since you started this drill on ${date}, ${m.metric} ${change}. That's based on ${e.nBefore} ${noun(e.nBefore)} before and ${e.nAfter} after.`;
+    }
     case 'worse':
+      if (before === after) return `${cap(m.metric)} is a little worse than before this drill.`;
       return `${cap(m.metric)} is worse than before this drill (${before} then, ${after} now).`;
     case 'unclear':
       return `No clear change in ${m.metric} yet. ${e.nAfter} ${noun(e.nAfter)} measured since ${date}.`;

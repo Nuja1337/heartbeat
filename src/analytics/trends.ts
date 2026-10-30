@@ -4,6 +4,8 @@ import type { PlaySummary } from '../data/schema';
 import { SKILLS } from '../shared/catalog';
 import type { SkillId } from '../shared/types';
 import { SKILL_ORDER } from './demand';
+import { skillScoreOf } from './ratings';
+import { dayNumberStart, localDayNumber } from './calendar';
 import { aggOf, ewma, weightedMean, welch } from './stats';
 
 const DAY = 86_400_000;
@@ -59,7 +61,7 @@ export const TREND_METRICS: TrendMetric[] = [
   ...SKILL_ORDER.map(
     (skill): TrendMetric => ({
       id: `skill:${skill}`, label: `${SKILLS[skill].label} score`, unit: 'level', decimals: 2, kind: 'play', better: 'up',
-      value: (s) => s.skills[skill]?.score ?? null, weight: (s) => s.skills[skill]?.n ?? 1,
+      value: (s) => { const sc = s.skills[skill]; return sc ? skillScoreOf(skill, sc) : null; }, weight: (s) => s.skills[skill]?.n ?? 1,
     }),
   ),
   { id: 'plays', label: 'Plays per day', unit: 'plays', decimals: 0, kind: 'daily', better: null },
@@ -80,11 +82,11 @@ export type TrendRangeId = (typeof TREND_RANGES)[number]['id'];
 
 /** Whole days since 1970 in the viewer's time zone. */
 export function dayIndex(t: number): number {
-  return Math.floor((t - new Date(t).getTimezoneOffset() * 60_000) / DAY);
+  return localDayNumber(t);
 }
+/** Local midnight at the start of a day from dayIndex. Built from calendar parts, so it holds across clock changes. */
 export function dayStartMs(day: number): number {
-  const approx = day * DAY;
-  return approx + new Date(approx).getTimezoneOffset() * 60_000;
+  return dayNumberStart(day);
 }
 
 export interface DayPoint {

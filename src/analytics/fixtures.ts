@@ -80,6 +80,20 @@ export interface FixtureOptions {
   offCenter?: boolean;
   /** Share of spinners that fall short. */
   spinnerFail?: number;
+  /**
+   * Plants 2.0 movement data (leave time, first motion, correction path). Without this option records carry
+   * only the 1.0 movement fields. It uses its own random stream, so the other fields don't change.
+   */
+  movement?: {
+    /** Mean leaveMs / gapMs. Default 0.15. */
+    leaveFrac?: number;
+    /** Mean primaryAlong in radii on the long, fast jumps (see longFrom and fastFrom). Default 0. */
+    firstMotion?: number;
+    /** Share of jumps of 2.5 widths or more that get a second motion. Default 0.15. */
+    correctionShare?: number;
+    /** Mean correction path in radii for those jumps. Default 0.15. */
+    correctionPath?: number;
+  };
 }
 
 /* ---------------------------------------------------------------- rng */
@@ -201,6 +215,7 @@ export function makeFixture(options: FixtureOptions = {}): Fixture {
   const radius = o.radius ?? 50;
   const objects = o.objects ?? 200;
   const slots = layout({ ...o, objects, radius }, r);
+  const mv = rng((o.seed ?? 1) + 7919);
   const windows = windowsForTiming(5);
   const duration = slots[slots.length - 1]!.endTime + 1000;
   const modeId = o.modeId ?? 'dynamic';
@@ -397,6 +412,32 @@ export function makeFixture(options: FixtureOptions = {}): Fixture {
     score += Math.round(100 * w * (0.8 + 0.2 * (radial === null ? 0 : Math.max(0, 1 - (radial / radius) ** 2))) * (1 + Math.min(comboBefore, 50) / 100));
     if (s.kind !== 'spinner' && judgment === 'miss' && missReason === 'aim') strayPresses++;
 
+    function movementFor(): HitRecord['movement'] {
+      const base: HitRecord['movement'] = {
+        arriveMs: timingError === null ? null : -r.range(20, 120),
+        efficiency: timingError === null ? null : r.range(0.7, 0.95),
+        corrections: timingError === null ? null : r.pick([0, 0, 1, 2]),
+        peakSpeed: f.velocity === null ? null : f.velocity * 1.8,
+      };
+      const m = o.movement;
+      if (!m || timingError === null || s.kind === 'spinner' || f.gapMs === null) return base;
+      const longFast = f.spacing !== null && f.velocity !== null && f.spacing >= (o.longFrom ?? 4.5) && f.velocity >= (o.fastFrom ?? 0.9);
+      const leaveFrac = Math.min(0.95, Math.max(0.02, mv.normal(m.leaveFrac ?? 0.15, 0.08)));
+      const primary = f.direction === null ? null : ((longFast ? (m.firstMotion ?? 0) : 0) + mv.normal(0, 0.25)) * radius;
+      const longer = f.spacing !== null && f.spacing >= 2.5;
+      const corrected = longer && mv.next() < (m.correctionShare ?? 0.15);
+      const path = corrected ? Math.max(0.05, mv.normal(m.correctionPath ?? 0.15, 0.1)) : mv.range(0, 0.1);
+      return {
+        ...base,
+        corrections: corrected ? 1 : 0,
+        leaveMs: f.gapMs * leaveFrac,
+        primaryAlong: primary,
+        primaryLateral: primary === null ? null : mv.normal(0, 0.25) * radius,
+        primaryEndMs: -mv.range(30, 100),
+        correctionPath: path * radius,
+      };
+    }
+
     records.push({
       index: idx,
       kind: s.kind,
@@ -420,12 +461,7 @@ export function makeFixture(options: FixtureOptions = {}): Fixture {
       comboBefore,
       afterPause: false,
       features: f,
-      movement: {
-        arriveMs: timingError === null ? null : -r.range(20, 120),
-        efficiency: timingError === null ? null : r.range(0.7, 0.95),
-        corrections: timingError === null ? null : r.pick([0, 0, 1, 2]),
-        peakSpeed: f.velocity === null ? null : f.velocity * 1.8,
-      },
+      movement: movementFor(),
       slider,
       spinner,
     });

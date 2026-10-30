@@ -205,10 +205,19 @@ describe('ratings', () => {
   function plays(scores: number[], days: number[] = []): PlaySummary[] {
     return scores.map((score, i) => {
       const s = summarizePlay(makeFixture({ seed: i + 1, objects: 40, startedAt: NOW - (days[i] ?? i) * DAY }).result, { id: `p${i}` });
-      s.skills = { aim: { raw: 1, level: score, performance: 1, score, n: 50 } };
+      // Ratings read raw and performance, so plant the raw demand that gives this level.
+      s.skills = { aim: { raw: rawDemandAt('aim', score), level: score, performance: 1, score, n: 50 } };
       return s;
     });
   }
+
+  it('recomputes each score from raw and performance and ignores the stored level and score', () => {
+    const [p] = plays([4]);
+    p!.skills = { aim: { raw: rawDemandAt('aim', 4), level: 1, performance: 0.5, score: 99, n: 50 } };
+    expect(skillRating('aim', [p!], NOW)!.rating).toBeCloseTo(4 * 0.25, 6);
+    p!.skills = { aim: { raw: rawDemandAt('aim', 6), level: 1, performance: 1, score: 0, n: 50 } };
+    expect(skillRating('aim', [p!], NOW)!.rating).toBeCloseTo(6, 6);
+  });
 
   it('weights the best scores by 0.85 to the power of their rank', () => {
     const r = skillRating('aim', plays([4, 3, 2]), NOW)!;

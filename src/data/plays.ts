@@ -1,6 +1,7 @@
 // Saving and loading plays. A play is one summary row plus one detail row of typed-array columns.
 
 import { pbFlags } from '../analytics/bests';
+import { newMilestones, recordMilestones } from '../analytics/milestones';
 import { allRatings, newTierEvents, recordTierEvents } from '../analytics/ratings';
 import { summarizePlay } from '../analytics/summary';
 import type { HitRecord, ModeId, PlayResult } from '../shared/types';
@@ -10,7 +11,7 @@ import { applyReplayRetention, makeReplayRows, prepareReplay } from './replays';
 import { applyPlayToProgress } from './progress';
 import { DETAIL_VERSION, SUMMARY_VERSION } from './schema';
 import type { MetaRow, PlayData, PlayDetail, PlaySummary, ProgressRow, TierHistory } from './schema';
-import { getDeviceId, planKeyRange, requestPersistence } from './meta';
+import { cleanMilestones, getDeviceId, planKeyRange, requestPersistence } from './meta';
 import type { ModuleId } from '../shared/types';
 
 /** A quit play with fewer judged objects than this isn't saved. */
@@ -70,7 +71,7 @@ function liftAll(rows: unknown[]): PlaySummary[] {
 }
 
 /**
- * Saves a finished play, its detail, module progress and any new tiers. The replay is encoded and gzipped
+ * Saves a finished play, its detail, module progress, any new tiers and any new milestones. The replay is encoded and gzipped
  * first, because awaiting other work inside a transaction would commit it early. Transaction A writes the play.
  * Transaction B writes the replay once A has committed, and a failure there leaves the play saved.
  */
@@ -90,6 +91,9 @@ export async function savePlay(result: PlayResult, now = Date.now()): Promise<Sa
     summary.pb = pbFlags(summary, existing);
     const ratings = allRatings([...existing, summary], now);
     summary.tiers = newTierEvents(history, ratings);
+    const milestoneRow = await req<MetaRow | undefined>(tx.objectStore('meta').get('milestones'));
+    const milestones = cleanMilestones(milestoneRow?.value);
+    summary.milestones = newMilestones(milestones, summary, [...existing, summary]);
 
     tx.objectStore('plays').put(summary);
     if (result.records.length > 0) {
@@ -102,6 +106,9 @@ export async function savePlay(result: PlayResult, now = Date.now()): Promise<Sa
     for (const row of progress) tx.objectStore('progress').put(row);
     if (summary.tiers.length > 0) {
       tx.objectStore('meta').put({ key: 'tiers', value: recordTierEvents(history, summary.tiers, now) } satisfies MetaRow);
+    }
+    if (summary.milestones.length > 0) {
+      tx.objectStore('meta').put({ key: 'milestones', value: recordMilestones(milestones, summary.milestones, now, summary.id) } satisfies MetaRow);
     }
   });
   if (prepared) {

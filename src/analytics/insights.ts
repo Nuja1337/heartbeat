@@ -3,11 +3,13 @@
 //
 // A rule has two parts. `detect` decides whether the rule fires and with what numbers. `sample`
 // returns the same measurement on any set of rows, which drills use for their before and after.
+// `detectInsights` returns the insights ranked, with the top three on different modules where it can.
 
-import type { DrillBaseline, PlayData, PlaySummary, RuleId } from '../data/schema';
+import type { DrillBaseline, InsightSnooze, PlayData, PlaySummary, RuleId } from '../data/schema';
 import { DEFAULT_DIFFICULTY, MODES } from '../shared/catalog';
 import type { HitRecord, LaunchRequest, ModeId, ModuleId, ModuleOptions } from '../shared/types';
 import { isJump, isStreamNote, isTap, octantOf, tapMissed } from './buckets';
+import { distinct } from './contrast';
 import { basisText, insightText, lateralSide, OCTANT_PHRASE, recommendationLabel, ruleTitle } from './insightCopy';
 import type { Params } from './insightCopy';
 import { SESSION_GAP_MS, groupSessions } from './sessions';
@@ -193,13 +195,14 @@ function jumpCuts(rows: Rows): JumpCuts | null {
 }
 const cutVariant = (c: JumpCuts): string => `s${c.spacing}v${c.velocity}`;
 function parseCuts(variant: string | null): JumpCuts | null {
-  const m = variant?.match(/^s([\d.]+)v([\d.]+)$/);
+  const m = variant?.match(/(?:^|:)s([\d.]+)v([\d.]+)$/);
   return m ? { spacing: Number(m[1]), velocity: Number(m[2]) } : null;
 }
-const isLongFast = (t: Tap, c: JumpCuts): boolean => {
+const isLongFastJump = (t: Tap, c: JumpCuts): boolean => {
   const f = t.rec.features;
-  return isJump(t.rec) && t.along !== null && f.spacing !== null && f.velocity !== null && f.spacing >= c.spacing && f.velocity >= c.velocity;
+  return isJump(t.rec) && f.spacing !== null && f.velocity !== null && f.spacing >= c.spacing && f.velocity >= c.velocity;
 };
+const isLongFast = (t: Tap, c: JumpCuts): boolean => t.along !== null && isLongFastJump(t, c);
 const isShort = (t: Tap): boolean => {
   const f = t.rec.features;
   return isJump(t.rec) && t.along !== null && f.spacing !== null && f.spacing >= 1 && f.spacing < 2.5;
@@ -209,9 +212,26 @@ function longFastAlong(r: Rows, variant: string | null): number[] {
   const c = parseCuts(variant) ?? jumpCuts(r);
   return c ? nonNull(r.taps.filter((t) => isLongFast(t, c)).map((t) => t.along)) : [];
 }
+/** Where the first motion stopped on the long, fast jumps, in radii. */
+function longFastPrimary(r: Rows, variant: string | null): number[] {
+  const c = parseCuts(variant) ?? jumpCuts(r);
+  return c ? nonNull(r.taps.filter((t) => isLongFastJump(t, c)).map((t) => norm(t.rec.movement.primaryAlong ?? null, t.rec.radius))) : [];
+}
+/** Time before the move starts as a share of the time to the next target, on fast jumps. */
+const leaveShares = (r: Rows) =>
+  nonNull(
+    r.taps
+      .filter((t) => isJump(t.rec) && t.rec.features.gapMs !== null && t.rec.features.gapMs > 0 && t.rec.features.gapMs <= 350 && t.rec.movement.leaveMs != null)
+      .map((t) => t.rec.movement.leaveMs! / t.rec.features.gapMs!),
+  );
+/** Hit jumps of 2.5 widths or more that have correction data. */
+const correctionTaps = (r: Rows): Tap[] =>
+  r.taps.filter((t) => isJump(t.rec) && !t.missed && t.rec.features.spacing !== null && t.rec.features.spacing >= 2.5 && t.rec.movement.corrections !== null && t.rec.movement.correctionPath != null);
+const corrected = (t: Tap): boolean => (t.rec.movement.corrections ?? 0) >= 1;
 const shortAlong = (r: Rows) => nonNull(r.taps.filter(isShort).map((t) => t.along));
 
 const pctWidth = (radii: number) => Math.round(Math.abs(radii) * 50);
+const pct = (share: number) => Math.round(share * 100);
 
 function jumpsRec(options: ModuleOptions) {
   return { modeId: 'jumps' as ModeId, options: withDefaults('jumps', options) };
@@ -320,7 +340,7 @@ const rules: Rule[] = [
             ...jumpsRec({ directionFocus: o }), sample: { kind: 'mean', values },
           });
         }
-        if (overall > 0 && a.sd >= 1.3 * overall && logSdZ(a.sd, a.n, overall, others.length) >= 2) {
+        if (overall > 0 && a.sd >= 1.3 * overall && a.sd - overall >= 0.1 && distinct(a.sd, overall, 'width') && logSdZ(a.sd, a.n, overall, others.length) >= 2) {
           consider({
             variant: `o${o}:spread`, ratio: a.sd / overall / 1.3, n: a.n,
             params: { dir: OCTANT_PHRASE[o]!, pct: pctWidth(a.sd), other: pctWidth(overall) },
@@ -362,7 +382,7 @@ const rules: Rule[] = [
       if (late.length < need(40, scale) || early.length < need(40, scale)) return null;
       const a = sd(late);
       const b = sd(early);
-      if (b <= 0 || a / b < 1.35 || logSdZ(a, late.length, b, early.length) < 2) return null;
+      if (b <= 0 || a / b < 1.35 || !distinct(a, b, 'ms') || logSdZ(a, late.length, b, early.length) < 2) return null;
       return {
         variant: null, ratio: a / b / 1.35, n: Math.min(late.length, early.length), params: { a: Math.round(a), b: Math.round(b) },
         modeId: 'streams', options: withDefaults('streams', { streamLength: 'long' }), sample: { kind: 'sd', values: late },
@@ -382,7 +402,7 @@ const rules: Rule[] = [
       const positive = diffs.filter((d) => d > 0).length / diffs.length;
       if (m < 3 || positive < 0.7) return null;
       return {
-        variant: null, ratio: m / 3, n: diffs.length, params: { pp: Math.round(m) },
+        variant: null, ratio: m / 3, n: diffs.length, params: { points: Math.round(m) },
         modeId: 'stamina', options: withDefaults('stamina', {}), sample: { kind: 'mean', values: diffs },
       };
     },
@@ -402,7 +422,7 @@ const rules: Rule[] = [
       const rs = ms / sharp.length;
       const rw = mw / wide.length;
       const diff = rs - rw;
-      if (Math.abs(diff) < 0.06) return null;
+      if (Math.abs(diff) < 0.06 || !distinct(rs, rw, 'share')) return null;
       const z = twoPropZ(ms, sharp.length, mw, wide.length);
       if (Math.abs(z) < 2) return null;
       const sharpWorse = diff > 0;
@@ -441,7 +461,7 @@ const rules: Rule[] = [
       const straight = trackedBy(rows, 'straight');
       if (curve.length < need(15, scale) || straight.length < need(15, scale)) return null;
       const w = welch(aggOf(curve), aggOf(straight));
-      if (w.diff > -0.08 || Math.abs(w.t) < 2) return null;
+      if (w.diff > -0.08 || Math.abs(w.t) < 2 || !distinct(mean(curve), mean(straight), 'share')) return null;
       return {
         variant: null, ratio: Math.abs(w.diff) / 0.08, n: Math.min(curve.length, straight.length),
         params: { a: Math.round(mean(curve) * 100), b: Math.round(mean(straight) * 100) },
@@ -464,7 +484,7 @@ const rules: Rule[] = [
       if (ticksTotal === 0) return null;
       const endRate = ends / s.length;
       const tickRate = ticksHit / ticksTotal;
-      if (endRate > 0.85 || tickRate < 0.95) return null;
+      if (endRate > 0.85 || tickRate < 0.95 || !distinct(endRate, tickRate, 'share')) return null;
       if (twoPropZ(ticksHit, ticksTotal, ends, s.length) < 2) return null;
       return {
         variant: null, ratio: (1 - endRate) / 0.15, n: s.length, params: { pct: Math.round(endRate * 100), ticks: Math.round(tickRate * 100) },
@@ -507,7 +527,7 @@ const rules: Rule[] = [
       const mb = busy.filter((t) => t.missed).length;
       const mc = calm.filter((t) => t.missed).length;
       const diff = mb / busy.length - mc / calm.length;
-      if (diff < 0.06 || twoPropZ(mb, busy.length, mc, calm.length) < 2) return null;
+      if (diff < 0.06 || !distinct(mb / busy.length, mc / calm.length, 'share') || twoPropZ(mb, busy.length, mc, calm.length) < 2) return null;
       return {
         variant: `b${cuts.busy}c${cuts.calm}`, ratio: diff / 0.06, n: Math.min(busy.length, calm.length),
         params: { cut: cuts.busy, a: Math.round((mb / busy.length) * 100), b: Math.round((mc / calm.length) * 100) },
@@ -558,7 +578,61 @@ const rules: Rule[] = [
     good: () => 'up',
     threshold: () => 0.1,
   },
+  {
+    id: 'late-leave',
+    minN: 60,
+    detect(rows, scale) {
+      const values = leaveShares(rows);
+      const t = meanTest(values, 60, 0.35, 1, scale);
+      if (!t) return null;
+      return {
+        variant: null, ratio: t.mean / 0.35, n: t.n, params: { pct: pct(t.mean) },
+        ...jumpsRec({}), sample: { kind: 'mean', values },
+      };
+    },
+    sample: (r) => ({ kind: 'mean', values: leaveShares(r) }),
+    good: () => 'down',
+    threshold: () => 0.1,
+  },
+  {
+    id: 'first-motion',
+    minN: 40,
+    detect(rows, scale) {
+      const cuts = jumpCuts(rows);
+      if (!cuts) return null;
+      const values = longFastPrimary(rows, cutVariant(cuts));
+      const t = meanTest(values, 40, 0.5, 0, scale);
+      if (!t) return null;
+      return {
+        variant: `${t.mean < 0 ? 'short' : 'over'}:${cutVariant(cuts)}`, ratio: Math.abs(t.mean) / 0.5, n: t.n, params: { pct: pctWidth(t.mean), cut: cuts.spacing },
+        ...jumpsRec({ distanceFocus: 'long' }), sample: { kind: 'mean', values },
+      };
+    },
+    sample: (r, variant) => ({ kind: 'mean', values: longFastPrimary(r, variant) }),
+    good: () => 'zero',
+    threshold: () => 0.25,
+  },
+  {
+    id: 'corrections',
+    minN: 60,
+    detect(rows, scale) {
+      const taps = correctionTaps(rows);
+      if (taps.length < need(60, scale)) return null;
+      const share = taps.filter(corrected).length / taps.length;
+      const path = mean(taps.map((t) => t.rec.movement.correctionPath! / t.rec.radius));
+      if (share < 0.45 || path < 0.6) return null;
+      return {
+        variant: null, ratio: Math.min(share / 0.45, path / 0.6), n: taps.length, params: { pct: pct(share) },
+        ...jumpsRec({}), sample: correctionRate(taps),
+      };
+    },
+    sample: (r) => correctionRate(correctionTaps(r)),
+    good: () => 'down',
+    threshold: () => 0.1,
+  },
 ];
+
+const correctionRate = (taps: Tap[]): Sample => ({ kind: 'rate', hits: taps.filter(corrected).length, n: taps.length });
 
 function secondHalfDrops(rows: Rows): number[] {
   return rows.plays
@@ -581,15 +655,32 @@ export const ruleMinN = (ruleId: RuleId): number => RULES_BY_ID.get(ruleId)?.min
 export const ruleGood = (ruleId: RuleId, variant: string | null): Good => RULES_BY_ID.get(ruleId)?.good(variant) ?? 'down';
 export const ruleThreshold = (ruleId: RuleId, variant: string | null): number => RULES_BY_ID.get(ruleId)?.threshold(variant) ?? 1;
 
-const severity = (ratio: number, n: number, minN: number): number => ratio * Math.min(1, n / (3 * minN));
+/** Rules about the session, not about aim, timing or tracking, count for half. */
+const RULE_WEIGHT: Partial<Record<RuleId, number>> = { 'same-module': 0.5, 'long-session': 0.5 };
 
-function toInsight(rule: Rule, d: Detection, scope: 'window' | 'play'): Insight {
+/** severity = min(ratio, 4) x min(1, n / (3 x minN)) x weight x fresh. */
+export const severityOf = (ratio: number, n: number, minN: number, weight = 1, fresh = 1): number =>
+  Math.min(ratio, 4) * Math.min(1, n / (3 * minN)) * weight * fresh;
+
+/** Taken when the recommended module was played in the last two days. */
+export const FRESH_FACTOR = 0.6;
+export const FRESH_DAYS = 2;
+
+interface RankContext {
+  /** Modules played in the last two days. */
+  recent: ReadonlySet<ModeId>;
+}
+const NO_RECENT: RankContext = { recent: new Set() };
+
+const freshOf = (modeId: ModeId | null, ctx: RankContext): number => (modeId && ctx.recent.has(modeId) ? FRESH_FACTOR : 1);
+
+function toInsight(rule: Rule, d: Detection, scope: 'window' | 'play', ctx: RankContext = NO_RECENT): Insight {
   const recommendation: Recommendation | null = d.modeId ? { modeId: d.modeId, options: d.options, label: recommendationLabel(d.modeId, d.options) } : null;
   return {
     key: d.variant ? `${rule.id}:${d.variant}` : rule.id,
     ruleId: rule.id,
     variant: d.variant,
-    severity: severity(d.ratio, d.n, rule.minN),
+    severity: severityOf(d.ratio, d.n, rule.minN, RULE_WEIGHT[rule.id] ?? 1, freshOf(d.modeId, ctx)),
     n: d.n,
     title: ruleTitle(rule.id, d.variant),
     text: insightText(rule.id, d.variant, d.params),
@@ -632,7 +723,7 @@ function sameModule(plays: PlaySummary[]): Insight | null {
     key: 'same-module',
     ruleId: 'same-module',
     variant: null,
-    severity: 0.5,
+    severity: severityOf(1, 4, 4 / 3, RULE_WEIGHT['same-module']),
     n: 4,
     title: ruleTitle('same-module', null),
     text: insightText('same-module', null, { module: MODES[mode].label }),
@@ -650,12 +741,12 @@ function longSession(plays: PlaySummary[], now: number): Insight | null {
   const avg = mean(session.plays.map((p) => p.accuracy));
   const last = mean(session.plays.slice(-3).map((p) => p.accuracy));
   const dropPoints = (avg - last) * 100;
-  if (dropPoints < 3) return null;
+  if (dropPoints < 3 || !distinct(last, avg, 'share')) return null;
   return {
     key: 'long-session',
     ruleId: 'long-session',
     variant: null,
-    severity: dropPoints / 3,
+    severity: severityOf(dropPoints / 3, session.plays.length, session.plays.length / 3, RULE_WEIGHT['long-session']),
     n: session.plays.length,
     title: ruleTitle('long-session', null),
     text: insightText('long-session', null, { last: Math.round(last * 100), avg: Math.round(avg * 100) }),
@@ -667,28 +758,63 @@ function longSession(plays: PlaySummary[], now: number): Insight | null {
 
 /* --------------------------------------------------------------- main */
 
-/** Insights from the last 30 days of plays, strongest first. Empty below 3 plays. */
-export function detectInsights(plays: readonly PlayData[], now: number): Insight[] {
+/**
+ * Orders insights so the first three recommend different modules where possible. The rest follow in
+ * severity order. An insight with no module (rest, for instance) counts as its own module.
+ */
+export function diversify(sorted: readonly Insight[], top = 3): Insight[] {
+  const picked: Insight[] = [];
+  const modules = new Set<string>();
+  for (const i of sorted) {
+    if (picked.length >= top) break;
+    const m = i.recommendation?.modeId ?? `none:${i.key}`;
+    if (modules.has(m)) continue;
+    modules.add(m);
+    picked.push(i);
+  }
+  for (const i of sorted) {
+    if (picked.length >= top) break;
+    if (!picked.includes(i)) picked.push(i);
+  }
+  return [...picked, ...sorted.filter((i) => !picked.includes(i))];
+}
+
+export interface DetectOptions {
+  /** Insight key to "hidden until" in epoch ms, from meta. Snoozed insights are dropped. */
+  snoozed?: InsightSnooze;
+}
+
+/**
+ * Insights from the last 30 days of plays, strongest first, with the top three on different modules
+ * where possible. Empty below 3 plays. Snoozed keys are dropped.
+ */
+export function detectInsights(plays: readonly PlayData[], now: number, options: DetectOptions = {}): Insight[] {
   const window = selectWindow(plays, now);
   if (!window) return [];
+  const snoozed = options.snoozed ?? {};
+  const hidden = (key: string): boolean => (snoozed[key] ?? 0) > now;
   const rows = buildRows(window);
+  const summaries = window.map((p) => p.summary);
+  const ctx: RankContext = { recent: new Set(summaries.filter((s) => s.startedAt >= now - FRESH_DAYS * DAY && s.startedAt <= now).map((s) => s.modeId)) };
   const out: Insight[] = [];
   for (const rule of rules) {
     const d = rule.detect(rows, 1);
-    if (d) out.push(toInsight(rule, d, 'window'));
+    if (!d) continue;
+    const insight = toInsight(rule, d, 'window', ctx);
+    if (!hidden(insight.key)) out.push(insight);
   }
   out.sort((a, b) => b.severity - a.severity);
 
-  const summaries = window.map((p) => p.summary);
   const repeat = sameModule(summaries);
-  if (repeat) {
+  if (repeat && !hidden(repeat.key)) {
     const repeated = summaries.slice().sort((a, b) => b.startedAt - a.startedAt)[0]!.modeId;
     const next = out.find((i) => i.recommendation && i.recommendation.modeId !== repeated);
-    out.push({ ...repeat, recommendation: next?.recommendation ?? null });
+    const recommendation = next?.recommendation ?? null;
+    out.push({ ...repeat, recommendation, severity: repeat.severity * freshOf(recommendation?.modeId ?? null, ctx) });
   }
   const tired = longSession(summaries, now);
-  if (tired) out.push(tired);
-  return out.sort((a, b) => b.severity - a.severity);
+  if (tired && !hidden(tired.key)) out.push(tired);
+  return diversify(out.sort((a, b) => b.severity - a.severity));
 }
 
 /** Notes for one finished play. They use half the usual minimum counts. */
