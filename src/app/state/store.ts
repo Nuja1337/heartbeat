@@ -2,12 +2,13 @@
 // Components read it with useSyncExternalStore so the game never waits on a render.
 
 import { useSyncExternalStore } from 'react';
-import { onDbOutdated } from '../../data/db';
+import { DbNewerError, onDbBlocked, onDbOutdated } from '../../data/db';
 import { defaultUiPrefs, loadUiPrefs, saveUiPrefs } from '../../data/meta';
 import type { UiPrefs } from '../../data/schema';
 import { cloneSettings, loadSettings, saveSettings } from '../../data/settings';
 import { DEFAULT_SETTINGS } from '../../shared/catalog';
 import type { Settings } from '../../shared/types';
+import { osPrefersReducedMotion, withFirstRunMotion } from './appearance';
 
 interface AppState {
   settings: Settings;
@@ -16,6 +17,10 @@ interface AppState {
   storageError: string | null;
   /** Another tab opened a newer version of the database. */
   outdated: boolean;
+  /** Another tab holds the old database open, so the update waits. */
+  blocked: boolean;
+  /** Why the database can't be used, when the cause has a message of its own. */
+  dbMessage: string | null;
   ready: boolean;
 }
 
@@ -24,6 +29,8 @@ let state: AppState = {
   prefs: defaultUiPrefs(),
   storageError: null,
   outdated: false,
+  blocked: false,
+  dbMessage: null,
   ready: false,
 };
 const listeners = new Set<() => void>();
@@ -70,12 +77,16 @@ let booting: Promise<void> | null = null;
 export function boot(): Promise<void> {
   if (booting) return booting;
   onDbOutdated(() => set({ outdated: true }));
+  onDbBlocked(() => set({ blocked: true }));
   booting = (async () => {
     try {
-      const [settings, prefs] = await Promise.all([loadSettings(), loadUiPrefs()]);
-      set({ settings, prefs, ready: true });
+      const [loaded, prefs] = await Promise.all([loadSettings(), loadUiPrefs()]);
+      // The open has resolved, so any wait for another tab is over.
+      set({ settings: withFirstRunMotion(loaded, osPrefersReducedMotion()), prefs, blocked: false, ready: true });
     } catch (e) {
-      set({ storageError: e instanceof Error ? e.message : 'Could not open the database.', ready: true });
+      const settings = withFirstRunMotion(state.settings, osPrefersReducedMotion());
+      if (e instanceof DbNewerError) set({ settings, dbMessage: e.message, blocked: false, ready: true });
+      else set({ settings, storageError: e instanceof Error ? e.message : 'Could not open the database.', blocked: false, ready: true });
     }
   })();
   return booting;

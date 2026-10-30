@@ -52,13 +52,13 @@ export function Rose({
         {sectors.map((s) => {
           const r = Math.max(10, rMax * Math.sqrt(s.n / peak));
           const enough = s.value !== null && s.n >= minN;
-          const fill = !enough ? '#1b2330' : scale === 'sequential' ? sequentialColor(Math.min(1, s.value! / max)) : divergingColor(Math.max(-1, Math.min(1, s.value! / max)));
+          const fill = !enough ? CHART.bg : scale === 'sequential' ? sequentialColor(Math.min(1, s.value! / max)) : divergingColor(Math.max(-1, Math.min(1, s.value! / max)));
           return (
             <path
               key={s.octant}
               d={wedge(s.octant, r)}
               fill={fill}
-              stroke={hover === s.octant ? CHART.ink : '#0b0f14'}
+              stroke={hover === s.octant ? CHART.ink : CHART.empty}
               strokeWidth={hover === s.octant ? 2 : 1.5}
               tabIndex={0}
               aria-label={describe(s)}

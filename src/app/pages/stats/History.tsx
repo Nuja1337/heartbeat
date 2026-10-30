@@ -47,7 +47,7 @@ export function History() {
               ))}
             </select>
           </div>
-          {error && <p role="alert" className="mb-3 text-miss">{error}</p>}
+          {error && <p role="alert" className="mb-3 text-danger">{error}</p>}
           <div className="space-y-4">
             {sessions.map((session) => (
               <Card key={session.start}>

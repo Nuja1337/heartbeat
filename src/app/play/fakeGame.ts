@@ -46,7 +46,7 @@ export function fakeResult(launch: LaunchRequest, status: PlayResult['status'] =
   };
 }
 
-export const createFakeGame: CreateGame = (canvas: HTMLCanvasElement, launch: LaunchRequest, _settings: Settings, cb: GameCallbacks): GameHandle => {
+export const createFakeGame: CreateGame = (canvas: HTMLCanvasElement, launch: LaunchRequest, settings: Settings, cb: GameCallbacks): GameHandle => {
   let paused = false;
   let destroyed = false;
   let finished = false;
@@ -65,13 +65,13 @@ export const createFakeGame: CreateGame = (canvas: HTMLCanvasElement, launch: La
       canvas.height = Math.round(h * dpr);
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = '#0b0f14';
+    ctx.fillStyle = '#07090e';
     ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = '#e5e7eb';
+    ctx.fillStyle = '#eef1f6';
     ctx.textAlign = 'center';
     ctx.font = '20px system-ui, sans-serif';
     ctx.fillText('Fake game', w / 2, h / 2 - 12);
-    ctx.fillStyle = '#9ca3af';
+    ctx.fillStyle = '#a3adbd';
     ctx.font = '15px system-ui, sans-serif';
     ctx.fillText(paused ? 'Paused' : `Result in ${(left / 1000).toFixed(1)} s. Press Esc to pause.`, w / 2, h / 2 + 16);
   };
@@ -99,10 +99,27 @@ export const createFakeGame: CreateGame = (canvas: HTMLCanvasElement, launch: La
     last = performance.now();
     cb.onPause(p);
   };
+  // Holding the retry key for 300 ms ends the play as a quit and calls onRetry, like the real engine.
+  let retryTimer = 0;
   const onKey = (e: KeyboardEvent) => {
     if (e.code === 'Escape') setPaused(true);
+    else if (!e.repeat && settings.input.retryKey !== '' && e.code === settings.input.retryKey && cb.onRetry && !retryTimer) {
+      retryTimer = window.setTimeout(() => {
+        if (finished || destroyed) return;
+        finished = true;
+        cancelAnimationFrame(raf);
+        cb.onRetry?.(fakeResult(launch, 'quit'));
+      }, 300);
+    }
+  };
+  const onKeyUp = (e: KeyboardEvent) => {
+    if (e.code === settings.input.retryKey) {
+      window.clearTimeout(retryTimer);
+      retryTimer = 0;
+    }
   };
   window.addEventListener('keydown', onKey);
+  window.addEventListener('keyup', onKeyUp);
 
   return {
     resume: () => setPaused(false),
@@ -112,7 +129,9 @@ export const createFakeGame: CreateGame = (canvas: HTMLCanvasElement, launch: La
     destroy: () => {
       destroyed = true;
       cancelAnimationFrame(raf);
+      window.clearTimeout(retryTimer);
       window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keyup', onKeyUp);
     },
   };
 };

@@ -1,6 +1,5 @@
 import type { HitRecord } from '../../shared/types';
-import { JUDGMENTS } from '../../shared/catalog';
-import { CHART } from './scale';
+import { CHART, JCOLOR } from './scale';
 
 /**
  * Where clicks landed relative to the target, in the frame of the movement into it.
@@ -21,11 +20,11 @@ export function AimScatter({ records, size = 300 }: { records: readonly HitRecor
     <svg viewBox={`0 0 ${size} ${size}`} className="w-full max-w-sm" role="img" aria-label={`Click positions around the target. Average ${Math.round(ma * 50)} percent along and ${Math.round(ml * 50)} percent across.`}>
       <line x1={0} x2={size} y1={c} y2={c} stroke={CHART.grid} />
       <line x1={c} x2={c} y1={0} y2={size} stroke={CHART.grid} />
-      <circle cx={c} cy={c} r={k} fill="rgba(125,211,252,0.06)" stroke={CHART.accent} strokeWidth={1.5} />
+      <circle cx={c} cy={c} r={k} fill="rgba(94,231,242,0.06)" stroke={CHART.accent} strokeWidth={1.5} />
       {pts.map((r, i) => {
         const px = Math.max(3, Math.min(size - 3, c + (r.aimAlong! / r.radius) * k));
         const py = Math.max(3, Math.min(size - 3, c + (r.aimLateral! / r.radius) * k));
-        return <circle key={i} cx={px} cy={py} r={2.4} fill={JUDGMENTS[r.judgment].color} fillOpacity={0.75} />;
+        return <circle key={i} cx={px} cy={py} r={2.4} fill={JCOLOR[r.judgment]} fillOpacity={0.75} />;
       })}
       <g>
         <line x1={c + ma * k - 7} x2={c + ma * k + 7} y1={c + ml * k} y2={c + ml * k} stroke={CHART.ink} strokeWidth={2} />

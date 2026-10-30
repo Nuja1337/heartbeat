@@ -77,7 +77,7 @@ export function Results() {
 
       {(note || pbs.length > 0 || s.tiers.length > 0) && (
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          {note && <Badge tone="warn">{note}</Badge>}
+          {note && <Badge tone="warn" sentence>{note}</Badge>}
           {pbs.map((p) => (
             <Badge key={p} tone="good">{p}</Badge>
           ))}

@@ -1,7 +1,7 @@
 // Chooses the real game or the fake one. The fake game exists in dev builds only.
 
-import { createGame } from '../../game/index';
 import type { CreateGame } from '../../shared/types';
+import { loadGame } from '../state/engine';
 
 const KEY = 'fw-fake';
 
@@ -22,5 +22,5 @@ export async function pickCreateGame(): Promise<CreateGame> {
     const { createFakeGame } = await import('./fakeGame');
     return createFakeGame;
   }
-  return createGame;
+  return (await loadGame()).createGame;
 }

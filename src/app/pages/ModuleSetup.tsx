@@ -129,7 +129,7 @@ function Setup({ modeId }: { modeId: ModeId }) {
                       );
                     })}
                   </ul>
-                  {!mixValid && <p role="status" className="text-sm text-rough">Pick at least 2 modules.</p>}
+                  {!mixValid && <p role="status" className="text-sm text-warn">Pick at least 2 modules.</p>}
                 </Field>
               )}
             </Card>

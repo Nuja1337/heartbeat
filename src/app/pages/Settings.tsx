@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { buildExport, exportBytes, ImportError, importBytes } from '../../data/exportImport';
+import { ImportError, importBytes } from '../../data/exportImport';
 import type { ImportReport } from '../../data/exportImport';
 import { currentPersisted, getLastExport, storageEstimate } from '../../data/meta';
 import { deleteAllData } from '../../data/plays';
 import { RETENTION_CHOICES } from '../../data/settings';
-import { ENGINE_VERSION, GENERATOR_VERSION, playTestSound } from '../../game/index';
 import { KeyCapture } from '../components/KeyCapture';
 import { Button, Card, Field, Notice, PageHeader, Segmented, SectionTitle, Slider, Toggle, keyLabel } from '../components/ui';
 import { INTRO } from '../copy';
 import { bytes, dateTime } from '../format';
 import { invalidateAnalysis, useAnalysis } from '../state/analysis';
+import { loadGame, useGame } from '../state/engine';
+import { downloadExport } from '../state/exportFile';
+import { promptInstall, usePwa } from '../pwa';
 import { useSettings } from '../state/store';
 
 const RETENTION_LABEL = (d: number | null) => (d === null ? 'Forever' : `${d} days`);
@@ -18,10 +20,12 @@ export function Settings() {
   const [s, update] = useSettings();
   const { data } = useAnalysis();
   const lastInput = data?.summaries[0]?.input ?? null;
+  const { game } = useGame();
+  const { canInstall } = usePwa();
 
   const test = (sound: 'hit' | 'miss' | 'combo') => {
     try {
-      playTestSound(s, sound);
+      game?.playTestSound(s, sound);
     } catch {
       // The engine may not be available yet.
     }
@@ -30,7 +34,7 @@ export function Settings() {
   return (
     <>
       <PageHeader title="Settings" intro={INTRO.settings} />
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card>
           <SectionTitle>Input</SectionTitle>
           <Toggle
@@ -126,7 +130,7 @@ export function Settings() {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
         <Card>
           <SectionTitle>Detected on your last play</SectionTitle>
           {lastInput ? (
@@ -146,6 +150,16 @@ export function Settings() {
         </Card>
         <DataCard />
       </div>
+
+      {canInstall && (
+        <Card className="mt-6">
+          <SectionTitle>Install</SectionTitle>
+          <p className="text-sm text-ink-2">Install Flickwise to open it from your desktop or home screen and play without a connection.</p>
+          <Button variant="primary" className="mt-4" onClick={() => void promptInstall()}>
+            Install
+          </Button>
+        </Card>
+      )}
     </>
   );
 }
@@ -170,16 +184,9 @@ function DataCard() {
   const doExport = async (gzip: boolean) => {
     setBusy(true);
     try {
-      const file = await buildExport({ engineVersion: ENGINE_VERSION, generatorVersion: GENERATOR_VERSION });
-      const bytesOut = await exportBytes(file, gzip);
-      const blob = new Blob([bytesOut as BlobPart], { type: gzip ? 'application/gzip' : 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `flickwise-${new Date().toISOString().slice(0, 10)}.json${gzip ? '.gz' : ''}`;
-      a.click();
-      URL.revokeObjectURL(url);
-      setMessage({ tone: 'good', text: `Exported ${file.plays.length} plays.` });
+      const g = await loadGame();
+      const count = await downloadExport(gzip, { engineVersion: g.ENGINE_VERSION, generatorVersion: g.GENERATOR_VERSION });
+      setMessage({ tone: 'good', text: `Exported ${count} plays.` });
       refresh();
     } catch (e) {
       setMessage({ tone: 'bad', text: e instanceof Error ? e.message : 'The export failed.' });
@@ -270,7 +277,7 @@ function DataCard() {
         <dt className="text-ink-2">Last export</dt>
         <dd>{lastExport ? dateTime(lastExport) : 'never'}</dd>
       </dl>
-      {persisted === false && <p className="mt-2 text-sm text-rough">The browser has not promised to keep this data. Export a file now and then.</p>}
+      {persisted === false && <p className="mt-2 text-sm text-warn">The browser has not promised to keep this data. Export a file now and then.</p>}
 
       <Field label="Keep per-object detail for" help="Older detail is removed. Play summaries, ratings, trends and bests are always kept.">
         <Segmented

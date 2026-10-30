@@ -5,7 +5,6 @@ export const NAV = [
   { to: '/play', label: 'Play', end: false },
   { to: '/train', label: 'Train', end: false },
   { to: '/stats', label: 'Stats', end: false },
-  { to: '/settings', label: 'Settings', end: false },
 ] as const;
 
 export const INTRO = {

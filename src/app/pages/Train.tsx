@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { Motif } from '../components/Motif';
 import { SKILLS, MODES, MODE_ORDER, DEFAULT_MODULE_LEVEL, MODULE_IDS } from '../../shared/catalog';
 import type { ModuleId } from '../../shared/types';
 import { Badge, Card, PageHeader } from '../components/ui';
@@ -12,7 +13,7 @@ export function Train() {
   return (
     <>
       <PageHeader title="Train" intro={INTRO.train} />
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
         {modes.map((id) => {
           const mode = MODES[id];
           const isModule = (MODULE_IDS as string[]).includes(id);
@@ -21,10 +22,10 @@ export function Train() {
             <li key={id}>
               <Link
                 to={`/train/${id}`}
-                className="flex h-full flex-col rounded-lg border border-line bg-surface p-4 transition hover:border-accent focus-visible:border-accent"
+                className="fw-panel fw-marks fw-interactive flex h-full flex-col p-4 sm:p-6"
               >
-                <span className="flex items-baseline justify-between gap-2">
-                  <span className="text-lg font-semibold">{mode.label}</span>
+                <span className="flex items-center justify-between gap-2">
+                  <span className="font-display text-lg font-semibold">{mode.label}</span>
                   {isModule ? (
                     <Badge tone={row ? 'accent' : 'neutral'}>
                       {row ? `Level ${level(row.level)}` : `Starts at ${DEFAULT_MODULE_LEVEL}`}
@@ -33,8 +34,11 @@ export function Train() {
                     <Badge>{mode.adaptive ? 'Adaptive' : 'Fixed level'}</Badge>
                   )}
                 </span>
-                <span className="mt-1 flex-1 text-sm text-ink-2">{mode.description}</span>
-                {mode.skills.length > 0 && <span className="mt-3 text-xs text-ink-3">{mode.skills.map((s) => SKILLS[s].label).join(', ')}</span>}
+                <span className="mt-2 flex-1 text-sm text-ink-2">{mode.description}</span>
+                <span className="mt-4 flex items-end justify-between gap-3">
+                  <span className="text-xs text-ink-3">{mode.skills.map((s) => SKILLS[s].label).join(', ')}</span>
+                  <Motif mode={id} />
+                </span>
               </Link>
             </li>
           );

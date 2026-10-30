@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { JUDGMENTS } from '../../shared/catalog';
 import type { HitRecord } from '../../shared/types';
-import { CHART, linear, niceTicks } from './scale';
+import { JUDGMENTS } from '../../shared/catalog';
+import { CHART, JCOLOR, linear, niceTicks } from './scale';
 
 const W = 720;
 const H = 240;
@@ -33,14 +33,14 @@ export function Timeline({ records }: { records: readonly HitRecord[] }) {
         <text x={W - M.r} y={H - 8} fontSize={11} fill={CHART.ink2} textAnchor="end">End</text>
         {taps.map((r, i) =>
           r.timingError === null ? (
-            <line key={r.index} x1={x(r.time)} x2={x(r.time)} y1={H - M.b - 8} y2={H - M.b} stroke={JUDGMENTS.miss.color} strokeWidth={2} />
+            <line key={r.index} x1={x(r.time)} x2={x(r.time)} y1={H - M.b - 8} y2={H - M.b} stroke={JCOLOR.miss} strokeWidth={2} />
           ) : (
             <circle
               key={r.index}
               cx={x(r.time)}
               cy={y(Math.max(-cap, Math.min(cap, r.timingError)))}
               r={active === i ? 4.5 : 2.6}
-              fill={JUDGMENTS[r.judgment].color}
+              fill={JCOLOR[r.judgment]}
               fillOpacity={0.85}
             />
           ),

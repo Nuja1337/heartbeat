@@ -1,10 +1,8 @@
 // Loads everything the dashboards need once, and keeps it until a play or a delete changes it.
 
 import { useCallback, useEffect, useState } from 'react';
-import { refreshDrill } from '../../analytics/drillEval';
-import { detectInsights, INSIGHT_WINDOW_DAYS } from '../../analytics/insights';
+// The analytics modules load on first use, so Home's first paint doesn't wait for them.
 import type { Insight } from '../../analytics/insights';
-import { allRatings } from '../../analytics/ratings';
 import type { RatingInfo } from '../../analytics/ratings';
 import { listDrills, saveDrill } from '../../data/drills';
 import { getTierHistory } from '../../data/meta';
@@ -42,6 +40,11 @@ export function invalidateAnalysis(): void {
 
 async function compute(): Promise<Analysis> {
   const now = Date.now();
+  const [{ refreshDrill }, { detectInsights, INSIGHT_WINDOW_DAYS }, { allRatings }] = await Promise.all([
+    import('../../analytics/drillEval'),
+    import('../../analytics/insights'),
+    import('../../analytics/ratings'),
+  ]);
   const [summaries, progress, drills, tiers] = await Promise.all([listSummaries(), loadProgress(), listDrills(), getTierHistory()]);
 
   // Insights read the newest plays only. Drills load their own data below, outside this cap.

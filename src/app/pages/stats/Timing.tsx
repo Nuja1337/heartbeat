@@ -4,6 +4,7 @@ import { aggOf, median } from '../../../analytics/stats';
 import { listSummariesSince, loadPlayData } from '../../../data/plays';
 import type { PlayData } from '../../../data/schema';
 import { Histogram, histCounts } from '../../charts/Histogram';
+import { CHART } from '../../charts/scale';
 import { Card, PageHeader, Stat } from '../../components/ui';
 import { INTRO } from '../../copy';
 import { offsetText, pct0 } from '../../format';
@@ -13,9 +14,9 @@ const DAY = 86_400_000;
 const MAX_PLAYS = 40;
 
 const SERIES = [
-  { id: 'circle', label: 'Circles', color: '#fb923c' },
-  { id: 'head', label: 'Slider heads', color: '#60a5fa' },
-  { id: 'stream', label: 'Stream notes', color: '#f472b6' },
+  { id: 'circle', label: 'Circles', color: '#ffb340' },
+  { id: 'head', label: 'Slider heads', color: '#b49bff' },
+  { id: 'stream', label: 'Stream notes', color: '#ff7ab8' },
 ] as const;
 
 export function Timing() {
@@ -55,7 +56,7 @@ export function Timing() {
     return { all, circle, head, stream, crispMs: crisp.length ? median(crisp) : 40 };
   }, [plays]);
 
-  if (error) return <p className="text-miss">{error}</p>;
+  if (error) return <p className="text-danger">{error}</p>;
   if (!plays) return <p className="text-ink-2">Loading.</p>;
 
   const a = aggOf(groups.all);
@@ -82,7 +83,7 @@ export function Timing() {
           <Card>
             <div className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
               <span className="flex items-center gap-2">
-                <span aria-hidden className="h-2.5 w-2.5 rounded-sm" style={{ background: '#7dd3fc' }} />
+                <span aria-hidden className="h-2.5 w-2.5 rounded-sm" style={{ background: CHART.accent }} />
                 All clicks (bars)
               </span>
               {SERIES.map((s) => (
@@ -96,7 +97,7 @@ export function Timing() {
             <Histogram
               label="Timing errors in 5 ms bins from minus 150 to plus 150 milliseconds"
               series={[
-                { label: 'All clicks', color: '#7dd3fc', counts: histCounts(groups.all) },
+                { label: 'All clicks', color: CHART.accent, counts: histCounts(groups.all) },
                 ...SERIES.filter((s) => shown[s.id] && groups[s.id].length > 0).map((s) => ({ label: s.label, color: s.color, counts: histCounts(groups[s.id]) })),
               ]}
               mean={a.mean}

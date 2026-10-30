@@ -64,7 +64,7 @@ export function KeyCapture({
         </button>
       </div>
       {message && (
-        <p role="status" className="mt-1 text-sm text-rough">
+        <p role="status" className="mt-1 text-sm text-warn">
           {message}
         </p>
       )}

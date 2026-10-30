@@ -28,6 +28,9 @@ function Session({ launch, from, onRestart }: { launch: LaunchRequest; from: str
   const [saving, setSaving] = useState(false);
   const resumeButton = useRef<HTMLButtonElement>(null);
   const mounted = useRef(true);
+  // The restart handler is read through a ref so a new closure never restarts the engine.
+  const restart = useRef(onRestart);
+  restart.current = onRestart;
   // The finished play, kept so a failed save can be tried again.
   const pending = useRef<PlayResult | null>(null);
 
@@ -59,6 +62,26 @@ function Session({ launch, from, onRestart }: { launch: LaunchRequest; from: str
     [navigate, from],
   );
 
+  /** Saves a play that ended by quick retry, then starts the same launch again without leaving /session. */
+  const saveAndRestart = useCallback((result: PlayResult) => {
+    if (!shouldSave(result)) {
+      restart.current();
+      return;
+    }
+    pending.current = result;
+    savePlay(result).then(
+      () => {
+        invalidateAnalysis();
+        pending.current = null;
+        if (mounted.current) restart.current();
+      },
+      (e: unknown) => {
+        if (!mounted.current) return;
+        setError(`The play finished, but it could not be saved. ${e instanceof Error ? e.message : ''}`.trim());
+      },
+    );
+  }, []);
+
   const leave = useCallback(() => {
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => undefined);
     navigate(from, { replace: true });
@@ -87,6 +110,7 @@ function Session({ launch, from, onRestart }: { launch: LaunchRequest; from: str
           handle.current = create(el, launch, getSettings(), {
             onPause: (p) => alive && setPaused(p),
             onFinish: finish,
+            onRetry: (result) => alive && saveAndRestart(result),
             onError: (message) => alive && setError(message),
           });
         } catch (e) {
@@ -101,7 +125,7 @@ function Session({ launch, from, onRestart }: { launch: LaunchRequest; from: str
       handle.current?.destroy();
       handle.current = null;
     };
-  }, [launch, from, navigate, save]);
+  }, [launch, from, navigate, save, saveAndRestart]);
 
   useEffect(() => {
     if (paused) resumeButton.current?.focus();
@@ -118,9 +142,9 @@ function Session({ launch, from, onRestart }: { launch: LaunchRequest; from: str
       <canvas ref={canvas} className="block h-full w-full select-none" style={{ touchAction: 'none' }} onContextMenu={(e) => e.preventDefault()} />
 
       {paused && !error && !saving && (
-        <div role="dialog" aria-modal="true" aria-label="Paused" className="absolute inset-0 flex items-center justify-center bg-bg/80 backdrop-blur-sm">
-          <div className="w-72 rounded-lg border border-line bg-surface p-5 shadow-xl">
-            <h2 className="mb-4 text-lg font-semibold">Paused</h2>
+        <div role="dialog" aria-modal="true" aria-label="Paused" className="fw-enter-small absolute inset-0 flex items-center justify-center bg-bg/80 backdrop-blur-sm">
+          <div className="fw-panel fw-marks w-72 p-6">
+            <h2 className="fw-kicker mb-5">Paused</h2>
             <div className="flex flex-col gap-2">
               <Button ref={resumeButton} variant="primary" onClick={resume}>
                 Resume
@@ -135,17 +159,17 @@ function Session({ launch, from, onRestart }: { launch: LaunchRequest; from: str
       )}
 
       {saving && (
-        <div role="status" className="absolute inset-0 flex items-center justify-center bg-bg/80 text-ink-2">
-          Saving your play.
+        <div role="status" className="absolute inset-0 flex items-center justify-center bg-bg/80 backdrop-blur-sm">
+          <span className="fw-kicker">Saving your play.</span>
         </div>
       )}
 
       {error && (
-        <div role="alertdialog" aria-label="Error" className="absolute inset-0 flex items-center justify-center bg-bg/90">
-          <div className="w-96 max-w-[90vw] rounded-lg border border-miss/40 bg-surface p-5">
-            <h2 className="mb-2 text-lg font-semibold">Something went wrong</h2>
-            <p className="mb-4 text-ink-2">{error}</p>
-            <div className="flex gap-2">
+        <div role="alertdialog" aria-label="Error" className="fw-enter-small absolute inset-0 flex items-center justify-center bg-bg/90">
+          <div className="fw-panel fw-marks w-96 max-w-[90vw] border-danger/40 p-6">
+            <h2 className="mb-2 text-lg">Something went wrong</h2>
+            <p className="mb-6 text-ink-2">{error}</p>
+            <div className="flex flex-wrap gap-2">
               {pending.current && (
                 <Button variant="primary" onClick={() => save(pending.current!)}>
                   Try saving again

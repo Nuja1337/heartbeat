@@ -4,10 +4,12 @@ import type { PlaySummary } from '../../data/schema';
 import type { HitRecord } from '../../shared/types';
 import { median } from '../../analytics/stats';
 import { AimScatter } from '../charts/AimScatter';
+import { CHART, JCOLOR } from '../charts/scale';
 import { Bars } from '../charts/Bars';
 import { Histogram, histCounts } from '../charts/Histogram';
 import { alongText, duration, int, lateralText, level, offsetText, pct, widthPct } from '../format';
-import { Card, SectionTitle, Stat } from './ui';
+import { Count } from './Count';
+import { Card, SectionTitle, Stat, StatBig } from './ui';
 
 const ORDER: Judgment[] = ['crisp', 'solid', 'rough', 'miss'];
 
@@ -21,12 +23,12 @@ export function PlayReport({ summary: s, records }: { summary: PlaySummary; reco
 
   return (
     <div className="space-y-6">
-      <Card>
-        <div className="flex flex-wrap gap-x-10 gap-y-4">
+      <Card marks>
+        <div className="flex flex-wrap items-end gap-x-10 gap-y-4">
           {isDynamic ? (
-            <Stat label="Score" value={int(s.score)} />
+            <StatBig label="Score" value={<Count value={s.score} format={int} />} />
           ) : levelEntries.length > 0 ? (
-            levelEntries.map(([id, v]) => <Stat key={id} label={`${MODES[id as keyof typeof MODES].label} level`} value={level(v)} />)
+            levelEntries.map(([id, v]) => <StatBig key={id} label={`${MODES[id as keyof typeof MODES].label} level`} value={<Count value={v} format={level} />} />)
           ) : null}
           <Stat label="Accuracy" value={pct(s.accuracy)} />
           <Stat label="Max combo" value={int(s.maxCombo)} />
@@ -36,13 +38,13 @@ export function PlayReport({ summary: s, records }: { summary: PlaySummary; reco
         <div className="mt-5">
           <div className="flex h-2 overflow-hidden rounded-full bg-line" role="img" aria-label={ORDER.map((j) => `${JUDGMENTS[j].label} ${s.counts[j]}`).join(', ')}>
             {ORDER.map((j) => (
-              <span key={j} style={{ width: `${(s.counts[j] / total) * 100}%`, background: JUDGMENTS[j].color }} />
+              <span key={j} style={{ width: `${(s.counts[j] / total) * 100}%`, background: JCOLOR[j] }} />
             ))}
           </div>
           <ul className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm">
             {ORDER.map((j) => (
               <li key={j} className="flex items-center gap-2">
-                <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ background: JUDGMENTS[j].color }} />
+                <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ background: JCOLOR[j] }} />
                 <span className="text-ink-2">{JUDGMENTS[j].label}</span>
                 <span>{s.counts[j]}</span>
               </li>
@@ -87,7 +89,7 @@ export function PlayReport({ summary: s, records }: { summary: PlaySummary; reco
                   label="Timing errors in 5 ms bins"
                   compact
                   height={250}
-                  series={[{ label: 'All taps', color: '#7dd3fc', counts: histCounts(timing) }]}
+                  series={[{ label: 'All taps', color: CHART.accent, counts: histCounts(timing) }]}
                   mean={s.timing.mean}
                   sd={s.timing.sd}
                   windows={{ crisp: crispMs, solid: crispMs * 2, rough: crispMs * 3 }}

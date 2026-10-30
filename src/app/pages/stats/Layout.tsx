@@ -1,5 +1,8 @@
-import { NavLink, Outlet } from 'react-router';
+import { Suspense } from 'react';
+import { Outlet } from 'react-router';
 import { AnalysisError } from '../../components/AnalysisError';
+import { PageSkeleton } from '../../components/Skeleton';
+import { TabNav } from '../../components/ui';
 import { useAnalysis } from '../../state/analysis';
 
 const TABS = [
@@ -15,20 +18,11 @@ export function StatsLayout() {
   const { error, reload } = useAnalysis();
   return (
     <>
-      <nav aria-label="Stats" className="mb-6 flex flex-wrap gap-1 border-b border-line pb-2">
-        {TABS.map((t) => (
-          <NavLink
-            key={t.to}
-            to={t.to}
-            end={t.end}
-            className={({ isActive }) => `rounded-md px-3 py-1.5 text-sm transition ${isActive ? 'bg-surface-2 text-accent' : 'text-ink-2 hover:text-ink'}`}
-          >
-            {t.label}
-          </NavLink>
-        ))}
-      </nav>
+      <TabNav label="Stats" tabs={TABS} />
       {error && <AnalysisError message={error} onRetry={reload} />}
-      <Outlet />
+      <Suspense fallback={<PageSkeleton />}>
+        <Outlet />
+      </Suspense>
     </>
   );
 }

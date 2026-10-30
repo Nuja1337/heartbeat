@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { itemsFromMap, mapDemand, PREVIEW_MIN_N } from '../../analytics/demand';
 import type { SkillDemand } from '../../analytics/demand';
-import { previewLaunch } from '../../game/index';
 import {
   DEFAULT_DIFFICULTY,
   DIFFICULTY_LIMITS,
@@ -20,6 +19,8 @@ import {
 import type { DifficultySettings, LaunchRequest, ModId, SkillId } from '../../shared/types';
 import { DemandBars } from '../components/DemandBars';
 import { Button, Card, Field, Notice, PageHeader, SectionTitle, Segmented, Slider, Toggle } from '../components/ui';
+import type { GameModule } from '../state/engine';
+import { useGame } from '../state/engine';
 import { INTRO, PREVIEW_UNAVAILABLE } from '../copy';
 import { useCurrentLevels } from '../state/levels';
 import { cleanMods, dynamicLaunch, presetDifficulty, randomSeed, snapLength, startPlay } from '../state/launch';
@@ -35,9 +36,10 @@ interface Preview {
   full: boolean;
 }
 
-function previewFor(launch: LaunchRequest): Preview {
+function previewFor(launch: LaunchRequest, game: GameModule | null): Preview {
   try {
-    const p = previewLaunch(launch);
+    if (!game) throw new Error('The game has not loaded.');
+    const p = game.previewLaunch(launch);
     return { demand: mapDemand(itemsFromMap(p.map, p.features), launch.mods, PREVIEW_MIN_N), full: true };
   } catch {
     // Without the engine, show what the settings alone determine.
@@ -73,7 +75,8 @@ export function PlaySetup() {
     () => dynamicLaunch({ presetLevel: preset, difficulty, mods, lengthSec, seed, levels }),
     [preset, difficulty, mods, lengthSec, seed, levels],
   );
-  const preview = useMemo(() => previewFor(launch), [launch]);
+  const { game, failed } = useGame();
+  const preview = useMemo(() => previewFor(launch, game), [launch, game]);
 
   const tight = mods.includes('tight');
   const wide = mods.includes('wide');
@@ -103,22 +106,18 @@ export function PlaySetup() {
         <div className="space-y-6">
           <Card>
             <SectionTitle>Level</SectionTitle>
-            <div role="radiogroup" aria-label="Level" className="grid gap-2 sm:grid-cols-2">
+            <div role="radiogroup" aria-label="Level" className="grid gap-3 sm:grid-cols-2">
               {LEVEL_PRESETS.map((p) => (
-                <label key={p.level} className="cursor-pointer">
-                  <input type="radio" name="level" className="peer sr-only" checked={preset === p.level} onChange={() => choosePreset(p.level)} />
-                  <span className="block h-full rounded-md border border-line bg-bg p-3 transition hover:border-ink-3 peer-checked:border-accent peer-checked:bg-surface-2 peer-focus-visible:outline-2 peer-focus-visible:outline-accent">
-                    <span className="font-medium">{p.label}</span>
-                    <span className="block text-sm text-ink-2">{p.description}</span>
-                  </span>
+                <label key={p.level} className="fw-choice">
+                  <input type="radio" name="level" className="sr-only" checked={preset === p.level} onChange={() => choosePreset(p.level)} />
+                  <span className="block font-display font-semibold">{p.label}</span>
+                  <span className="block text-sm text-ink-2">{p.description}</span>
                 </label>
               ))}
-              <label className="cursor-pointer sm:col-span-2">
-                <input type="radio" name="level" className="peer sr-only" checked={preset === null} onChange={() => setPreset(null)} />
-                <span className="block rounded-md border border-line bg-bg p-3 transition hover:border-ink-3 peer-checked:border-accent peer-checked:bg-surface-2 peer-focus-visible:outline-2 peer-focus-visible:outline-accent">
-                  <span className="font-medium">Custom</span>
-                  <span className="block text-sm text-ink-2">Set each part of the difficulty yourself.</span>
-                </span>
+              <label className="fw-choice sm:col-span-2">
+                <input type="radio" name="level" className="sr-only" checked={preset === null} onChange={() => setPreset(null)} />
+                <span className="block font-display font-semibold">Custom</span>
+                <span className="block text-sm text-ink-2">Set each part of the difficulty yourself.</span>
               </label>
             </div>
           </Card>
@@ -149,25 +148,25 @@ export function PlaySetup() {
 
           <Card>
             <SectionTitle aside={`Score multiplier x${modMultiplier(mods).toFixed(2)}`}>Mods</SectionTitle>
-            <ul className="grid gap-2 sm:grid-cols-2">
+            <ul className="grid gap-3 sm:grid-cols-2">
               {DYNAMIC_MODS.map((id) => {
                 const info = MODS[id];
                 const blocked = !mods.includes(id) && info.conflicts.some((c) => mods.includes(c));
                 return (
                   <li key={id}>
-                    <label className={`flex gap-3 rounded-md border border-line bg-bg p-3 ${blocked ? 'opacity-40' : 'cursor-pointer hover:border-ink-3'}`}>
+                    <label className="fw-choice flex gap-3">
                       <input
                         type="checkbox"
-                        className="mt-1 accent-[var(--color-accent)]"
+                        className="mt-1 size-4 shrink-0 accent-[var(--color-accent)]"
                         checked={mods.includes(id)}
                         disabled={blocked}
                         onChange={(e) => toggleMod(id, e.target.checked)}
                       />
                       <span>
-                        <span className="font-medium">{info.label}</span>
+                        <span className="font-display font-semibold">{info.label}</span>
                         <span className="ml-2 text-sm text-ink-2">x{info.multiplier}</span>
                         <span className="block text-sm text-ink-2">{info.description}</span>
-                        {blocked && <span className="block text-sm text-rough">Can't be used with {info.conflicts.map((c) => MODS[c].label).join(' or ')}.</span>}
+                        {blocked && <span className="block text-sm text-warn">Can't be used with {info.conflicts.map((c) => MODS[c].label).join(' or ')}.</span>}
                       </span>
                     </label>
                   </li>
@@ -180,11 +179,11 @@ export function PlaySetup() {
         <aside className="space-y-6">
           <Card>
             <SectionTitle>Target</SectionTitle>
-            <svg viewBox="0 0 1000 625" className="w-full rounded-md border border-line bg-bg" role="img" aria-label={`Target of radius ${Math.round(shownRadius)} on a 1000 wide field`}>
-              <circle cx={500} cy={312.5} r={shownRadius} fill="color-mix(in srgb, var(--color-accent) 25%, transparent)" stroke="var(--color-accent)" strokeWidth={4} />
+            <svg viewBox="0 0 1000 625" className="w-full rounded-md border border-line bg-bg-2" role="img" aria-label={`Target of radius ${Math.round(shownRadius)} on a 1000 wide field`}>
+              <circle cx={500} cy={312.5} r={shownRadius} fill="color-mix(in srgb, var(--color-accent) 18%, transparent)" stroke="var(--color-accent)" strokeWidth={4} />
               <circle cx={500} cy={312.5} r={Math.max(4, shownRadius * 0.08)} fill="var(--color-accent)" />
             </svg>
-            <dl className="mt-3 grid grid-cols-2 gap-y-1 text-sm">
+            <dl className="mt-4 grid grid-cols-2 gap-y-1 text-sm">
               <dt className="text-ink-2">Radius</dt>
               <dd>{Math.round(shownRadius)} units</dd>
               <dt className="text-ink-2">Approach</dt>
@@ -201,7 +200,7 @@ export function PlaySetup() {
           <Card>
             <SectionTitle>Demand</SectionTitle>
             <DemandBars demand={preview.demand} />
-            {!preview.full && (
+            {!preview.full && (game !== null || failed) && (
               <div className="mt-3">
                 <Notice>{PREVIEW_UNAVAILABLE}</Notice>
               </div>

@@ -1,9 +1,7 @@
 // Starting a drill from an insight.
 
 import type { NavigateFunction } from 'react-router';
-import { createDrill } from '../../analytics/drillEval';
 import type { Insight } from '../../analytics/insights';
-import { drillLaunch } from '../../analytics/insights';
 import { saveDrill } from '../../data/drills';
 import type { Drill, PlayData } from '../../data/schema';
 import type { ModuleId } from '../../shared/types';
@@ -19,6 +17,7 @@ export async function trainThis(
   navigate: NavigateFunction,
 ): Promise<void> {
   if (!insight.recommendation) return;
+  const [{ createDrill }, { drillLaunch }] = await Promise.all([import('../../analytics/drillEval'), import('../../analytics/insights')]);
   let drill = drills.find((d) => d.status === 'active' && !d.final && d.ruleId === insight.ruleId && d.variant === insight.variant) ?? null;
   if (!drill) {
     drill = createDrill(insight, crypto.randomUUID(), Date.now(), plays);

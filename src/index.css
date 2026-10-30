@@ -1,22 +1,118 @@
 @import "tailwindcss";
+@import "@fontsource-variable/space-grotesk";
+
+/* Flickwise 2.0 visual system (PLAN-2 §9). A dark precision instrument: near-black blue surfaces,
+   one lime signal accent, cyan for data, reticle corner marks, thin rules and no shadows. */
 
 @theme {
-  --color-bg: #0b0f14;
-  --color-surface: #111827;
-  --color-surface-2: #172033;
-  --color-line: #1f2937;
+  --color-bg: #07090e;
+  --color-bg-2: #0b0f17;
+  --color-surface: #0f141d;
+  --color-surface-2: #151c28;
+  --color-surface-3: #1c2534;
+  --color-line: #1e2735;
   --color-line-2: #2b3648;
-  --color-ink: #e5e7eb;
-  --color-ink-2: #9ca3af;
-  --color-ink-3: #6b7280;
-  --color-accent: #7dd3fc;
-  --color-accent-ink: #06202e;
-  --color-crisp: #a78bfa;
-  --color-solid: #2dd4bf;
-  --color-rough: #f59e0b;
-  --color-miss: #f43f5e;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-ink: #eef1f6;
+  --color-ink-2: #a3adbd;
+  --color-ink-3: #6b7689;
+  --color-accent: #c9f25c;
+  --color-accent-ink: #121a05;
+  --color-data: #5ee7f2;
+  --color-warn: #ffb340;
+  --color-danger: #ff4f6a;
+
+  --font-display: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --default-transition-duration: 120ms;
+  --default-transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* The type scale. Size / line height, then the weight and tracking each step carries. */
+  --text-micro: 0.6875rem;
+  --text-micro--line-height: 1rem;
+  --text-micro--letter-spacing: 0.08em;
+  --text-micro--font-weight: 600;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 0.9375rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.0625rem;
+  --text-lg--line-height: 1.5rem;
+  --text-lg--font-weight: 600;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.75rem;
+  --text-xl--font-weight: 600;
+  --text-2xl: 2rem;
+  --text-2xl--line-height: 2.375rem;
+  --text-2xl--letter-spacing: -0.01em;
+  --text-2xl--font-weight: 650;
+  --text-3xl: 3rem;
+  --text-3xl--line-height: 3.25rem;
+  --text-3xl--font-weight: 700;
+  --text-4xl: 4.5rem;
+  --text-4xl--line-height: 1;
+  --text-4xl--letter-spacing: -0.03em;
+  --text-4xl--font-weight: 700;
+}
+
+/* The four judgment colors follow the chosen palette. The app writes --fw-* on :root from
+   settings.skin.palette. `inline` makes bg-crisp and friends read the variable directly. */
+@theme inline {
+  --color-crisp: var(--fw-crisp);
+  --color-solid: var(--fw-solid);
+  --color-rough: var(--fw-rough);
+  --color-miss: var(--fw-miss);
+}
+
+:root {
+  --fw-crisp: #b49bff;
+  --fw-solid: #36d6b0;
+  --fw-rough: #ffb340;
+  --fw-miss: #ff4f6a;
+  --dur-fast: 120ms;
+  --dur-small: 180ms;
+  --dur-page: 280ms;
+  --dur-count: 600ms;
+}
+
+/* Reduce motion, from the setting or from the OS, sets every duration to 0. */
+:root[data-reduce-motion="true"] {
+  --dur-fast: 0ms;
+  --dur-small: 0ms;
+  --dur-page: 0ms;
+  --dur-count: 0ms;
+  --default-transition-duration: 0ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-small: 0ms;
+    --dur-page: 0ms;
+    --dur-count: 0ms;
+    --default-transition-duration: 0ms;
+  }
+}
+:root[data-reduce-motion="true"] *,
+:root[data-reduce-motion="true"] *::before,
+:root[data-reduce-motion="true"] *::after {
+  transition-duration: 0ms !important;
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation: none !important;
+  }
 }
 
 /* Base rules sit in a layer so Tailwind utilities, such as button colors, can override them. */
@@ -27,13 +123,43 @@
   }
 
   body {
+    position: relative;
     margin: 0;
-    background: var(--color-bg);
+    min-height: 100vh;
+    background:
+      radial-gradient(1200px 600px at 20% -10%, #10192a, transparent 60%) no-repeat,
+      var(--color-bg);
     color: var(--color-ink);
     font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.5rem;
     font-variant-numeric: tabular-nums;
-    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* A 32 px dot grid at 3% white, fading out over the top 600 px. */
+  body::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 600px;
+    pointer-events: none;
+    background-image: radial-gradient(rgb(255 255 255 / 0.03) 1px, transparent 1.5px);
+    background-size: 32px 32px;
+    mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+  }
+
+  #root {
+    position: relative;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    margin: 0;
   }
 
   button,
@@ -46,47 +172,59 @@
   :focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
-    border-radius: 4px;
   }
 
   ::selection {
-    background: color-mix(in srgb, var(--color-accent) 35%, transparent);
+    background: color-mix(in srgb, var(--color-accent) 30%, transparent);
   }
 
-  /* Range inputs */
+  /* Range inputs. The fill is drawn from --fill, which the Slider component sets. */
   input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
     height: 20px;
+    margin: 0;
     background: transparent;
     cursor: pointer;
   }
   input[type="range"]::-webkit-slider-runnable-track {
     height: 4px;
     border-radius: 2px;
-    background: var(--color-line-2);
+    background: linear-gradient(to right, var(--color-accent) var(--fill, 0%), var(--color-line-2) var(--fill, 0%));
   }
   input[type="range"]::-moz-range-track {
     height: 4px;
     border-radius: 2px;
     background: var(--color-line-2);
   }
+  input[type="range"]::-moz-range-progress {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-accent);
+  }
   input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    height: 16px;
-    width: 16px;
-    margin-top: -6px;
+    height: 14px;
+    width: 14px;
+    margin-top: -5px;
+    box-sizing: border-box;
     border-radius: 50%;
-    background: var(--color-accent);
+    background: var(--color-ink);
     border: 2px solid var(--color-bg);
+    box-shadow: 0 0 0 1px var(--color-line-2);
+    transition: transform var(--dur-fast) var(--ease-out);
   }
   input[type="range"]::-moz-range-thumb {
-    height: 12px;
-    width: 12px;
+    height: 10px;
+    width: 10px;
     border-radius: 50%;
-    background: var(--color-accent);
+    background: var(--color-ink);
     border: 2px solid var(--color-bg);
+    box-shadow: 0 0 0 1px var(--color-line-2);
+  }
+  input[type="range"]:hover::-webkit-slider-thumb {
+    transform: scale(1.15);
   }
   input[type="range"]:disabled {
     opacity: 0.4;
@@ -96,16 +234,240 @@
   input[type="number"],
   input[type="text"],
   select {
-    background: var(--color-bg);
+    height: 36px;
+    background: var(--color-bg-2);
     border: 1px solid var(--color-line-2);
-    border-radius: 6px;
-    padding: 0.35rem 0.6rem;
+    border-radius: var(--radius-md);
+    padding: 0 0.75rem;
+    transition: border-color var(--dur-fast) var(--ease-out);
+  }
+  input[type="number"]:hover,
+  input[type="text"]:hover,
+  select:hover {
+    border-color: var(--color-ink-3);
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  * {
-    transition: none !important;
-    animation: none !important;
+@layer components {
+  /* Panel: surface, one line, a top highlight. No shadow. */
+  .fw-panel {
+    position: relative;
+    min-width: 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-lg);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  }
+
+  /* Reticle corner marks, the signature. Ten pixels long, drawn inside the panel corners. */
+  .fw-marks,
+  .fw-choice {
+    --mark: var(--color-line-2);
+    --mark-inset: 6px;
+    --mark-len: 10px;
+  }
+  .fw-marks::after,
+  .fw-choice::after {
+    content: "";
+    position: absolute;
+    inset: var(--mark-inset);
+    pointer-events: none;
+    background:
+      linear-gradient(var(--mark), var(--mark)) top left / var(--mark-len) 1px,
+      linear-gradient(var(--mark), var(--mark)) top left / 1px var(--mark-len),
+      linear-gradient(var(--mark), var(--mark)) top right / var(--mark-len) 1px,
+      linear-gradient(var(--mark), var(--mark)) top right / 1px var(--mark-len),
+      linear-gradient(var(--mark), var(--mark)) bottom left / var(--mark-len) 1px,
+      linear-gradient(var(--mark), var(--mark)) bottom left / 1px var(--mark-len),
+      linear-gradient(var(--mark), var(--mark)) bottom right / var(--mark-len) 1px,
+      linear-gradient(var(--mark), var(--mark)) bottom right / 1px var(--mark-len);
+    background-repeat: no-repeat;
+    transition: opacity var(--dur-fast) var(--ease-out);
+  }
+  .fw-interactive {
+    transition:
+      border-color var(--dur-fast) var(--ease-out),
+      background-color var(--dur-fast) var(--ease-out);
+  }
+  .fw-interactive:hover,
+  .fw-interactive:focus-visible,
+  .fw-interactive:focus-within {
+    --mark: var(--color-accent);
+    border-color: var(--color-line-2);
+    background-color: var(--color-surface-2);
+  }
+  .fw-interactive:focus-visible {
+    outline-offset: 3px;
+  }
+
+  /* A selectable card: a radio or a checkbox inside a label. The marks light up when it is chosen. */
+  .fw-choice {
+    position: relative;
+    display: block;
+    height: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-2);
+    cursor: pointer;
+    --mark: transparent;
+    --mark-inset: 5px;
+    transition:
+      border-color var(--dur-fast) var(--ease-out),
+      background-color var(--dur-fast) var(--ease-out);
+  }
+  .fw-choice:hover {
+    border-color: var(--color-line-2);
+    --mark: var(--color-line-2);
+  }
+  .fw-choice:has(input:checked) {
+    border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-line));
+    background: var(--color-surface-2);
+    --mark: var(--color-accent);
+  }
+  .fw-choice:has(input:focus-visible) {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  .fw-choice:has(input:disabled) {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* Small marks, for badges. */
+  .fw-marks-sm {
+    --mark-inset: 3px;
+    --mark-len: 5px;
+  }
+
+  /* Kicker: micro text after a small accent square. */
+  .fw-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--text-micro);
+    line-height: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-3);
+  }
+  .fw-kicker::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    flex: none;
+    background: var(--color-accent);
+  }
+
+  /* Page and panel enter: a fade and a 4 px rise. */
+  .fw-enter {
+    animation: fw-rise var(--dur-page) var(--ease-out) both;
+  }
+  .fw-enter-small {
+    animation: fw-rise var(--dur-small) var(--ease-out) both;
+  }
+  @keyframes fw-rise {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+  @keyframes fw-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  /* Graph draw-in. Paths carry pathLength="1". */
+  .fw-draw {
+    stroke-dasharray: 1;
+    animation: fw-draw var(--dur-count) var(--ease-out) both;
+  }
+  @keyframes fw-draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+  }
+  .fw-grow {
+    transform-origin: left center;
+    animation: fw-grow var(--dur-count) var(--ease-out) both;
+  }
+  @keyframes fw-grow {
+    from {
+      transform: scaleX(0);
+    }
+  }
+
+  /* Skeleton blocks for lazy routes. */
+  .fw-skeleton {
+    background: linear-gradient(90deg, var(--color-surface) 0%, var(--color-surface-2) 50%, var(--color-surface) 100%) 0 0 / 200% 100%;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-lg);
+    animation: fw-shimmer 1.4s linear infinite;
+  }
+  @keyframes fw-shimmer {
+    to {
+      background-position: -200% 0;
+    }
+  }
+
+  /* Mode-card motifs are the only looping motion in the menus. */
+  .fw-motif {
+    color: var(--color-ink-3);
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .fw-interactive:hover .fw-motif,
+  .fw-interactive:focus-visible .fw-motif {
+    color: var(--color-accent);
+  }
+  .fw-pulse {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: fw-pulse 2.4s var(--ease-out) infinite;
+  }
+  @keyframes fw-pulse {
+    0% {
+      transform: scale(0.6);
+      opacity: 0.9;
+    }
+    70%,
+    100% {
+      transform: scale(1.5);
+      opacity: 0;
+    }
+  }
+  .fw-travel {
+    animation: fw-travel 2.8s ease-in-out infinite alternate;
+  }
+  @keyframes fw-travel {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(var(--travel, 36px));
+    }
+  }
+  .fw-hump {
+    animation: fw-hump 2.8s ease-in-out infinite alternate;
+  }
+  @keyframes fw-hump {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
+  }
+  .fw-spin {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: fw-spin 6s linear infinite;
+  }
+  @keyframes fw-spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 }

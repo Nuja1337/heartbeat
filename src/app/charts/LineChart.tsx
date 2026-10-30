@@ -52,10 +52,10 @@ export function LineChart({
           </text>
         ))}
         {a && <line x1={x(a.t)} x2={x(a.t)} y1={M.t} y2={H - M.b} stroke={CHART.axis} />}
-        {points.length > 1 && <path d={line} fill="none" stroke={CHART.accent} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />}
+        {points.length > 1 && <path d={line} pathLength={1} className="fw-draw" fill="none" stroke={CHART.accent} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />}
         {points.map((p, i) => (
           <g key={p.day}>
-            <circle cx={x(p.t)} cy={y(p.value)} r={active === i ? 5 : 3.5} fill={CHART.accent} fillOpacity={0.55} stroke="#111827" strokeWidth={1.5} />
+            <circle cx={x(p.t)} cy={y(p.value)} r={active === i ? 5 : 3.5} fill={CHART.accent} fillOpacity={0.55} stroke={CHART.empty} strokeWidth={1.5} />
             <circle
               cx={x(p.t)}
               cy={y(p.value)}
