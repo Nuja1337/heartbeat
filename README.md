@@ -145,3 +145,5 @@ The site is a static Worker deployed with Wrangler. See `wrangler.jsonc`.
 2. `src/app/pwa.ts` no longer calls `serviceWorker.register`, so the page stops installing a new worker.
 
 Browsers check `/sw.js` for changes on their own, so players pick it up on their next visit.
+
+Every build must ship `/sw.js` as JavaScript at that exact path. The host answers a missing file with the app's HTML, so a build without it, or with the worker under another name, leaves players on whatever worker they have, and the kill switch can no longer reach them.

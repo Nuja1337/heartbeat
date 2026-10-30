@@ -873,7 +873,7 @@ These override §4, §5.2, §8.3 and the Phase 0.4 tests wherever they differ.
 
 **Export and import (add to §4.5).**
 - Import sets `hasReplay` from whether a replay row was stored, like `hasDetail`.
-- A `JsonReplay` is skipped, not its play, unless `data` is a string under 16 MB decoded and `events` and `rawBytes` are finite numbers.
+- A `JsonReplay` is skipped, not its play, unless `data` is a string under 16 MB decoded and `events`, `rawBytes` and `engineVersion` are finite numbers.
 - A v2 file can hold `v: 1` summaries, because `buildExport` exports raw rows. Import lifts each one.
 - `deleteAllData` also clears both replay stores and the meta keys `milestones`, `insightSnooze` and every `plan:*`. The `onboarding` key survives.
 - A tombstoned play's replay is not imported.
