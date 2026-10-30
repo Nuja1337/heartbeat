@@ -30,8 +30,8 @@ export function Daily() {
       {!data ? (
         !error && (
           <div role="status" aria-busy="true" className="grid gap-6 lg:grid-cols-3">
-            <div className="fw-skeleton h-72 lg:col-span-1" />
-            <div className="fw-skeleton h-72 lg:col-span-2" />
+            <div className="hb-skeleton h-72 lg:col-span-1" />
+            <div className="hb-skeleton h-72 lg:col-span-2" />
             <span className="sr-only">Loading.</span>
           </div>
         )

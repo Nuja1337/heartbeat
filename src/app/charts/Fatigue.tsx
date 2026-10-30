@@ -69,7 +69,7 @@ export function Fatigue({ points, compact = false }: { points: readonly FatigueP
           </>
         )}
         <path d={area} fill={CHART.accent} fillOpacity={0.1} />
-        <path d={line} pathLength={1} className="fw-draw" fill="none" stroke={CHART.accent} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        <path d={line} pathLength={1} className="hb-draw" fill="none" stroke={CHART.accent} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         {a && (
           <g>
             <line x1={x(a.t)} x2={x(a.t)} y1={M.t} y2={H - M.b} stroke={CHART.axis} />

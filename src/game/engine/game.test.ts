@@ -568,7 +568,7 @@ describe('recording in the game', () => {
     const { e, handle } = start({ mode: 'jumps' });
     e.run(100);
     const renderer = (handle as unknown as { renderer: { currentSkin: { palette: string } } }).renderer;
-    expect(renderer.currentSkin.palette).toBe('flickwise');
+    expect(renderer.currentSkin.palette).toBe('heartbeat');
     handle.setSettings({ ...DEFAULT_SETTINGS, skin: { ...DEFAULT_SETTINGS.skin, palette: 'contrast' } });
     expect(renderer.currentSkin.palette).toBe('contrast');
     e.run(50);

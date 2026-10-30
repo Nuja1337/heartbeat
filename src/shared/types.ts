@@ -590,7 +590,7 @@ export interface ReplayData {
 /* ----------------------------------------------------------- settings */
 
 export type SoundSetId = 'glass' | 'wood' | 'pulse';
-export type PaletteId = 'flickwise' | 'classic' | 'clearview' | 'contrast';
+export type PaletteId = 'heartbeat' | 'classic' | 'clearview' | 'contrast';
 export type CursorStyle = 'ring' | 'cross' | 'dot';
 export type ApproachStyle = 'ring' | 'fill' | 'brackets';
 export type MetronomeMode = 'off' | 'beat' | 'bar';

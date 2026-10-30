@@ -149,7 +149,7 @@ describe('plan status', () => {
 describe('daily map', () => {
   it('uses the date seed, Dynamic, the daily length and no mods', () => {
     const l = dailyLaunch('2026-11-01', 5, { jumps: 3 });
-    expect(l.seed).toBe(3692414807);
+    expect(l.seed).toBe(1500758254);
     expect(l.seed).toBe(dailySeed('2026-11-01'));
     expect(l.modeId).toBe('dynamic');
     expect(l.presetLevel).toBe(5);

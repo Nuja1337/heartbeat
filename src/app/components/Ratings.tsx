@@ -27,7 +27,7 @@ export function Ratings({ ratings, compact = false }: { ratings: Record<SkillId,
               )}
             </div>
             <div className="mt-1.5 h-1 rounded-full bg-line" role="img" aria-label={r ? `${SKILLS[skill].label} rating ${level(r.rating)} of 8` : 'No rating'}>
-              <div className="fw-grow h-1 rounded-full bg-accent" style={{ width: `${fill * 100}%` }} />
+              <div className="hb-grow h-1 rounded-full bg-accent" style={{ width: `${fill * 100}%` }} />
             </div>
             {!compact && (
               <p className="mt-1.5 text-sm text-ink-2">

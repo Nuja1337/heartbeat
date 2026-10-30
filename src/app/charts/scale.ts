@@ -64,10 +64,10 @@ export const CHART = {
 
 /** Judgment colors follow the chosen palette through the variables the app sets on :root. */
 export const JCOLOR = {
-  crisp: 'var(--fw-crisp)',
-  solid: 'var(--fw-solid)',
-  rough: 'var(--fw-rough)',
-  miss: 'var(--fw-miss)',
+  crisp: 'var(--hb-crisp)',
+  solid: 'var(--hb-solid)',
+  rough: 'var(--hb-rough)',
+  miss: 'var(--hb-miss)',
 } as const;
 
 /** Rates run from the surface to danger: 0 is near the surface and 1 is danger. */

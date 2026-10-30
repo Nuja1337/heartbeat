@@ -40,7 +40,7 @@ describe('cache names and responses', () => {
   it('names the cache from the manifest text', () => {
     expect(cacheNameFor('a')).toBe(cacheNameFor('a'));
     expect(cacheNameFor('a')).not.toBe(cacheNameFor('b'));
-    expect(cacheNameFor('{}')).toMatch(/^fw-[0-9a-z]+$/);
+    expect(cacheNameFor('{}')).toMatch(/^hb-[0-9a-z]+$/);
     expect(hashText('')).toBe(hashText(''));
   });
 
@@ -163,7 +163,7 @@ describe('public/sw.js', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
-  it('installs by precaching the shell and every manifest entry into fw- plus a hash of the manifest', async () => {
+  it('installs by precaching the shell and every manifest entry into hb- plus a hash of the manifest', async () => {
     const w = makeWorker(GOOD);
     await (await w.run('install')).pending;
     const name = cacheNameFor(MANIFEST_TEXT);
@@ -182,16 +182,16 @@ describe('public/sw.js', () => {
   it('names its cache from its own ?v= address and keeps using it after a restart', async () => {
     const w = makeWorker(GOOD, '?v=abc123');
     await (await w.run('install')).pending;
-    expect([...w.stores.keys()]).toEqual(['fw-abc123']);
+    expect([...w.stores.keys()]).toEqual(['hb-abc123']);
     // An older build's cache sits last in the key list, and a restarted worker has lost its memory.
     const restarted = makeWorker({ ...GOOD, '/assets/new.js': js }, '?v=abc123');
-    restarted.stores.set('fw-abc123', new Map());
-    restarted.stores.set('fw-zzz-old', new Map());
+    restarted.stores.set('hb-abc123', new Map());
+    restarted.stores.set('hb-zzz-old', new Map());
     await restarted.run('fetch', { request: { method: 'GET', url: 'https://app.test/assets/new.js', mode: 'cors' } }).then((r) => r.pending);
-    expect(restarted.stores.get('fw-abc123')!.has('/assets/new.js')).toBe(true);
-    expect(restarted.stores.get('fw-zzz-old')!.has('/assets/new.js')).toBe(false);
+    expect(restarted.stores.get('hb-abc123')!.has('/assets/new.js')).toBe(true);
+    expect(restarted.stores.get('hb-zzz-old')!.has('/assets/new.js')).toBe(false);
     await (await restarted.run('activate')).pending;
-    expect([...restarted.stores.keys()]).toEqual(['fw-abc123']);
+    expect([...restarted.stores.keys()]).toEqual(['hb-abc123']);
   });
 
   it('fails the install when a file is missing or the manifest is not JSON', async () => {
@@ -259,13 +259,14 @@ describe('public/sw.js', () => {
     }
   });
 
-  it('removes other fw- caches on activate, keeps unrelated ones and claims clients', async () => {
+  it('removes every cache but the current one on activate, whatever its prefix, and claims clients', async () => {
     const w = makeWorker(GOOD);
     await (await w.run('install')).pending;
-    w.stores.set('fw-old', new Map());
+    w.stores.set('hb-old', new Map());
+    w.stores.set('earlier-build', new Map()); // Caches from before the rename start with another prefix.
     w.stores.set('other-app', new Map());
     await (await w.run('activate')).pending;
-    expect([...w.stores.keys()].sort()).toEqual([cacheNameFor(MANIFEST_TEXT), 'other-app'].sort());
+    expect([...w.stores.keys()].sort()).toEqual([cacheNameFor(MANIFEST_TEXT)]);
     expect(w.state().claimed).toBe(true);
   });
 
@@ -286,7 +287,7 @@ describe('public/sw-kill.js', () => {
     const handlers = new Map<string, Handler>();
     const deleted: string[] = [];
     const log = { skipped: 0, unregistered: 0, navigated: [] as string[] };
-    const names = ['fw-a', 'fw-b', 'other-app'];
+    const names = ['hb-a', 'earlier-build', 'other-app'];
     const caches = {
       keys: async () => names,
       delete: async (n: string) => void deleted.push(n),
@@ -322,10 +323,10 @@ describe('public/sw-kill.js', () => {
     expect(k.handlers.has('fetch')).toBe(false);
   });
 
-  it('on activate deletes the fw- caches, unregisters and reloads its clients', async () => {
+  it('on activate deletes every cache, unregisters and reloads its clients', async () => {
     const k = makeKill();
     await k.run('activate');
-    expect(k.deleted).toEqual(['fw-a', 'fw-b']);
+    expect(k.deleted).toEqual(['hb-a', 'earlier-build', 'other-app']);
     expect(k.log.unregistered).toBe(1);
     expect(k.log.navigated).toEqual(['https://app.test/stats', 'https://app.test/']);
   });

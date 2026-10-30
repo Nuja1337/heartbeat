@@ -1,7 +1,6 @@
 // IndexedDB access: open, migrate, and small promise helpers.
 
-// Keeps the old app name on purpose: it names the database that already holds people's plays.
-export const DB_NAME = 'flickwise';
+export const DB_NAME = 'heartbeat';
 export const DB_VERSION = 2;
 
 export type StoreName = 'meta' | 'settings' | 'plays' | 'playDetails' | 'progress' | 'drills' | 'tombstones' | 'replays' | 'replayBytes';

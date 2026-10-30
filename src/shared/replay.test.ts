@@ -99,7 +99,7 @@ function container(opts: {
   const { trace: _t, ...head } = replayOf(traceOf([]));
   const header = new TextEncoder().encode(JSON.stringify(opts.head ?? head));
   return Uint8Array.from([
-    0x46, 0x57, 0x52, 0x50, opts.version ?? REPLAY_FORMAT, opts.flags ?? 0, ...(opts.reserved ?? [0, 0]),
+    0x48, 0x42, 0x52, 0x50, opts.version ?? REPLAY_FORMAT, opts.flags ?? 0, ...(opts.reserved ?? [0, 0]),
     ...u32(header.length), ...header, ...u32(opts.n), ...u32(opts.p), ...opts.ops,
     ...u32(opts.t.length), ...opts.t, ...u32(opts.x.length), ...opts.x, ...u32(opts.y.length), ...opts.y,
   ]);
@@ -170,8 +170,8 @@ describe('replay codec golden bytes', () => {
     [TRACE_OP.press, 100],
   ];
   const data = replayOf(traceOf(events));
-  // Prefix: "FWRP", version 1, flags 0, reserved 0, H = 1591. Body: N = 5, P = 2, ops 0 2 13 11 5, then the three streams.
-  const GOLDEN_PREFIX = '465752500100000037060000';
+  // Prefix: "HBRP", version 1, flags 0, reserved 0, H = 1591. Body: N = 5, P = 2, ops 0 2 13 11 5, then the three streams.
+  const GOLDEN_PREFIX = '484252500100000037060000';
   const GOLDEN_BODY =
     '05000000' + '02000000' + '00020d0b05' + '09000000' + '00c064ff509f09bf28' + '04000000' + 'd002bf02' + '04000000' + '8805ef04';
 
@@ -288,9 +288,9 @@ describe('replay codec rejection', () => {
     expect(kindOf(() => decodeReplay(c({ ...head, map: null })))).toBe('damaged');
     expect(kindOf(() => decodeReplay(c({ ...head, endT: 'x' })))).toBe('damaged');
     expect(kindOf(() => decodeReplay(c([1, 2])))).toBe('damaged');
-    const notJson = Uint8Array.from([0x46, 0x57, 0x52, 0x50, 1, 0, 0, 0, ...u32(3), 0x7b, 0x7b, 0x7b, ...u32(0), ...u32(0), ...u32(0), ...u32(0), ...u32(0)]);
+    const notJson = Uint8Array.from([0x48, 0x42, 0x52, 0x50, 1, 0, 0, 0, ...u32(3), 0x7b, 0x7b, 0x7b, ...u32(0), ...u32(0), ...u32(0), ...u32(0), ...u32(0)]);
     expect(kindOf(() => decodeReplay(notJson))).toBe('damaged');
-    const badUtf8 = Uint8Array.from([0x46, 0x57, 0x52, 0x50, 1, 0, 0, 0, ...u32(2), 0xc3, 0x28, ...u32(0), ...u32(0), ...u32(0), ...u32(0), ...u32(0)]);
+    const badUtf8 = Uint8Array.from([0x48, 0x42, 0x52, 0x50, 1, 0, 0, 0, ...u32(2), 0xc3, 0x28, ...u32(0), ...u32(0), ...u32(0), ...u32(0), ...u32(0)]);
     expect(kindOf(() => decodeReplay(badUtf8))).toBe('damaged');
   });
 });

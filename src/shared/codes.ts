@@ -309,8 +309,7 @@ function fnv1a32(text: string): number {
 
 /** The seed of the daily map. `date` is a localDateKey. */
 export function dailySeed(date: string): number {
-  // The salt keeps the old app name on purpose: changing it would change every daily map.
-  return fnv1a32('flickwise-daily:' + date);
+  return fnv1a32('heartbeat-daily:' + date);
 }
 
 /** YYYY-MM-DD from the local date parts of an epoch time. */

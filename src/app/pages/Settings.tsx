@@ -183,7 +183,7 @@ export function Settings() {
               {(Object.keys(PALETTES) as PaletteId[]).map((id) => {
                 const p = PALETTES[id];
                 return (
-                  <label key={id} className="fw-choice">
+                  <label key={id} className="hb-choice">
                     <input type="radio" name="palette" className="sr-only" checked={s.skin.palette === id} onChange={() => setSkin({ palette: id })} />
                     <span className="flex items-center justify-between gap-2">
                       <span className="font-display font-semibold">{p.label}</span>

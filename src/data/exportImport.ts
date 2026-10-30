@@ -14,8 +14,9 @@ import { upgradeDetail, upgradeSummary } from './plays';
 import { loadSettings, sanitizeSettings } from './settings';
 import type { Settings } from '../shared/types';
 
-// Keeps the old app name on purpose: old export files carry it, import must accept it and new exports keep writing it.
-export const EXPORT_FORMAT = 'flickwise-export';
+export const EXPORT_FORMAT = 'heartbeat-export';
+// Export files made before the app was renamed use this format value. Import still accepts it.
+export const LEGACY_EXPORT_FORMAT = 'flickwise-export';
 export const EXPORT_VERSION = 2;
 /** A replay larger than this after decoding is skipped on import. */
 export const MAX_IMPORT_REPLAY_BYTES = 16 * 1024 * 1024;
@@ -35,7 +36,7 @@ export interface JsonReplay {
 }
 
 export interface ExportFile {
-  format: typeof EXPORT_FORMAT;
+  format: typeof EXPORT_FORMAT | typeof LEGACY_EXPORT_FORMAT;
   formatVersion: number;
   exportedAt: number;
   app: { engineVersion: number; generatorVersion: number };
@@ -172,7 +173,7 @@ export async function parseExportBytes(bytes: Uint8Array): Promise<unknown> {
 
 export function validateExport(raw: unknown): ExportFile {
   const f = raw as Partial<ExportFile> | null;
-  if (!f || typeof f !== 'object' || f.format !== EXPORT_FORMAT) throw new ImportError('This is not a Heartbeat export file.');
+  if (!f || typeof f !== 'object' || (f.format !== EXPORT_FORMAT && f.format !== LEGACY_EXPORT_FORMAT)) throw new ImportError('This is not a Heartbeat export file.');
   if (typeof f.formatVersion !== 'number') throw new ImportError('The export file has no version.');
   if (f.formatVersion > EXPORT_VERSION) {
     throw new ImportError('This file was made by a newer version of Heartbeat. Update the app and try again.');

@@ -79,7 +79,7 @@ export function MapPreview({ launch, data, pending, failed }: { launch: LaunchRe
   const [watching, setWatching] = useState(false);
   const s = data?.stats;
   return (
-    <section className="fw-panel p-4 sm:p-6" aria-label="Map">
+    <section className="hb-panel p-4 sm:p-6" aria-label="Map">
       <SectionTitle aside={pending && data ? 'Updating' : undefined}>Map</SectionTitle>
       <div className={`transition-opacity ${pending && data ? 'opacity-60' : ''}`} aria-busy={pending}>
         {data ? (
@@ -88,7 +88,7 @@ export function MapPreview({ launch, data, pending, failed }: { launch: LaunchRe
           <Notice>The map could not be built for these settings.</Notice>
         ) : (
           <div className="grid h-40 place-items-center rounded-md border border-line bg-bg-2">
-            <span className="fw-kicker">Building the map.</span>
+            <span className="hb-kicker">Building the map.</span>
           </div>
         )}
         <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-5">
@@ -198,7 +198,7 @@ export function WatchMap({ launch, onClose }: { launch: LaunchRequest; onClose()
       }}
     >
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="fw-kicker">Watch this map</h2>
+        <h2 className="hb-kicker">Watch this map</h2>
         <Button size="sm" variant="ghost" onClick={() => dialog.current?.close()}>
           Close
         </Button>
@@ -207,7 +207,7 @@ export function WatchMap({ launch, onClose }: { launch: LaunchRequest; onClose()
         <canvas ref={canvas} className="block size-full cursor-pointer select-none" aria-label="The map played by a simulated player" onClick={toggle} />
         {!info && !message && (
           <div role="status" className="absolute inset-0 grid place-items-center bg-bg-2">
-            <span className="fw-kicker">Loading the map.</span>
+            <span className="hb-kicker">Loading the map.</span>
           </div>
         )}
       </div>

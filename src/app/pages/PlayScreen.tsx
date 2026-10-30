@@ -146,9 +146,9 @@ function Session({ launch, from, onRestart }: { launch: LaunchRequest; from: str
       <canvas ref={canvas} className="block h-full w-full select-none" style={{ touchAction: 'none' }} onContextMenu={(e) => e.preventDefault()} />
 
       {paused && !error && !saving && (
-        <div role="dialog" aria-modal="true" aria-label="Paused" className="fw-enter-small absolute inset-0 flex items-center justify-center bg-bg/80 backdrop-blur-sm">
-          <div className="fw-panel fw-marks w-72 p-6">
-            <h2 className="fw-kicker mb-5">Paused</h2>
+        <div role="dialog" aria-modal="true" aria-label="Paused" className="hb-enter-small absolute inset-0 flex items-center justify-center bg-bg/80 backdrop-blur-sm">
+          <div className="hb-panel hb-marks w-72 p-6">
+            <h2 className="hb-kicker mb-5">Paused</h2>
             <div className="flex flex-col gap-2">
               <Button ref={resumeButton} variant="primary" onClick={resume}>
                 Resume
@@ -164,13 +164,13 @@ function Session({ launch, from, onRestart }: { launch: LaunchRequest; from: str
 
       {saving && (
         <div role="status" className="absolute inset-0 flex items-center justify-center bg-bg/80 backdrop-blur-sm">
-          <span className="fw-kicker">Saving your play.</span>
+          <span className="hb-kicker">Saving your play.</span>
         </div>
       )}
 
       {error && (
-        <div role="alertdialog" aria-label="Error" className="fw-enter-small absolute inset-0 flex items-center justify-center bg-bg/90">
-          <div className="fw-panel fw-marks w-96 max-w-[90vw] border-danger/40 p-6">
+        <div role="alertdialog" aria-label="Error" className="hb-enter-small absolute inset-0 flex items-center justify-center bg-bg/90">
+          <div className="hb-panel hb-marks w-96 max-w-[90vw] border-danger/40 p-6">
             <h2 className="mb-2 text-lg">Something went wrong</h2>
             <p className="mb-6 text-ink-2">{error}</p>
             <div className="flex flex-wrap gap-2">

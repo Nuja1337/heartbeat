@@ -1,7 +1,7 @@
 // Replay container (PLAN-2 4.3 and 4.11). Pure and synchronous. Gzip is the data layer's job.
 //
 // Layout, little-endian:
-//   0   4  magic "FWRP"
+//   0   4  magic "HBRP"
 //   4   1  container version (REPLAY_FORMAT)
 //   5   1  flags, 0
 //   6   2  reserved, 0
@@ -31,8 +31,7 @@ export class ReplayFormatError extends Error {
 
 const damaged = (): ReplayFormatError => new ReplayFormatError('damaged');
 
-// The magic bytes ("FWRP") keep the old app name on purpose: stored replays and shared files start with them.
-const MAGIC = [0x46, 0x57, 0x52, 0x50] as const;
+const MAGIC = [0x48, 0x42, 0x52, 0x50] as const;
 const PREFIX_BYTES = 12;
 const MAX_OP = TRACE_OP.resume;
 /** Ops 0 to 4 carry a position. */

@@ -61,7 +61,7 @@ export function RatingHistory({ points, label }: { points: readonly RatingPoint[
           </text>
         ))}
         {a && <line x1={x(a.t)} x2={x(a.t)} y1={M.t} y2={H - M.b} stroke={CHART.axis} />}
-        <path d={path} pathLength={1} className="fw-draw" fill="none" stroke={CHART.accent} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        <path d={path} pathLength={1} className="hb-draw" fill="none" stroke={CHART.accent} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         {a && <circle cx={x(a.t)} cy={y(a.rating)} r={4.5} fill={CHART.accent} stroke={CHART.empty} strokeWidth={1.5} />}
       </svg>
       <figcaption className="min-h-6 text-sm text-ink-2" aria-live="polite">

@@ -4,12 +4,6 @@ Heartbeat is a browser aim trainer. It records where and how you miss, then sugg
 
 The repository is private for now.
 
-## Formerly Flickwise
-
-The app was renamed from Flickwise to Heartbeat on 29 October 2026 and moved from flickwise.ajshaham.workers.dev to heartbeat.ajshaham.workers.dev. The old address still serves the same build and shows a notice at the top of every page.
-
-Plays are saved in the browser and tied to the address, so they do not follow the move. To bring them over, open the old address, choose Export your data in the notice (or use Settings, Data), then open Heartbeat and import the file in Settings, under Data. Export files made before the rename still import.
-
 ## What it does
 
 You click targets in time with a beat. Every click is saved with its position, its timing and the movement that led to it. The stats pages turn that into ratings, trends and specific advice. Home offers a short setup for your input, your timing and a placement test (see Calibration).
@@ -100,7 +94,7 @@ Everything is stored in this browser with IndexedDB. There is no account and not
 - Per-object detail is kept for 365 days by default. You can change this in Settings. Removing old detail doesn't change ratings, trends or bests.
 - Replays are stored compressed. The newest 100 are kept by default, and Settings offers 25, 100, 300 or all. Replays you mark to keep, and replays of new bests, are never removed. Older ones are removed after your next play or the next time Heartbeat starts.
 - Settings can export everything as a .json or .json.gz file and import it again. The export has a checkbox to include replays, and without them the file is much smaller. Importing skips plays that are already there.
-- Data from version 1.0, when the app was called Flickwise, upgrades automatically the first time 2.0 opens. 1.0 export files still import.
+- Export files from version 1.0 still import.
 - The browser can clear site data. Settings shows whether it has agreed to keep it, and a regular export is the safe copy.
 - Data belongs to one address. Moving the app to a new address means exporting here and importing there.
 
@@ -132,19 +126,6 @@ npm run deploy    # build and publish with Wrangler
 
 `npm run dev` also serves `/dev.html`, a test page for the game engine.
 
-Some internal identifiers keep the old name on purpose, because changing them would break saved data, old export files, replays or daily maps. Each has a comment where it is defined.
-
-- The IndexedDB database name `flickwise` (`src/data/db.ts`).
-- The export `format` value `flickwise-export` (`src/data/exportImport.ts`). Import accepts it and new exports keep writing it.
-- The replay magic bytes `FWRP` (`src/shared/replay.ts`).
-- The service worker cache prefix `fw-` (`src/app/pwa.ts` and `public/sw.js`).
-- The `--fw-*` CSS variables.
-- The session storage keys that start with `fw-`, and the local storage key the dev game-engine page uses, `flickwise-dev-harness`.
-- The palette id `flickwise` in settings and export files. Its label is Heartbeat.
-- The daily seed salt `flickwise-daily:` (`src/shared/codes.ts`). Changing it would change every daily map.
-
-The old address is detected in `src/app/oldAddress.ts`. When the page is served from `flickwise.ajshaham.workers.dev`, the notice in `src/app/layout/MovedBanner.tsx` shows. The old Worker keeps serving the same build.
-
 Open the app with `?fake=1` in a dev build to replace the game engine with a stand-in. A play then ends after 3 seconds with a made-up result, which is enough to click through setup, results, stats and insights.
 
 Folders:
@@ -158,7 +139,7 @@ The site is a static Worker deployed with Wrangler. See `wrangler.jsonc`.
 
 ### Retiring the service worker
 
-`public/sw-kill.js` is a worker that removes itself, deletes the `fw-` caches and reloads the open pages. Nothing uses it now. If a released worker ever breaks the app, ship a build where:
+`public/sw-kill.js` is a worker that removes itself, deletes every cache and reloads the open pages. Nothing uses it now. If a released worker ever breaks the app, ship a build where:
 
 1. `public/sw-kill.js` is served as `/sw.js`, for example by copying it over `public/sw.js` before `npm run build`.
 2. `src/app/pwa.ts` no longer calls `serviceWorker.register`, so the page stops installing a new worker.

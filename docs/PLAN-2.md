@@ -1,8 +1,6 @@
-# Flickwise 2.0 plan
+# Heartbeat 2.0 plan
 
-> Flickwise was renamed Heartbeat on 29 October 2026. This document keeps the old name.
-
-Repo: `C:\Users\Nuja\Documents\GitHub\flickwise`. This plan builds on `docs/PLAN.md`, the 1.0 design. "PLAN §n" means a 1.0 section and "§n" means a section of this file. Code comments cite "PLAN-2 §n".
+Repo: `C:\Users\Nuja\Documents\GitHub\heartbeat`. This plan builds on `docs/PLAN.md`, the 1.0 design. "PLAN §n" means a 1.0 section and "§n" means a section of this file. Code comments cite "PLAN-2 §n".
 
 ## 1. Summary
 
@@ -71,7 +69,7 @@ Rules for every phase:
 - Tests:
   1. Codec round trip on 50 random traces covering every op. A golden-bytes test on a fixed 5-event replay: the builder freezes the hex after review. Rejection of bad magic, newer versions, truncation, unknown ops and trailing bytes. A synthetic 1 kHz, 120 s human-like path (minimum-jerk plus noise) encodes at 4 bytes per event or less before gzip.
   2. Share codes: a round trip for every mode and option, preset and custom. The vector `AQABFc1bB1oAQAACBEM` decodes to Dynamic, preset 4, seed 123456789, 90 s, Mirror, generator 2. A single-character change fails the checksum. A newer version is rejected. Out-of-range values are clamped.
-  3. `dailySeed('2026-11-01') === 3692414807` and `dailySeed('2027-01-01') === 3721610987`. `localDateKey` returns local dates.
+  3. `dailySeed('2026-11-01') === 1500758254` and `dailySeed('2027-01-01') === 2909596274`. `localDateKey` returns local dates.
   4. Migration: build a v1 database with `MIGRATIONS[1]` and the fixture rows, then open it at v2. Counts are equal, records unpack deep-equal to the fixture, summaries lift with the v2 defaults, settings keep their stored values and get defaults for the new fields, and `replays` exists and is empty.
   5. Importing the v1 fixture into a fresh v2 database gives the same result as test 4.
   6. `savePlay` with a synthetic `ReplayData` writes a gzip row and sets `hasReplay`. A PB is auto-kept. `getReplay` returns a deep-equal object. A failing encode still saves the play, without a replay.
@@ -365,7 +363,7 @@ export interface ReplayData {
 /* ---------------------------------------------------------- settings */
 
 export type SoundSetId = 'glass' | 'wood' | 'pulse';
-export type PaletteId = 'flickwise' | 'classic' | 'clearview' | 'contrast';
+export type PaletteId = 'heartbeat' | 'classic' | 'clearview' | 'contrast';
 export type CursorStyle = 'ring' | 'cross' | 'dot';
 export type ApproachStyle = 'ring' | 'fill' | 'brackets';
 export type MetronomeMode = 'off' | 'beat' | 'bar';
@@ -554,9 +552,9 @@ export interface Palette {
   judgments: Record<Judgment, string>;
 }
 export const PALETTES: Record<PaletteId, Palette> = {
-  flickwise: { label: 'Flickwise', description: 'The default colours.', groups: ['#5ee7f2', '#ff7ab8', '#c9f25c', '#eef1f6'],
+  heartbeat: { label: 'Heartbeat', description: 'The default colours.', groups: ['#5ee7f2', '#ff7ab8', '#c9f25c', '#eef1f6'],
     judgments: { crisp: '#b49bff', solid: '#36d6b0', rough: '#ffb340', miss: '#ff4f6a' } },
-  classic: { label: 'Classic', description: 'The colours from Flickwise 1.0.', groups: ['#7dd3fc', '#f9a8d4', '#fde68a', '#e5e7eb'],
+  classic: { label: 'Classic', description: 'The colours from Heartbeat 1.0.', groups: ['#7dd3fc', '#f9a8d4', '#fde68a', '#e5e7eb'],
     judgments: { crisp: '#a78bfa', solid: '#2dd4bf', rough: '#f59e0b', miss: '#f43f5e' } },
   clearview: { label: 'Clear view', description: 'Easier to tell apart with red-green colour blindness.', groups: ['#56b4e9', '#e69f00', '#f0e442', '#ffffff'],
     judgments: { crisp: '#56b4e9', solid: '#ffffff', rough: '#e69f00', miss: '#cc79a7' } },
@@ -565,7 +563,7 @@ export const PALETTES: Record<PaletteId, Palette> = {
 };
 
 export const SOUND_SETS: Record<SoundSetId, { label: string; description: string }> = {
-  glass: { label: 'Glass', description: 'Bright, short tones, as in Flickwise 1.0.' },
+  glass: { label: 'Glass', description: 'Bright, short tones, as in Heartbeat 1.0.' },
   wood: { label: 'Wood', description: 'Soft clicks with little pitch.' },
   pulse: { label: 'Pulse', description: 'Square-wave blips.' },
 };
@@ -601,7 +599,7 @@ export const DEFAULT_SETTINGS: Settings = {
   input: { rawInput: false, sensitivity: 1, keys: ['KeyZ', 'KeyX'], mouseButtons: true, cursor: 'system', cursorScale: 1, cursorTrail: false, retryKey: 'Backquote' },
   audio: { master: 0.6, muted: false, hits: 0.8, effects: 0.8, ambient: 0.5, soundSet: 'glass', metronome: 'off', metronomeVolume: 0.5, offsetMs: 0 },
   display: { errorBar: true, pathHints: true, crispPopups: false, earlyLate: true, reduceMotion: false, lowLatency: true, showFps: false, visualOffsetMs: 0, frameGraph: false },
-  skin: { palette: 'flickwise', cursorStyle: 'ring', approach: 'ring', fieldGrid: true, clickRipple: true },
+  skin: { palette: 'heartbeat', cursorStyle: 'ring', approach: 'ring', fieldGrid: true, clickRipple: true },
   goals: { weeklyMinutes: 60 },
   data: { detailRetentionDays: 365, replayLimit: 100 },
   updatedAt: 0,
@@ -679,7 +677,7 @@ export type RuleId = /* 1.0 values */ | 'late-leave' | 'first-motion' | 'correct
 
 | Offset | Size | Field |
 |---|---|---|
-| 0 | 4 | Magic `46 57 52 50` ("FWRP") |
+| 0 | 4 | Magic `48 42 52 50` ("HBRP") |
 | 4 | 1 | Container version = `REPLAY_FORMAT` (1) |
 | 5 | 1 | Flags = 0 |
 | 6 | 2 | Reserved = 0 |
@@ -710,7 +708,7 @@ Op codes come from `TRACE_OP`:
 | 15 | resume, which calls `noteResume` |
 
 Decoding rules:
-- The decoder rejects unknown ops, a version above `REPLAY_FORMAT`, length mismatches and trailing bytes. It throws `ReplayFormatError` with the message "This replay is damaged." or "This replay was made by a newer version of Flickwise."
+- The decoder rejects unknown ops, a version above `REPLAY_FORMAT`, length mismatches and trailing bytes. It throws `ReplayFormatError` with the message "This replay is damaged." or "This replay was made by a newer version of Heartbeat."
 - In memory, x and y are 0 for events without a position.
 - Size target: 4 bytes or less per event before gzip on 1 kHz human-like movement. Expect about 150 to 300 KB per 120 s play at 1 kHz after gzip.
 
@@ -740,7 +738,7 @@ export interface ReplayRow {
 ```
 
 - The migration only adds a store. Existing rows are never rewritten. Readers and import lift summaries through `upgradeSummary`, as in 1.0.
-- `onblocked` no longer rejects. The open stays pending and the app shows "Close other Flickwise tabs to finish the update." A 1.0 tab receives `versionchange`, closes its connection and shows its own reload message.
+- `onblocked` no longer rejects. The open stays pending and the app shows "Close other Heartbeat tabs to finish the update." A 1.0 tab receives `versionchange`, closes its connection and shows its own reload message.
 - **One way.** After v2 opens on a profile, 1.0 code gets a VersionError. Fix forward and never roll back the deploy.
 - `savePlay` order:
   1. Summarize and pack the records.
@@ -754,7 +752,7 @@ export interface ReplayRow {
 ### 4.5 Export v2
 
 ```ts
-{ format: 'flickwise-export', formatVersion: 2, exportedAt, app: { engineVersion, generatorVersion }, deviceId,
+{ format: 'heartbeat-export', formatVersion: 2, exportedAt, app: { engineVersion, generatorVersion }, deviceId,
   settings, progress, drills, tombstones,
   meta: { tiers, milestones?, onboarding? },
   plays: [ { summary, detail /* as 1.0 */, replay?: JsonReplay | null } ] }
@@ -817,9 +815,9 @@ export interface DailyPlan { date: string; createdAt: number; steps: PlanStep[] 
 
 ### 4.9 Daily seed
 
-`dailySeed(date) = fnv1a32('flickwise-daily:' + date)`. FNV-1a 32 uses offset 2166136261 and prime 16777619 with `Math.imul`, over UTF-16 code units, and returns `>>> 0`. `date` is `localDateKey(epochMs)`, which is `YYYY-MM-DD` from local date parts (decision 3).
+`dailySeed(date) = fnv1a32('heartbeat-daily:' + date)`. FNV-1a 32 uses offset 2166136261 and prime 16777619 with `Math.imul`, over UTF-16 code units, and returns `>>> 0`. `date` is `localDateKey(epochMs)`, which is `YYYY-MM-DD` from local date parts (decision 3).
 
-Vectors: `2026-11-01` gives 3692414807, and `2027-01-01` gives 3721610987.
+Vectors: `2026-11-01` gives 1500758254, and `2027-01-01` gives 2909596274.
 
 The daily launch:
 - modeId `dynamic`, with the difficulty of the player's chosen preset (default from §7.6)
@@ -881,8 +879,8 @@ These override §4, §5.2, §8.3 and the Phase 0.4 tests wherever they differ.
 - A tombstoned play's replay is not imported.
 
 **Blocked and failed opens (add to §4.4).**
-- `db.ts` exports `onDbBlocked(fn)` next to `onDbOutdated`. The Shell shows "Close other Flickwise tabs to finish the update." while blocked and clears it once the open succeeds.
-- `open.onerror` with a `VersionError` shows "This browser has data from a newer Flickwise. Reload to update."
+- `db.ts` exports `onDbBlocked(fn)` next to `onDbOutdated`. The Shell shows "Close other Heartbeat tabs to finish the update." while blocked and clears it once the open succeeds.
+- `open.onerror` with a `VersionError` shows "This browser has data from a newer Heartbeat. Reload to update."
 
 **Settings (add to §4.6).** Round to a step as a whole count of steps, then `Number((count × step).toFixed(2))`, so 0.15 stays exactly 0.15.
 
@@ -936,7 +934,7 @@ These override §4, §5.2, §8.3 and the Phase 0.4 tests wherever they differ.
 - **Render.** `rs.playT = T`, `rs.now = T`, the cursor at `session.cursor.positionAt(T)`, `drawCursor` true and no overlay. The effects clock is play time: `fx.onEvent(e, e.t, …)`. This makes effects slow down at 0.25× and freeze when paused.
 - **Seek.** A forward seek feeds ahead. A backward seek rebuilds and feeds from 0, and skips effects for events before `T − 800`. Long plays may take up to about 100 ms, so seeks are throttled to one per animation frame.
 - **On load.** One silent run to `endT` compares judgments with `replay.judgments` and reports `mismatches` in `onReady`.
-  - A replay from a newer engine fails with "This replay was made by a newer version of Flickwise."
+  - A replay from a newer engine fails with "This replay was made by a newer version of Heartbeat."
   - A replay from an older engine plays, and the page notes any mismatches.
 - **Sound.** Hit sounds play only at 1× while playing forward.
 - **Autoplay source.** `autoplayReplay(launch, model = PERFECT_PLAYER, stepMs = 4)` runs the headless runner with recording and returns `ReplayData`. `loop: true` restarts at the end.
@@ -1240,17 +1238,17 @@ A class component around `<Outlet/>` and around `/session`. It reads "Something 
 
 - **`sw.js`**:
   - On install, fetch `/asset-manifest.json` and precache `/`, `/index.html` and every `file`, `css` and `assets` entry.
-  - The cache name is `fw-` plus a hash of the manifest text.
+  - The cache name is `hb-` plus a hash of the manifest text.
   - Navigations are network first with a 3 s timeout, falling back to the cached `/index.html`.
   - `/assets/*` is cache first. Everything else goes to the network.
-  - Activate deletes other `fw-` caches and calls `clients.claim()`.
+  - Activate deletes every cache except the current one and calls `clients.claim()`.
   - `skipWaiting()` runs only on a message from the page.
 - **Page**:
   - Register only in production.
-  - When a worker is waiting, show "A new version of Flickwise is ready." with a Reload button. It posts `skipWaiting`, and the page reloads on `controllerchange`.
+  - When a worker is waiting, show "A new version of Heartbeat is ready." with a Reload button. It posts `skipWaiting`, and the page reloads on `controllerchange`.
   - Capture `beforeinstallprompt` for an Install button in Settings.
 - **Kill switch**: if the worker misbehaves, deploy a `sw.js` that unregisters itself and reloads its clients.
-- **Manifest**: name Flickwise, `display: standalone`, `start_url: /`, background and theme colours #07090e, and the PNG icons 192, 512 and maskable 512.
+- **Manifest**: name Heartbeat, `display: standalone`, `start_url: /`, background and theme colours #07090e, and the PNG icons 192, 512 and maskable 512.
 
 ### 8.4 Home (U3)
 
@@ -1263,7 +1261,7 @@ A class component around `<Outlet/>` and around `/session`. It reads "Something 
   - The top insight with "Train this" and "Not now".
   - "What changed this week" from `weeklyChanges`.
   - The 5 most recent plays with grade chips.
-- First run, no plays: a "Set up Flickwise" card linking to `/welcome` (added by U5).
+- First run, no plays: a "Set up Heartbeat" card linking to `/welcome` (added by U5).
 
 ### 8.5 Results 2.0 (U3)
 
@@ -1334,7 +1332,7 @@ Mode cards in a grid:
 
 ### 8.12 Share links (U4)
 
-`/s/:code` decodes and navigates to `/play` or `/train/:mode` with the launch prefilled and a "Shared map" banner. An invalid code shows the decoder's message. A different generator version shows the §4.10 note. Share text: "Flickwise map: Dynamic, Level 4, Mirror. {url}".
+`/s/:code` decodes and navigates to `/play` or `/train/:mode` with the launch prefilled and a "Shared map" banner. An invalid code shows the decoder's message. A different generator version shows the §4.10 note. Share text: "Heartbeat map: Dynamic, Level 4, Mirror. {url}".
 
 ### 8.13 Onboarding (U5)
 
@@ -1367,12 +1365,12 @@ Progress is kept in meta `onboarding`.
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
 }
 @theme inline {
-  --color-crisp: var(--fw-crisp); --color-solid: var(--fw-solid);
-  --color-rough: var(--fw-rough); --color-miss: var(--fw-miss);
+  --color-crisp: var(--hb-crisp); --color-solid: var(--hb-solid);
+  --color-rough: var(--hb-rough); --color-miss: var(--hb-miss);
 }
 ```
 
-The app sets `--fw-*` on `:root` from the active palette. U1 confirms that Tailwind 4's `@theme inline` behaves this way, and otherwise sets these four through a plain `:root` rule.
+The app sets `--hb-*` on `:root` from the active palette. U1 confirms that Tailwind 4's `@theme inline` behaves this way, and otherwise sets these four through a plain `:root` rule.
 
 **Type**:
 - Numbers always use `tabular-nums`. If Space Grotesk lacks tabular figures (unconfirmed), numbers use `--font-sans`.
@@ -1489,7 +1487,7 @@ The app sets `--fw-*` on `:root` from the active palette. U1 confirms that Tailw
    - Recommendation: add it. Big numbers carry most of the new look, and system fonts look different on every machine. Body text stays on the system font.
 5. **Accent colour.**
    - Options: lime as the main accent with cyan for data, or keep 1.0's sky blue.
-   - Recommendation: lime. It gives Flickwise a look of its own and stays readable on the dark surfaces. The judgment colours keep their 1.0 meaning in every palette.
+   - Recommendation: lime. It gives Heartbeat a look of its own and stays readable on the dark surfaces. The judgment colours keep their 1.0 meaning in every palette.
 6. **How to release.**
    - Options: deploy after each phase from Phase 1 on, or release 2.0 once at the end.
    - Recommendation: deploy from Phase 1 on. You get replays recording from your real plays early, and later phases need that data. The database change ships in the Phase 1 deploy, so please export a backup first.
@@ -1528,11 +1526,11 @@ Confirmed:
 - The daily-seed and share-code test vectors in §4.8 and §4.9 were computed with Node.
 
 Key files read:
-- `C:\Users\Nuja\Documents\GitHub\flickwise\docs\PLAN.md`
-- `C:\Users\Nuja\Documents\GitHub\flickwise\src\shared\types.ts`
-- `C:\Users\Nuja\Documents\GitHub\flickwise\src\shared\catalog.ts`
-- `C:\Users\Nuja\Documents\GitHub\flickwise\src\game\engine\session.ts`
-- `C:\Users\Nuja\Documents\GitHub\flickwise\src\game\engine\game.ts`
-- `C:\Users\Nuja\Documents\GitHub\flickwise\src\game\map\generator.ts`
-- `C:\Users\Nuja\Documents\GitHub\flickwise\src\data\{db,schema,columns,plays,exportImport,settings}.ts`
-- `C:\Users\Nuja\Documents\GitHub\flickwise\src\analytics\insights.ts`
+- `C:\Users\Nuja\Documents\GitHub\heartbeat\docs\PLAN.md`
+- `C:\Users\Nuja\Documents\GitHub\heartbeat\src\shared\types.ts`
+- `C:\Users\Nuja\Documents\GitHub\heartbeat\src\shared\catalog.ts`
+- `C:\Users\Nuja\Documents\GitHub\heartbeat\src\game\engine\session.ts`
+- `C:\Users\Nuja\Documents\GitHub\heartbeat\src\game\engine\game.ts`
+- `C:\Users\Nuja\Documents\GitHub\heartbeat\src\game\map\generator.ts`
+- `C:\Users\Nuja\Documents\GitHub\heartbeat\src\data\{db,schema,columns,plays,exportImport,settings}.ts`
+- `C:\Users\Nuja\Documents\GitHub\heartbeat\src\analytics\insights.ts`

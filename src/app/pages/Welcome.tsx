@@ -43,7 +43,7 @@ function StepList({ current, flags, onPick }: { current: OnboardingStep; flags: 
               onClick={() => onPick(s.id)}
               className={`block w-full cursor-pointer border-t-2 pt-3 text-left transition ${here ? 'border-accent' : flags[s.id] ? 'border-accent/40' : 'border-line-2'}`}
             >
-              <span className="fw-kicker">Step {i + 1}</span>
+              <span className="hb-kicker">Step {i + 1}</span>
               <span className={`mt-1 block font-display text-lg ${here ? 'text-ink' : 'text-ink-2'}`}>{s.label}</span>
               <span className="block text-sm text-ink-3">{flags[s.id] ? 'Done' : here ? 'In progress' : 'Not started'}</span>
             </button>

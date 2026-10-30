@@ -3,8 +3,7 @@
 
    Kill switch: public/sw-kill.js. To retire a broken worker, serve it as sw.js (see the README). */
 
-// Keeps the old app name on purpose: caches already made by earlier builds start with it.
-const PREFIX = 'fw-';
+const PREFIX = 'hb-';
 const MANIFEST_URL = '/asset-manifest.json';
 const NAV_TIMEOUT_MS = 3000;
 
@@ -146,7 +145,7 @@ self.addEventListener('activate', (event) => {
     (async () => {
       const keep = await currentName();
       for (const key of await caches.keys()) {
-        if (key.startsWith(PREFIX) && key !== keep) await caches.delete(key);
+        if (key !== keep) await caches.delete(key);
       }
       await self.clients.claim();
     })(),

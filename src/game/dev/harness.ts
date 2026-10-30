@@ -23,8 +23,7 @@ import { ENGINE_VERSION, GENERATOR_VERSION, createCalibration, createGame, creat
 import { autoplayReplay } from '../replay/autoplayReplay';
 import { NOISY_PLAYER } from '../sim/autoplay';
 
-// Keeps the old app name on purpose: the dev harness saves its fixtures under this key.
-const STORE = 'flickwise-dev-harness';
+const STORE = 'heartbeat-dev-harness';
 
 interface Form {
   mode: ModeId;
@@ -351,7 +350,7 @@ function calibrate(kind: CalibrationKind): void {
       stopCalibration();
     },
   });
-  (window as unknown as { __fwCal?: CalibrationHandle }).__fwCal = calibration;
+  (window as unknown as { __hbCal?: CalibrationHandle }).__hbCal = calibration;
 }
 
 function stopCalibration(): void {
@@ -437,7 +436,7 @@ function demo(): void {
   showPanel(false);
   panelButton.style.display = 'none';
   watchBar.style.display = 'none';
-  const win = window as unknown as { __fw?: { playback: PlaybackHandle | null; launch: LaunchRequest } };
+  const win = window as unknown as { __hb?: { playback: PlaybackHandle | null; launch: LaunchRequest } };
   // A sloppy player misses now and then, which the skin needs to show.
   const source: PlaybackSource = demoMisses
     ? { kind: 'replay', replay: autoplayReplay(launch(), { ...NOISY_PLAYER, name: 'sloppy', sigmaT: 55, sigmaAim: 0.75, trackNoise: 0.9 }) }
@@ -451,7 +450,7 @@ function demo(): void {
       showPanel(true);
     },
   });
-  win.__fw = { playback, launch: launch() };
+  win.__hb = { playback, launch: launch() };
 }
 
 function stopWatching(): void {

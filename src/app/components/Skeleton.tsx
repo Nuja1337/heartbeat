@@ -4,12 +4,12 @@ export function PageSkeleton() {
   return (
     <div role="status" aria-busy="true" aria-label="Loading">
       <div className="mb-8 space-y-3">
-        <div className="fw-skeleton h-8 w-56" />
-        <div className="fw-skeleton h-5 w-96 max-w-full" />
+        <div className="hb-skeleton h-8 w-56" />
+        <div className="hb-skeleton h-5 w-96 max-w-full" />
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="fw-skeleton h-56" />
-        <div className="fw-skeleton h-56" />
+        <div className="hb-skeleton h-56" />
+        <div className="hb-skeleton h-56" />
       </div>
       <span className="sr-only">Loading.</span>
     </div>

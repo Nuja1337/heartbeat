@@ -44,7 +44,7 @@ export function ModeCard({
 }) {
   const mode = MODES[modeId];
   return (
-    <Link to={`/train/${modeId}`} className="fw-panel fw-marks fw-interactive flex h-full flex-col p-4 sm:p-6">
+    <Link to={`/train/${modeId}`} className="hb-panel hb-marks hb-interactive flex h-full flex-col p-4 sm:p-6">
       <span className="flex items-start justify-between gap-3">
         <span className="min-w-0">
           <span className="block text-micro uppercase text-ink-3">{level.caption}</span>

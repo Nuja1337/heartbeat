@@ -2,11 +2,8 @@
 
    To retire a broken service worker, ship a build where this file is served as /sw.js and the page no longer
    calls serviceWorker.register (see "Retiring the service worker" in the README). Browsers check /sw.js for
-   changes on their own, install this one at once, and it removes itself and the Heartbeat caches.
+   changes on their own, install this one at once, and it removes itself and every cache.
    src/app/pwa.test.ts runs this file against fakes. */
-
-// Keeps the old app name on purpose: caches made by earlier builds start with it.
-const PREFIX = 'fw-';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -20,7 +17,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
       for (const key of await caches.keys()) {
-        if (key.startsWith(PREFIX)) await caches.delete(key);
+        await caches.delete(key);
       }
       await self.registration.unregister();
       // Reload the open pages so they load straight from the network.

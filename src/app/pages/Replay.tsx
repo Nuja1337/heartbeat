@@ -85,8 +85,8 @@ export function Replay() {
   else if (loaded.status === 'loading' || !play || !game)
     body = (
       <div role="status" aria-busy="true" className="grid gap-6 lg:grid-cols-3">
-        <div className="fw-skeleton aspect-[16/10] lg:col-span-2" />
-        <div className="fw-skeleton h-64" />
+        <div className="hb-skeleton aspect-[16/10] lg:col-span-2" />
+        <div className="hb-skeleton h-64" />
         <span className="sr-only">Loading.</span>
       </div>
     );
@@ -297,7 +297,7 @@ function Viewer({
           <canvas ref={canvas} className="block size-full cursor-pointer select-none" aria-label="Replay of the play" onClick={toggle} />
           {!info && !failure && (
             <div role="status" className="absolute inset-0 grid place-items-center bg-bg-2">
-              <span className="fw-kicker">Loading the replay.</span>
+              <span className="hb-kicker">Loading the replay.</span>
             </div>
           )}
         </div>

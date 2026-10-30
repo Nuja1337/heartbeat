@@ -52,8 +52,8 @@ function Broken({ error }: { error: Error }) {
 
   return (
     <div role="alert" className="mx-auto my-12 max-w-xl px-4">
-      <div className="fw-panel fw-marks p-6 sm:p-8">
-        <span className="fw-kicker text-danger before:bg-danger">Error</span>
+      <div className="hb-panel hb-marks p-6 sm:p-8">
+        <span className="hb-kicker text-danger before:bg-danger">Error</span>
         <h1 className="mt-3 text-2xl">Something broke on this page.</h1>
         <p className="mt-2 text-ink-2">Reloading usually fixes it. Your plays stay on this device.</p>
         {error.message && <p className="mt-3 break-words font-mono text-sm text-ink-3">{error.message}</p>}

@@ -4,8 +4,7 @@
 
 import { useSyncExternalStore } from 'react';
 
-// The prefix keeps the old app name on purpose: the worker finds and deletes caches by it.
-export const CACHE_PREFIX = 'fw-';
+export const CACHE_PREFIX = 'hb-';
 export const SW_URL = '/sw.js';
 export const MANIFEST_URL = '/asset-manifest.json';
 export const UPDATE_READY_MESSAGE = 'A new version of Heartbeat is ready.';

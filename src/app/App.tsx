@@ -44,7 +44,7 @@ const PlayDetail = lazyNamed(() => import('./pages/stats/PlayDetail'), 'PlayDeta
 function NotFound() {
   return (
     <Panel className="max-w-xl">
-      <span className="fw-kicker">404</span>
+      <span className="hb-kicker">404</span>
       <h1 className="mt-3 text-2xl">Page not found</h1>
       <p className="mt-2 text-ink-2">There is nothing at this address.</p>
       <LinkButton to="/" variant="primary" className="mt-6">

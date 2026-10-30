@@ -348,8 +348,7 @@ export interface Palette {
   judgments: Record<Judgment, string>;
 }
 export const PALETTES: Record<PaletteId, Palette> = {
-  // The id keeps the old app name on purpose: it is saved in settings and in export files.
-  flickwise: {
+  heartbeat: {
     label: 'Heartbeat',
     description: 'The default colours.',
     groups: ['#5ee7f2', '#ff7ab8', '#c9f25c', '#eef1f6'],
@@ -426,7 +425,7 @@ export const DEFAULT_SETTINGS: Settings = {
     errorBar: true, pathHints: true, crispPopups: false, earlyLate: true, reduceMotion: false, lowLatency: true, showFps: false,
     visualOffsetMs: 0, frameGraph: false,
   },
-  skin: { palette: 'flickwise', cursorStyle: 'ring', approach: 'ring', fieldGrid: true, clickRipple: true },
+  skin: { palette: 'heartbeat', cursorStyle: 'ring', approach: 'ring', fieldGrid: true, clickRipple: true },
   goals: { weeklyMinutes: 60 },
   data: { detailRetentionDays: 365, replayLimit: 100 },
   updatedAt: 0,

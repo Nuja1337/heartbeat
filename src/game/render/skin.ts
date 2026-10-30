@@ -40,7 +40,7 @@ export interface Skin extends PaletteStrings {
 const palettes = new Map<PaletteId, PaletteStrings>();
 
 function paletteStrings(id: PaletteId): PaletteStrings {
-  const known = id in PALETTES ? id : 'flickwise';
+  const known = id in PALETTES ? id : 'heartbeat';
   let p = palettes.get(known);
   if (p) return p;
   const src = PALETTES[known];

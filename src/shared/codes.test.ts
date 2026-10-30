@@ -300,8 +300,8 @@ describe('share code clamping and snapping', () => {
 
 describe('daily seed', () => {
   it('matches the plan vectors', () => {
-    expect(dailySeed('2026-11-01')).toBe(3692414807);
-    expect(dailySeed('2027-01-01')).toBe(3721610987);
+    expect(dailySeed('2026-11-01')).toBe(1500758254);
+    expect(dailySeed('2027-01-01')).toBe(2909596274);
   });
 
   it('is a u32 and differs by date', () => {

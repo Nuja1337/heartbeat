@@ -79,7 +79,7 @@ export function Panel({
   marks?: boolean;
   interactive?: boolean;
 }) {
-  const cls = ['fw-panel p-4 sm:p-6', marks || interactive ? 'fw-marks' : '', interactive ? 'fw-interactive' : '', className].filter(Boolean).join(' ');
+  const cls = ['hb-panel p-4 sm:p-6', marks || interactive ? 'hb-marks' : '', interactive ? 'hb-interactive' : '', className].filter(Boolean).join(' ');
   return <Tag className={cls}>{children}</Tag>;
 }
 
@@ -87,13 +87,13 @@ export function Panel({
 export const Card = Panel;
 
 export function Kicker({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <span className={`fw-kicker ${className}`}>{children}</span>;
+  return <span className={`hb-kicker ${className}`}>{children}</span>;
 }
 
 export function SectionTitle({ children, aside }: { children: ReactNode; aside?: ReactNode }) {
   return (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-      <h2 className="fw-kicker">{children}</h2>
+      <h2 className="hb-kicker">{children}</h2>
       {aside && <div className="min-w-0 text-sm text-ink-2">{aside}</div>}
     </div>
   );
@@ -178,7 +178,7 @@ export function GradeBadge({ grade, size = 'md' }: { grade: GradeId; size?: 'chi
   const box = size === 'lg' ? 'h-12 px-4 text-2xl' : size === 'chip' ? 'h-6 px-2.5 text-sm' : 'h-8 px-4 text-lg';
   return (
     <span
-      className={`fw-marks fw-marks-sm relative inline-flex items-center font-display font-semibold ${box}`}
+      className={`hb-marks hb-marks-sm relative inline-flex items-center font-display font-semibold ${box}`}
       style={{ color: GRADE_COLOR[grade], '--mark': 'currentColor' } as CSSProperties}
     >
       {label}

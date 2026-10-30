@@ -37,14 +37,14 @@ function Loading() {
   return (
     <div role="status" aria-busy="true" className="space-y-6">
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="fw-skeleton h-72" />
-        <div className="fw-skeleton h-72" />
-        <div className="fw-skeleton h-72" />
+        <div className="hb-skeleton h-72" />
+        <div className="hb-skeleton h-72" />
+        <div className="hb-skeleton h-72" />
       </div>
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="fw-skeleton h-72" />
-        <div className="fw-skeleton h-72" />
-        <div className="fw-skeleton h-72" />
+        <div className="hb-skeleton h-72" />
+        <div className="hb-skeleton h-72" />
+        <div className="hb-skeleton h-72" />
       </div>
       <span className="sr-only">Loading.</span>
     </div>
@@ -87,9 +87,6 @@ export function Home() {
                 <p className="mt-1 text-ink-2">Choose your input, calibrate your timing and find your starting levels.</p>
               </div>
               <LinkButton to="/welcome" variant="primary">Set up Heartbeat</LinkButton>
-              <p className="basis-full text-sm text-ink-2">
-                Played Flickwise before? <Link to="/settings#settings-data" className="text-accent hover:underline">Import your export file in Settings.</Link>
-              </p>
             </Panel>
           )}
 

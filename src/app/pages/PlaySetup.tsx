@@ -123,13 +123,13 @@ export function PlaySetup() {
             <SectionTitle>Level</SectionTitle>
             <div role="radiogroup" aria-label="Level" className="grid gap-3 sm:grid-cols-2">
               {LEVEL_PRESETS.map((p) => (
-                <label key={p.level} className="fw-choice">
+                <label key={p.level} className="hb-choice">
                   <input type="radio" name="level" className="sr-only" checked={preset === p.level} onChange={() => choosePreset(p.level)} />
                   <span className="block font-display font-semibold">{p.label}</span>
                   <span className="block text-sm text-ink-2">{p.description}</span>
                 </label>
               ))}
-              <label className="fw-choice sm:col-span-2">
+              <label className="hb-choice sm:col-span-2">
                 <input type="radio" name="level" className="sr-only" checked={preset === null} onChange={() => setPreset(null)} />
                 <span className="block font-display font-semibold">Custom</span>
                 <span className="block text-sm text-ink-2">Set each part of the difficulty yourself.</span>
@@ -171,7 +171,7 @@ export function PlaySetup() {
                 const blocked = !mods.includes(id) && info.conflicts.some((c) => mods.includes(c));
                 return (
                   <li key={id}>
-                    <label className="fw-choice flex gap-3">
+                    <label className="hb-choice flex gap-3">
                       <input
                         type="checkbox"
                         className="mt-1 size-4 shrink-0 accent-[var(--color-accent)]"

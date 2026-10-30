@@ -7,7 +7,7 @@ describe('palette variables', () => {
   it('gives the four judgment colors of every palette', () => {
     for (const id of Object.keys(PALETTES) as (keyof typeof PALETTES)[]) {
       const j = PALETTES[id].judgments;
-      expect(paletteVars(id)).toEqual({ '--fw-crisp': j.crisp, '--fw-solid': j.solid, '--fw-rough': j.rough, '--fw-miss': j.miss });
+      expect(paletteVars(id)).toEqual({ '--hb-crisp': j.crisp, '--hb-solid': j.solid, '--hb-rough': j.rough, '--hb-miss': j.miss });
     }
   });
 
@@ -18,7 +18,7 @@ describe('palette variables', () => {
     s.skin.palette = 'contrast';
     s.display.reduceMotion = true;
     applyAppearance(s, root as unknown as HTMLElement);
-    expect(style.get('--fw-miss')).toBe(PALETTES.contrast.judgments.miss);
+    expect(style.get('--hb-miss')).toBe(PALETTES.contrast.judgments.miss);
     expect(root.dataset.reduceMotion).toBe('true');
     s.display.reduceMotion = false;
     applyAppearance(s, root as unknown as HTMLElement);

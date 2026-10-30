@@ -317,6 +317,10 @@ describe('settings', () => {
     expect(sanitizeSettings({ data: { replayLimit: undefined } }).data.replayLimit).toBe(100);
   });
 
+  it('reads a palette saved under the old name as the default', () => {
+    expect(sanitizeSettings({ skin: { palette: 'flickwise' } }).skin.palette).toBe('heartbeat');
+  });
+
   it('clamps numbers to their ranges', () => {
     const r = SETTING_RANGES;
     const high = sanitizeSettings({ audio: { metronomeVolume: 9, offsetMs: 9999 }, display: { visualOffsetMs: 999 }, goals: { weeklyMinutes: 99_999 } });
@@ -587,7 +591,7 @@ describe('opening the database', () => {
     await openDb();
     await deleteDatabase();
     const newer = await new Promise<IDBDatabase>((resolve, reject) => {
-      const open = indexedDB.open('flickwise', DB_VERSION + 1);
+      const open = indexedDB.open('heartbeat', DB_VERSION + 1);
       open.onsuccess = () => resolve(open.result);
       open.onerror = () => reject(open.error);
     });

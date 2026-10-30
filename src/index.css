@@ -63,20 +63,20 @@
   --text-4xl--font-weight: 700;
 }
 
-/* The --fw- prefix keeps the old app name on purpose. The four judgment colors follow the chosen palette. The app writes --fw-* on :root from
+/* The four judgment colors follow the chosen palette. The app writes --hb-* on :root from
    settings.skin.palette. `inline` makes bg-crisp and friends read the variable directly. */
 @theme inline {
-  --color-crisp: var(--fw-crisp);
-  --color-solid: var(--fw-solid);
-  --color-rough: var(--fw-rough);
-  --color-miss: var(--fw-miss);
+  --color-crisp: var(--hb-crisp);
+  --color-solid: var(--hb-solid);
+  --color-rough: var(--hb-rough);
+  --color-miss: var(--hb-miss);
 }
 
 :root {
-  --fw-crisp: #b49bff;
-  --fw-solid: #36d6b0;
-  --fw-rough: #ffb340;
-  --fw-miss: #ff4f6a;
+  --hb-crisp: #b49bff;
+  --hb-solid: #36d6b0;
+  --hb-rough: #ffb340;
+  --hb-miss: #ff4f6a;
   --dur-fast: 120ms;
   --dur-small: 180ms;
   --dur-page: 280ms;
@@ -250,7 +250,7 @@
 
 @layer components {
   /* Panel: surface, one line, a top highlight. No shadow. */
-  .fw-panel {
+  .hb-panel {
     position: relative;
     min-width: 0;
     background: var(--color-surface);
@@ -260,14 +260,14 @@
   }
 
   /* Reticle corner marks, the signature. Ten pixels long, drawn inside the panel corners. */
-  .fw-marks,
-  .fw-choice {
+  .hb-marks,
+  .hb-choice {
     --mark: var(--color-line-2);
     --mark-inset: 6px;
     --mark-len: 10px;
   }
-  .fw-marks::after,
-  .fw-choice::after {
+  .hb-marks::after,
+  .hb-choice::after {
     content: "";
     position: absolute;
     inset: var(--mark-inset);
@@ -284,24 +284,24 @@
     background-repeat: no-repeat;
     transition: opacity var(--dur-fast) var(--ease-out);
   }
-  .fw-interactive {
+  .hb-interactive {
     transition:
       border-color var(--dur-fast) var(--ease-out),
       background-color var(--dur-fast) var(--ease-out);
   }
-  .fw-interactive:hover,
-  .fw-interactive:focus-visible,
-  .fw-interactive:focus-within {
+  .hb-interactive:hover,
+  .hb-interactive:focus-visible,
+  .hb-interactive:focus-within {
     --mark: var(--color-accent);
     border-color: var(--color-line-2);
     background-color: var(--color-surface-2);
   }
-  .fw-interactive:focus-visible {
+  .hb-interactive:focus-visible {
     outline-offset: 3px;
   }
 
   /* A selectable card: a radio or a checkbox inside a label. The marks light up when it is chosen. */
-  .fw-choice {
+  .hb-choice {
     position: relative;
     display: block;
     height: 100%;
@@ -316,32 +316,32 @@
       border-color var(--dur-fast) var(--ease-out),
       background-color var(--dur-fast) var(--ease-out);
   }
-  .fw-choice:hover {
+  .hb-choice:hover {
     border-color: var(--color-line-2);
     --mark: var(--color-line-2);
   }
-  .fw-choice:has(input:checked) {
+  .hb-choice:has(input:checked) {
     border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-line));
     background: var(--color-surface-2);
     --mark: var(--color-accent);
   }
-  .fw-choice:has(input:focus-visible) {
+  .hb-choice:has(input:focus-visible) {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
   }
-  .fw-choice:has(input:disabled) {
+  .hb-choice:has(input:disabled) {
     opacity: 0.4;
     cursor: not-allowed;
   }
 
   /* Small marks, for badges. */
-  .fw-marks-sm {
+  .hb-marks-sm {
     --mark-inset: 3px;
     --mark-len: 5px;
   }
 
   /* Kicker: micro text after a small accent square. */
-  .fw-kicker {
+  .hb-kicker {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -352,7 +352,7 @@
     text-transform: uppercase;
     color: var(--color-ink-3);
   }
-  .fw-kicker::before {
+  .hb-kicker::before {
     content: "";
     width: 6px;
     height: 6px;
@@ -361,72 +361,72 @@
   }
 
   /* Page and panel enter: a fade and a 4 px rise. */
-  .fw-enter {
-    animation: fw-rise var(--dur-page) var(--ease-out) both;
+  .hb-enter {
+    animation: hb-rise var(--dur-page) var(--ease-out) both;
   }
-  .fw-enter-small {
-    animation: fw-rise var(--dur-small) var(--ease-out) both;
+  .hb-enter-small {
+    animation: hb-rise var(--dur-small) var(--ease-out) both;
   }
-  @keyframes fw-rise {
+  @keyframes hb-rise {
     from {
       opacity: 0;
       transform: translateY(4px);
     }
   }
-  @keyframes fw-fade {
+  @keyframes hb-fade {
     from {
       opacity: 0;
     }
   }
 
   /* Graph draw-in. Paths carry pathLength="1". */
-  .fw-draw {
+  .hb-draw {
     stroke-dasharray: 1;
-    animation: fw-draw var(--dur-count) var(--ease-out) both;
+    animation: hb-draw var(--dur-count) var(--ease-out) both;
   }
-  @keyframes fw-draw {
+  @keyframes hb-draw {
     from {
       stroke-dashoffset: 1;
     }
   }
-  .fw-grow {
+  .hb-grow {
     transform-origin: left center;
-    animation: fw-grow var(--dur-count) var(--ease-out) both;
+    animation: hb-grow var(--dur-count) var(--ease-out) both;
   }
-  @keyframes fw-grow {
+  @keyframes hb-grow {
     from {
       transform: scaleX(0);
     }
   }
 
   /* Skeleton blocks for lazy routes. */
-  .fw-skeleton {
+  .hb-skeleton {
     background: linear-gradient(90deg, var(--color-surface) 0%, var(--color-surface-2) 50%, var(--color-surface) 100%) 0 0 / 200% 100%;
     border: 1px solid var(--color-line);
     border-radius: var(--radius-lg);
-    animation: fw-shimmer 1.4s linear infinite;
+    animation: hb-shimmer 1.4s linear infinite;
   }
-  @keyframes fw-shimmer {
+  @keyframes hb-shimmer {
     to {
       background-position: -200% 0;
     }
   }
 
   /* Mode-card motifs are the only looping motion in the menus. */
-  .fw-motif {
+  .hb-motif {
     color: var(--color-ink-3);
     transition: color var(--dur-fast) var(--ease-out);
   }
-  .fw-interactive:hover .fw-motif,
-  .fw-interactive:focus-visible .fw-motif {
+  .hb-interactive:hover .hb-motif,
+  .hb-interactive:focus-visible .hb-motif {
     color: var(--color-accent);
   }
-  .fw-pulse {
+  .hb-pulse {
     transform-box: fill-box;
     transform-origin: center;
-    animation: fw-pulse 2.4s var(--ease-out) infinite;
+    animation: hb-pulse 2.4s var(--ease-out) infinite;
   }
-  @keyframes fw-pulse {
+  @keyframes hb-pulse {
     0% {
       transform: scale(0.6);
       opacity: 0.9;
@@ -437,10 +437,10 @@
       opacity: 0;
     }
   }
-  .fw-travel {
-    animation: fw-travel 2.8s ease-in-out infinite alternate;
+  .hb-travel {
+    animation: hb-travel 2.8s ease-in-out infinite alternate;
   }
-  @keyframes fw-travel {
+  @keyframes hb-travel {
     from {
       transform: translateX(0);
     }
@@ -448,10 +448,10 @@
       transform: translateX(var(--travel, 36px));
     }
   }
-  .fw-hump {
-    animation: fw-hump 2.8s ease-in-out infinite alternate;
+  .hb-hump {
+    animation: hb-hump 2.8s ease-in-out infinite alternate;
   }
-  @keyframes fw-hump {
+  @keyframes hb-hump {
     0%,
     100% {
       transform: translateY(0);
@@ -460,12 +460,12 @@
       transform: translateY(-20px);
     }
   }
-  .fw-spin {
+  .hb-spin {
     transform-box: fill-box;
     transform-origin: center;
-    animation: fw-spin 6s linear infinite;
+    animation: hb-spin 6s linear infinite;
   }
-  @keyframes fw-spin {
+  @keyframes hb-spin {
     to {
       transform: rotate(360deg);
     }

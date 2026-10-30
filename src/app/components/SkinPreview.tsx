@@ -101,7 +101,7 @@ export function SkinPreview({ settings }: { settings: Settings }) {
           </p>
         ) : (
           loading && (
-            <span role="status" className="fw-kicker absolute inset-0 grid place-items-center bg-bg-2">
+            <span role="status" className="hb-kicker absolute inset-0 grid place-items-center bg-bg-2">
               Loading the preview.
             </span>
           )

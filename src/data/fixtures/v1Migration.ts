@@ -1,7 +1,7 @@
-// A frozen copy of the Flickwise 1.0 database migration (DB_VERSION 1). Tests use it to build a 1.0 database,
+// A frozen copy of the 1.0 database migration (DB_VERSION 1). Tests use it to build a 1.0 database,
 // so a change to the live MIGRATIONS can never alter what a real 1.0 profile looks like. Never edit this file.
 
-export const V1_DB_NAME = 'flickwise';
+export const V1_DB_NAME = 'heartbeat';
 
 export function migrateV1(db: IDBDatabase): void {
   db.createObjectStore('meta', { keyPath: 'key' });

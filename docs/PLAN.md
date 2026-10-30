@@ -1,6 +1,4 @@
-# Flickwise plan
-
-> Flickwise was renamed Heartbeat on 29 October 2026. This document keeps the old name.
+# Heartbeat plan
 
 The design both builders worked from. Section numbers are referenced from code comments and briefs.
 
@@ -9,7 +7,7 @@ The design both builders worked from. Section numbers are referenced from code c
 1. **Scaffold (main session).**
    - Files: `package.json`, `tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json`, `tsconfig.test.json`, `vite.config.ts`, `vitest.config.ts`, `wrangler.jsonc`, `index.html`, `dev.html`, `.gitignore`, `src/main.tsx`, `src/vite-env.d.ts`, `src/shared/types.ts`, `src/shared/catalog.ts` and `docs/PLAN.md`.
    - Stubs, each handed to its builder: `src/game/index.ts` (A), `src/app/App.tsx` and `src/index.css` (B).
-   - Run `gh api -X PUT repos/Nuja1337/flickwise/actions/permissions -F enabled=false` before the first push.
+   - Run `gh api -X PUT repos/Nuja1337/heartbeat/actions/permissions -F enabled=false` before the first push.
    - Check: `npm install`, then `npx tsc -b` is clean, `npx vitest run --passWithNoTests` passes, and `npm run dev` serves a blank page plus `/dev.html`.
 2. **Builder A and builder B in parallel** (section 14). Neither edits root files, `src/shared/*` or the other's folders.
    - Check: each runs `npx tsc -b` and its own tests green. A also goes through the manual list on `/dev.html`.
@@ -18,7 +16,7 @@ The design both builders worked from. Section numbers are referenced from code c
 4. **Review.** A reviewer reads both halves against this plan and the contract, plus a copy pass against writing.md.
 5. **Manual browser pass.** Chrome at 60 and 144 or 240 Hz, raw input, a pen tablet, Firefox, Safari, and Z/X plus chorded mouse buttons.
 6. **Deploy (main session).** `npm run deploy`.
-   - Check: https://flickwise.ajshaham.workers.dev loads, the deep link `/stats` loads the app, and a saved play survives a reload.
+   - Check: https://heartbeat.ajshaham.workers.dev loads, the deep link `/stats` loads the app, and a saved play survives a reload.
 
 ---
 
@@ -32,7 +30,7 @@ React handles menus, settings, results and stats. The play screen mounts one `<c
 - No chart library, no state library, no fonts. The system UI stack with tabular numbers is enough.
 
 ```
-flickwise/
+heartbeat/
   package.json, tsconfig*.json, vite.config.ts, vitest.config.ts, wrangler.jsonc,
   index.html, dev.html, .gitignore                          main session
   docs/PLAN.md                                              main session
@@ -101,8 +99,8 @@ flickwise/
   - Imports are extensionless.
 - `wrangler.jsonc`: your config verbatim, plus `$schema`.
 - `index.html`:
-  - Title "Flickwise", `<meta name="color-scheme" content="dark">`, `<div id="root">` and `/src/main.tsx`.
-  - Description: "Flickwise is a browser aim trainer that tracks where and how you miss, and suggests drills for your weak spots."
+  - Title "Heartbeat", `<meta name="color-scheme" content="dark">`, `<div id="root">` and `/src/main.tsx`.
+  - Description: "Heartbeat is a browser aim trainer that tracks where and how you miss, and suggests drills for your weak spots."
 - `dev.html`: loads `/src/game/dev/harness.ts`. It's only served in dev, because the build input stays `index.html`.
 - `main.tsx`: as in sims, importing `./app/App` and `./index.css`.
 - `.gitignore`: node_modules, dist, .wrangler, *.tsbuildinfo, .DS_Store, *.log, coverage.
@@ -116,7 +114,7 @@ Write these two files verbatim. Ids are permanent once data exists. Labels can c
 ### `src/shared/types.ts`
 
 ```ts
-// Shared contract for Flickwise. The game (src/game) and the app (src/app, src/data, src/analytics)
+// Shared contract for Heartbeat. The game (src/game) and the app (src/app, src/data, src/analytics)
 // both code against this file and never edit it. Changes go through the main session.
 //
 // Units: positions and lengths are playfield units (PLAYFIELD in catalog.ts: 1000 x 625, origin top-left,
@@ -1154,7 +1152,7 @@ Pause and results menus are B's React DOM on top of the canvas. Effects never mo
 - Notes are judged as circles. Overlapping windows resolve through the press-resolution rule.
 - `runIndex` and `runLength` come from `features.ts`, not from the pattern tag.
 
-**Score, combo, accuracy, health.** This is Flickwise's own formula, which rewards landing near the center.
+**Score, combo, accuracy, health.** This is Heartbeat's own formula, which rewards landing near the center.
 - `aimFactor = max(0, 1 − (radial/r)²)` and `comboFactor = 1 + min(comboBefore, 50)/100`.
 - Circle or slider head: `round(100 × w(j) × (0.8 + 0.2·aimFactor) × comboFactor)`, with w from `JUDGMENTS` (1, 0.65, 0.3, 0).
 - Slider tick or repeat: `10 × comboFactor`. Slider end: `30 × comboFactor`. A slider whose final judgment is Crisp adds `50 × comboFactor`.
@@ -1352,7 +1350,7 @@ Common rules:
   - The label rises 14 units over 450 ms. Crisp is hidden unless `crispPopups` is on.
   - With `earlyLate`, Solid and Rough show "early 23 ms" or "late 31 ms" underneath.
 - **Miss:** a red X (0.55r) for 500 ms, a red flash on the target outline, and a 120 ms edge vignette at alpha 0.12 (off with reduce motion).
-- **HUD layout** (Flickwise's own): the top band has the score on the left, the combo large in the center with accuracy below it, and on the right a time progress ring plus the level for modules. Health is a thin bar under the top band, Dynamic only.
+- **HUD layout** (Heartbeat's own): the top band has the score on the left, the combo large in the center with accuracy below it, and on the right a time progress ring plus the level for modules. Health is a thin bar under the top band, Dynamic only.
 - **Combo:** bumps to 1.12× over 90 ms on each increment, and glows at 50 and every 100. On a break it turns red, shakes ±5 px for 220 ms (HUD text only), shows "−37" fading below, then shows 0.
 - **Error bar:**
   - 360 px, centered in the bottom band, spanning ±rough with shaded Crisp, Solid and Rough zones.
@@ -1533,7 +1531,7 @@ Every recommendation is a full LaunchRequest with the module and options, `level
 
 ## 12. Storage (B)
 
-**Database** `flickwise`, `DB_VERSION = 1`:
+**Database** `heartbeat`, `DB_VERSION = 1`:
 
 | Store | Key | Indexes | Holds |
 |---|---|---|---|
@@ -1564,11 +1562,11 @@ Every recommendation is a full LaunchRequest with the module and options, `level
 **Migrations.**
 - `db.ts` holds `MIGRATIONS[v](db, tx)`. `onupgradeneeded` runs the steps from `oldVersion + 1` to `DB_VERSION`.
 - Records carry `v`. Readers and import both lift old shapes through `upgradeSummary` and `upgradeDetail`.
-- On `onversionchange`, close the DB and show "Flickwise was updated in another tab. Reload to continue."
+- On `onversionchange`, close the DB and show "Heartbeat was updated in another tab. Reload to continue."
 
 **Export and import** (`exportImport.ts`):
 ```
-{ format: "flickwise-export", formatVersion: 1, exportedAt, app: { engineVersion, generatorVersion },
+{ format: "heartbeat-export", formatVersion: 1, exportedAt, app: { engineVersion, generatorVersion },
   deviceId, settings, progress[], drills[], meta: { tiers }, tombstones[],
   plays: [ { summary, detail: { objects: { count, columns: { name: number[] } }, sliders, spinners } | null } ] }
 ```
@@ -1670,11 +1668,11 @@ export const playTestSound: PlayTestSound = () => {};
 > - No em dashes as pauses, no arrows in sentences, no emoji.
 > - Keep every number true. Page intros are one line.
 > - Game terms (combo, stream, slider, spinner) are fine.
-> - Originality: this is not osu!. Use Flickwise names only. Judgments are Crisp, Solid, Rough and Miss. Mods are Fade, Spotlight, Fast, Slow, Tight, Wide, Mirror, No Fail and One Life. Never write "Hidden", "Hard Rock", "Double Time", "300" or "beatmap". Use no osu! assets or layout.
+> - Originality: this is not osu!. Use Heartbeat names only. Judgments are Crisp, Solid, Rough and Miss. Mods are Fade, Spotlight, Fast, Slow, Tight, Wide, Mirror, No Fail and One Life. Never write "Hidden", "Hard Rock", "Double Time", "300" or "beatmap". Use no osu! assets or layout.
 > - No personal details anywhere in the repo.
 
 **Brief for Builder A (game engine):**
-> Build the Flickwise game in `src/game/**`. You own only that folder.
+> Build the Heartbeat game in `src/game/**`. You own only that folder.
 > - Read-only: `src/shared/types.ts`, `src/shared/catalog.ts`, `docs/PLAN.md`.
 > - Don't edit root files, `src/shared`, `src/app`, `src/data` or `src/analytics`. Add no dependencies.
 >
@@ -1720,7 +1718,7 @@ export const playTestSound: PlayTestSound = () => {};
 > [writing rules block]
 
 **Brief for Builder B (app, data, analytics):**
-> Build the Flickwise app in `src/app/**`, `src/data/**`, `src/analytics/**`, `src/index.css`, `public/**` and `README.md`. You own only those.
+> Build the Heartbeat app in `src/app/**`, `src/data/**`, `src/analytics/**`, `src/index.css`, `public/**` and `README.md`. You own only those.
 > - Read-only: `src/shared/*` and `docs/PLAN.md`.
 > - From `src/game` import only `src/game/index` (`createGame`, `previewLaunch`, `playTestSound`). It's a stub until builder A finishes, so build the play flow against `src/app/play/fakeGame.ts`. In dev builds only, `?fake=1` returns a PlayResult made from your fixtures after 3 s.
 > - Don't edit root files. Allowed dependencies: react, react-dom, react-router and Tailwind. Charts are your own SVG.
@@ -1812,7 +1810,7 @@ export const playTestSound: PlayTestSound = () => {};
 ## Decisions for you
 
 1. **Final address before players have data.**
-   - Options: keep flickwise.ajshaham.workers.dev for good, add a custom domain now, or use workers.dev now and move later through export and import.
+   - Options: keep heartbeat.ajshaham.workers.dev for good, add a custom domain now, or use workers.dev now and move later through export and import.
    - Recommendation: keep workers.dev unless a domain is already planned. In that case set the domain up before sharing the link.
 2. **Repo visibility and licence.**
    - Options: private, public with MIT (like your other public repos), or public with no licence.

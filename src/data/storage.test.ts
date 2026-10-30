@@ -4,7 +4,7 @@ import { makeFixture, makeHistory } from '../analytics/fixtures';
 import { OBJECT_COLUMNS, packRecords, tableFromJson, tableToJson, unpackRecords } from './columns';
 import { deleteDatabase, openDb, STORE_NAMES, withTx } from './db';
 import { gunzipBytes } from './gzip';
-import { buildExport, exportBytes, ImportError, importBytes, importExport, parseExportBytes } from './exportImport';
+import { buildExport, exportBytes, ImportError, importBytes, importExport, LEGACY_EXPORT_FORMAT, parseExportBytes } from './exportImport';
 import { getDeviceId, getMeta, loadUiPrefs, saveUiPrefs, getTierHistory } from './meta';
 import {
   countPlays, deleteAllData, deletePlay, getDetail, getRecords, getSummary, listSummaries, listSummariesByMode,
@@ -262,19 +262,27 @@ describe('export and import', () => {
 
   it('rejects files that are not Heartbeat exports', async () => {
     await expect(importExport({ format: 'something-else', formatVersion: 1, plays: [] })).rejects.toBeInstanceOf(ImportError);
-    await expect(importExport({ format: 'flickwise-export', formatVersion: 99, plays: [] })).rejects.toThrow(/newer/);
+    await expect(importExport({ format: LEGACY_EXPORT_FORMAT, formatVersion: 99, plays: [] })).rejects.toThrow(/newer/);
     await expect(importExport(null)).rejects.toBeInstanceOf(ImportError);
     await expect(parseExportBytes(new TextEncoder().encode('not json'))).rejects.toBeInstanceOf(ImportError);
   });
 
-  it('keeps the old format name in new exports, and still imports them', async () => {
+  it('writes the heartbeat format in new exports, and imports them', async () => {
     await seed();
     const file = await buildExport(undefined, {}, NOW);
-    expect(file.format).toBe('flickwise-export');
+    expect(file.format).toBe('heartbeat-export');
     const bytes = await exportBytes(file, true);
-    expect(JSON.parse(new TextDecoder().decode(await gunzipBytes(bytes))).format).toBe('flickwise-export');
+    expect(JSON.parse(new TextDecoder().decode(await gunzipBytes(bytes))).format).toBe('heartbeat-export');
     await deleteDatabase();
     const report = await importBytes(bytes);
+    expect(report.playsAdded).toBe(5);
+  });
+
+  it('still imports a file with the older format value', async () => {
+    await seed();
+    const file = await buildExport(undefined, {}, NOW);
+    await deleteDatabase();
+    const report = await importBytes(await exportBytes({ ...file, format: LEGACY_EXPORT_FORMAT }, true));
     expect(report.playsAdded).toBe(5);
   });
 

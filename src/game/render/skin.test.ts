@@ -19,7 +19,7 @@ describe('resolveSkin', () => {
   });
 
   it('builds the alpha variants once, as rgba strings of the same colour', () => {
-    const skin = resolveSkin(withSkin({ palette: 'flickwise' }));
+    const skin = resolveSkin(withSkin({ palette: 'heartbeat' }));
     // #5ee7f2 is the first group colour of the default palette.
     expect(skin.groupFill[0]).toBe('rgba(94, 231, 242, 0.3)');
     expect(skin.groupGlow[0]).toBe('rgba(94, 231, 242, 0.22)');
@@ -47,7 +47,7 @@ describe('resolveSkin', () => {
 
   it('falls back to the default look for values it does not know', () => {
     const s = resolveSkin(withSkin({ palette: 'nope' as PaletteId, approach: 'x' as never, cursorStyle: 'y' as never }));
-    expect(s.palette).toBe('flickwise');
+    expect(s.palette).toBe('heartbeat');
     expect(s.approach).toBe('ring');
     expect(s.cursorStyle).toBe('ring');
   });
