@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { ImportError, buildExport, exportBytes, importBytes } from '../../data/exportImport';
+import { ImportError, importBytes } from '../../data/exportImport';
 import type { ImportReport } from '../../data/exportImport';
 import { currentPersisted, getLastExport, storageEstimate } from '../../data/meta';
 import { deleteAllData } from '../../data/plays';
@@ -16,6 +16,7 @@ import { INTRO } from '../copy';
 import { bytes, dateTime } from '../format';
 import { invalidateAnalysis, useAnalysis } from '../state/analysis';
 import { loadGame, useGame } from '../state/engine';
+import { downloadExport } from '../state/exportFile';
 import { promptInstall, usePwa } from '../pwa';
 import { useSettings } from '../state/store';
 
@@ -416,15 +417,7 @@ function AppInfo() {
 /** Saves the export as a download. Resolves with the number of plays in it. */
 async function saveExport(gzip: boolean, includeReplays: boolean): Promise<number> {
   const g = await loadGame();
-  const file = await buildExport({ engineVersion: g.ENGINE_VERSION, generatorVersion: g.GENERATOR_VERSION }, { includeReplays });
-  const data = await exportBytes(file, gzip);
-  const url = URL.createObjectURL(new Blob([data as BlobPart], { type: gzip ? 'application/gzip' : 'application/json' }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `flickwise-${new Date().toISOString().slice(0, 10)}.json${gzip ? '.gz' : ''}`;
-  a.click();
-  URL.revokeObjectURL(url);
-  return file.plays.length;
+  return downloadExport(gzip, { includeReplays, app: { engineVersion: g.ENGINE_VERSION, generatorVersion: g.GENERATOR_VERSION } });
 }
 
 function DataSection() {

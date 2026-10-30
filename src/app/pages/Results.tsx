@@ -2,18 +2,19 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { distinct, drillText, fatigueCurve, OUTCOME_LABEL, playNotes, playVsAverage } from '../../analytics/index';
-import type { PlayDelta } from '../../analytics/views';
+import type { PlayDelta } from '../../analytics/index';
 import type { ContrastUnit } from '../../analytics/contrast';
-import { MILESTONES, SKILLS, gradeFor } from '../../shared/catalog';
+import { DEFAULT_MODULE_LEVEL, MILESTONES, MODES, PLACEMENT, SKILLS, gradeFor } from '../../shared/catalog';
 import { Fatigue } from '../charts/Fatigue';
 import { PlayReport } from '../components/PlayReport';
 import { SectionStrip } from '../components/SectionStrip';
 import { ShareButton } from '../components/ShareButton';
-import { Badge, Button, Delta, GradeBadge, LinkButton, Notice, Panel, SectionTitle } from '../components/ui';
-import { dateTime, int, modList, pct, playTitle, widthPct } from '../format';
+import { Badge, Button, Delta, GradeBadge, LinkButton, Notice, Panel, SectionTitle, Stat } from '../components/ui';
+import { dateTime, int, level, modList, pct, playTitle, widthPct } from '../format';
 import { useAnalysis } from '../state/analysis';
 import { OLD_GENERATOR_NOTE, isOlderGenerator, useGeneratorVersion } from '../state/generator';
 import { setupPath, startWithCurrentLevels } from '../state/launch';
+import { finished, patchOnboarding } from '../state/onboarding';
 import { getAppState } from '../state/store';
 import { usePlay } from '../state/usePlay';
 
@@ -78,6 +79,12 @@ export function Results() {
       setStartError(e instanceof Error ? e.message : 'Could not read your module levels.'),
     );
   };
+
+  // A finished placement play ends first-run setup, whether it was started from setup or from Train.
+  const placedId = s && s.modeId === 'placement' && s.status === 'completed' ? s.id : null;
+  useEffect(() => {
+    if (placedId) patchOnboarding((o) => finished({ ...o, placed: true }, Date.now())).catch(() => undefined);
+  }, [placedId]);
 
   // The key handler reads the latest closures through a ref, so it is attached once.
   const keys = useRef<{ retry(): void; fresh(): void; watch(): void; leave(): void }>(null);
@@ -204,6 +211,24 @@ export function Results() {
         records={records}
         extra={
           <>
+            {s.modeId === 'placement' && (
+              <Panel marks>
+                <SectionTitle aside={s.status === 'completed' ? 'Where each module starts now' : 'The test ended early, so these are less certain'}>Starting levels</SectionTitle>
+                <ul className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3 lg:grid-cols-5">
+                  {PLACEMENT.modules.map((m) => (
+                    <li key={m}>
+                      <Stat
+                        label={MODES[m].label}
+                        value={s.finalLevels[m] === undefined ? 'Unchanged' : level(s.finalLevels[m])}
+                        sub={`The test began at ${level(s.launch.levels[m] ?? DEFAULT_MODULE_LEVEL)}`}
+                        size="xl"
+                      />
+                    </li>
+                  ))}
+                </ul>
+                <LinkButton to="/train" variant="primary" className="mt-6">Go to Train</LinkButton>
+              </Panel>
+            )}
             {s.sections && s.sections.length > 0 && (
               <Panel>
                 <SectionTitle aside="Accuracy in each part of the map">Sections</SectionTitle>

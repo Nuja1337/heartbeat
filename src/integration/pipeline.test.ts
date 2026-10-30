@@ -30,6 +30,8 @@ function launch(seed: number): LaunchRequest {
   };
 }
 
+const CLEAN: PlayerModel = { ...UNDERSHOOTER, name: 'clean', undershoot: undefined };
+
 beforeEach(async () => {
   await deleteDatabase();
 });
@@ -52,14 +54,42 @@ describe('play, save, analyse', () => {
   });
 
   it('stays quiet about undershoot for a player who aims true', async () => {
-    const clean: PlayerModel = { ...UNDERSHOOTER, name: 'clean', undershoot: undefined };
     for (let i = 0; i < 5; i++) {
-      const { result } = runHeadless({ launch: launch(60 + i), model: clean });
+      const { result } = runHeadless({ launch: launch(60 + i), model: CLEAN });
       const startedAt = NOW - (5 - i) * 6 * HOUR;
       await savePlay({ ...result, startedAt, endedAt: startedAt + result.playedMs }, startedAt + result.playedMs);
     }
     const plays = await loadPlayData(await listSummaries());
     const insights = detectInsights(plays, NOW);
     expect(insights.some((i) => i.ruleId === 'long-undershoot')).toBe(false);
+  });
+
+  /** Saves five plays of one model over the last 30 hours, then lists the insights for them. */
+  async function insightsFor(model: PlayerModel, firstSeed: number) {
+    for (let i = 0; i < 5; i++) {
+      const { result } = runHeadless({ launch: launch(firstSeed + i), model });
+      const startedAt = NOW - (5 - i) * 6 * HOUR;
+      await savePlay({ ...result, startedAt, endedAt: startedAt + result.playedMs }, startedAt + result.playedMs);
+    }
+    return detectInsights(await loadPlayData(await listSummaries()), NOW);
+  }
+
+  it('finds a planted late leave near the top', async () => {
+    const insights = await insightsFor({ ...CLEAN, name: 'late-leaver', leaveDelayMs: 90 }, 80);
+    const rank = insights.findIndex((i) => i.ruleId === 'late-leave');
+    expect(rank).toBeGreaterThanOrEqual(0);
+    expect(rank).toBeLessThan(2);
+  });
+
+  it('finds a planted short first motion near the top', async () => {
+    const insights = await insightsFor({ ...CLEAN, name: 'short-mover', primaryShort: 0.3 }, 100);
+    const rank = insights.findIndex((i) => i.ruleId === 'first-motion');
+    expect(rank).toBeGreaterThanOrEqual(0);
+    expect(rank).toBeLessThan(2);
+  });
+
+  it('stays quiet about both for a player who leaves on time and moves in one motion', async () => {
+    const insights = await insightsFor(CLEAN, 120);
+    expect(insights.some((i) => i.ruleId === 'late-leave' || i.ruleId === 'first-motion')).toBe(false);
   });
 });

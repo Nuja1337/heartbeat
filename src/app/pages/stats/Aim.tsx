@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { throughputScatter } from '../../../analytics/index';
-import { TREND_RANGES, changeOf, dailySeries } from '../../../analytics/trends';
-import type { TrendId, TrendMetric, TrendRangeId } from '../../../analytics/trends';
+import { TREND_RANGES, changeOf, dailySeries } from '../../../analytics/index';
+import type { TrendMetric } from '../../../analytics/index';
+import type { TrendId, TrendRangeId } from '../../../analytics/trends';
 import { LineChart } from '../../charts/LineChart';
 import { ThroughputScatter } from '../../charts/ThroughputScatter';
 import { Card, PageHeader, SectionTitle, Segmented, Stat } from '../../components/ui';

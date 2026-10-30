@@ -3,9 +3,9 @@ import type { WeeklyChange } from '../../analytics/index';
 import { Delta, Panel, SectionTitle } from './ui';
 
 /** What moved in the last 7 days, as the sentences `weeklyChanges` writes. */
-export function WeeklyChanges({ changes, link = false }: { changes: readonly WeeklyChange[]; link?: boolean }) {
+export function WeeklyChanges({ changes, link = false, className = '' }: { changes: readonly WeeklyChange[]; link?: boolean; className?: string }) {
   return (
-    <Panel>
+    <Panel className={className}>
       <SectionTitle aside={link ? <Link to="/stats" className="text-accent hover:underline">All stats</Link> : 'Last 7 days against the 4 weeks before'}>
         What changed this week
       </SectionTitle>

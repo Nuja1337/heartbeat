@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { RatingPoint } from '../../analytics/views';
+import type { RatingPoint } from '../../analytics/index';
 import { dateOf, level } from '../format';
 import { CHART, extent, linear, niceTicks } from './scale';
 

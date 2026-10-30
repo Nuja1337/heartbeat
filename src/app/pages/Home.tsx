@@ -12,13 +12,14 @@ import { Badge, GradeBadge, LinkButton, Notice, PageHeader, Panel, SectionTitle 
 import { INTRO } from '../copy';
 import { ago, pct, playTitle } from '../format';
 import { useAnalysis } from '../state/analysis';
+import { useOnboarding } from '../state/onboarding';
 import { useSettings } from '../state/store';
 
 function PlayRow({ s }: { s: PlaySummary }) {
   const grade = gradeFor(s.accuracy, s.counts.miss, s.status);
   return (
-    <li>
-      <Link to={`/results/${s.id}`} className="flex items-center gap-3 rounded-md py-2.5 transition hover:bg-surface-2 sm:-mx-2 sm:px-2">
+    <li className="flex flex-1">
+      <Link to={`/results/${s.id}`} className="flex flex-1 items-center gap-3 rounded-md py-2.5 transition hover:bg-surface-2 sm:-mx-2 sm:px-2">
         <span className="w-24 shrink-0">
           {grade ? <GradeBadge grade={grade} size="chip" /> : <Badge tone="warn">{s.status === 'failed' ? 'Failed' : 'Quit'}</Badge>}
         </span>
@@ -53,6 +54,7 @@ function Loading() {
 export function Home() {
   const { data, error, reload } = useAnalysis();
   const [settings] = useSettings();
+  const { state: onboarding } = useOnboarding();
   const top = data?.insights[0];
 
   return (
@@ -78,7 +80,7 @@ export function Home() {
         !error && <Loading />
       ) : (
         <div className="space-y-6">
-          {data.summaries.length === 0 && (
+          {data.summaries.length === 0 && onboarding !== null && !onboarding.done && (
             <Panel marks className="flex flex-wrap items-center justify-between gap-4">
               <div className="min-w-0">
                 <h2 className="text-xl">Set up Flickwise</h2>
@@ -95,12 +97,14 @@ export function Home() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
-            <Panel>
+            <Panel className="flex flex-col">
               <SectionTitle aside={<Link to="/stats" className="text-accent hover:underline">Ratings</Link>}>Your skills</SectionTitle>
-              <Radar axes={data.radar} max={data.radarMax} />
+              <div className="flex flex-1 items-center">
+                <Radar axes={data.radar} max={data.radarMax} />
+              </div>
             </Panel>
 
-            <div className="space-y-6">
+            <div className="flex flex-col gap-6">
               {top ? (
                 <InsightCard insight={top} />
               ) : (
@@ -113,15 +117,15 @@ export function Home() {
                   </p>
                 </Panel>
               )}
-              <WeeklyChanges changes={data.changes} link />
+              <WeeklyChanges changes={data.changes} link className="flex-1" />
             </div>
 
-            <Panel>
+            <Panel className="flex flex-col">
               <SectionTitle aside={<Link to="/stats/history" className="text-accent hover:underline">History</Link>}>Recent plays</SectionTitle>
               {data.summaries.length === 0 ? (
                 <p className="text-ink-2">No plays yet.</p>
               ) : (
-                <ul className="divide-y divide-line">
+                <ul className="flex flex-1 flex-col divide-y divide-line">
                   {data.summaries.slice(0, 5).map((s) => (
                     <PlayRow key={s.id} s={s} />
                   ))}

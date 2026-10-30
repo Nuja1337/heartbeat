@@ -25,6 +25,7 @@ const TARGETS = [
   ...walk(join(SRC, 'data')),
   join(ROOT, 'README.md'),
   join(ROOT, 'index.html'),
+  join(ROOT, 'public', 'manifest.webmanifest'),
 ].filter(existsSync);
 
 const BANNED_WORDS = [
@@ -32,7 +33,7 @@ const BANNED_WORDS = [
   'elevate', 'empower', 'unlock', 'unleash', 'leverage', 'delve', 'harness', 'streamline', 'cutting-edge', 'game-changer',
   'supercharge', 'journey', 'testament', 'crucial', 'vital', 'pivotal', 'comprehensive', 'intuitive',
 ];
-const BANNED_PHRASES = ['hard rock', 'double time', 'beatmap', 'osu!'];
+const BANNED_PHRASES = ['hard rock', 'double time', 'beatmap', 'osu!', 'unstable rate'];
 
 /** Source without comments. Text in strings and JSX stays. */
 function withoutComments(src: string): string {
@@ -46,11 +47,12 @@ describe('writing rules', () => {
     expect(names).toContain('src/analytics/insightCopy.ts');
     expect(names).toContain('src/app/copy.ts');
     expect(names).toContain('README.md');
+    expect(names).toContain('public/manifest.webmanifest');
   });
 
   it.each(TARGETS.map((f) => [relative(ROOT, f).split('\\').join('/'), f]))('%s', (_name, file) => {
     const raw = readFileSync(file!, 'utf8');
-    const text = file!.endsWith('.md') || file!.endsWith('.html') ? raw : withoutComments(raw);
+    const text = file!.endsWith('.md') || file!.endsWith('.html') || file!.endsWith('.webmanifest') ? raw : withoutComments(raw);
     const found: string[] = [];
 
     for (const w of BANNED_WORDS) {
@@ -61,6 +63,7 @@ describe('writing rules', () => {
     }
     for (const p of BANNED_PHRASES) if (text.toLowerCase().includes(p)) found.push(`phrase "${p}"`);
     if (/\bHidden\b/.test(text)) found.push('word "Hidden"');
+    if (/\bpp\b/i.test(text)) found.push('word "pp"');
     if (/\u2014/.test(raw)) found.push('em dash');
     if (/[\u2192\u2190\u21d2\u2794]/.test(raw)) found.push('arrow');
     if (/\p{Extended_Pictographic}/u.test(raw)) found.push('emoji');

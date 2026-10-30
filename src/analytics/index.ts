@@ -16,12 +16,13 @@ export { allRatings, newTierEvents, recordTierEvents, skillRating, skillScoreOf 
 export type { RatingInfo } from './ratings';
 export { isSnoozed, snoozeUntil } from './snooze';
 export { summarizePlay } from './summary';
-export { changeOf, dailySeries, trendMetric } from './trends';
+export { changeOf, dailySeries, trendMetric, TREND_RANGES } from './trends';
+export type { TrendMetric } from './trends';
 export {
   buildDailyPlan, dailyStreak, isPlanStepDone, planStepsDone, playStreak, suggestedDynamicLevel, weeklyGoal,
 } from './training';
 export type { PlanProgress, StreakInfo, WeeklyGoal } from './training';
 export { demandTimeline, fatigueCurve, playVsAverage, radarData, radarMax, ratingHistory, throughputScatter, weeklyChanges } from './views';
 export type {
-  DemandTimeline, FatiguePoint, PlayVsAverage, RadarAxis, RatingSeries, ThroughputPoint, WeeklyChange,
+  DemandTimeline, FatiguePoint, PlayDelta, PlayVsAverage, RadarAxis, RatingPoint, RatingSeries, ThroughputPoint, WeeklyChange,
 } from './views';
