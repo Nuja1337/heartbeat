@@ -33,6 +33,17 @@ export interface HudData {
   frameBudgetMs: number | null;
 }
 
+/** A whole number with a comma between thousands, as `toLocaleString('en-US')` writes it, without the Intl call. */
+export function groupThousands(n: number): string {
+  const s = String(Math.abs(n));
+  let out = '';
+  for (let i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 === 0) out += ',';
+    out += s[i];
+  }
+  return n < 0 ? `-${out}` : out;
+}
+
 const BAR_W = 360;
 const F_SCORE = `700 28px ${FONT}`;
 const F_SMALL = `500 12px ${FONT}`;
@@ -61,6 +72,7 @@ export class Hud {
   private fpsText = '';
   private levelCache = new Map<number, string>();
   private lostCache = new Map<number, string>();
+  private setCache = new Map<number, string>();
   private skin: Skin | null = null;
   private zoneRough = '';
   private zoneSolid = '';
@@ -74,6 +86,15 @@ export class Hud {
     if (!s) {
       s = STRINGS.level(level);
       this.levelCache.set(k, s);
+    }
+    return s;
+  }
+
+  private setText(set: number): string {
+    let s = this.setCache.get(set);
+    if (!s) {
+      s = STRINGS.set(set);
+      this.setCache.set(set, s);
     }
     return s;
   }
@@ -135,7 +156,7 @@ export class Hud {
       const si = Math.round(fx.scoreShown);
       if (si !== this.scoreInt) {
         this.scoreInt = si;
-        this.scoreText = si.toLocaleString('en-US');
+        this.scoreText = groupThousands(si);
       }
       ctx.fillText(this.scoreText, left + sx, 36 + sy);
     } else if (d.level !== null) {
@@ -145,7 +166,7 @@ export class Hud {
       if (d.set !== null) {
         ctx.font = F_SMALL;
         ctx.fillStyle = COLORS.ink2;
-        ctx.fillText(STRINGS.set(d.set + 1), left + sx, 52 + sy);
+        ctx.fillText(this.setText(d.set + 1), left + sx, 52 + sy);
       }
     }
 
@@ -287,19 +308,20 @@ export class Hud {
     }
   }
 
+  private zone(ctx: CanvasRenderingContext2D, cx: number, cy: number, k: number, w: number, color: string): void {
+    ctx.fillStyle = color;
+    ctx.fillRect(cx - w * k, cy - 3, 2 * w * k, 6);
+  }
+
   private drawErrorBar(ctx: CanvasRenderingContext2D, layout: FieldLayout, fx: Effects, win: HitWindows, now: number): void {
     const skin = this.skin as Skin;
     const cx = layout.cssW / 2;
     const cy = layout.cssH - 24;
     const half = BAR_W / 2;
     const k = half / win.rough;
-    const zone = (w: number, color: string) => {
-      ctx.fillStyle = color;
-      ctx.fillRect(cx - w * k, cy - 3, 2 * w * k, 6);
-    };
-    zone(win.rough, this.zoneRough);
-    zone(win.solid, this.zoneSolid);
-    zone(win.crisp, this.zoneCrisp);
+    this.zone(ctx, cx, cy, k, win.rough, this.zoneRough);
+    this.zone(ctx, cx, cy, k, win.solid, this.zoneSolid);
+    this.zone(ctx, cx, cy, k, win.crisp, this.zoneCrisp);
     ctx.fillStyle = COLORS.ink2;
     ctx.fillRect(cx - 0.5, cy - 9, 1, 18);
 

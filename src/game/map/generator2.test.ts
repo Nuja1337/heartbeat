@@ -50,6 +50,13 @@ describe('pattern frequencies', () => {
     expect(countPatterns(withLevel({ spacing: 9, streams: 8 }), 12).spacedstream ?? 0).toBeGreaterThan(0);
   });
 
+  it('spaces streams only when the longest stream is 5 or more', () => {
+    for (const streamMaxLength of [3, 4]) {
+      expect(countPatterns(withLevel({ spacing: 9, streams: 8, streamMaxLength }), 12).spacedstream ?? 0, `max ${streamMaxLength}`).toBe(0);
+    }
+    expect(countPatterns(withLevel({ spacing: 9, streams: 8, streamMaxLength: 5 }), 12).spacedstream ?? 0).toBeGreaterThan(0);
+  });
+
   it('makes triples and bursts only with streams on', () => {
     expect(countPatterns(withLevel({ streams: 0 }), 6).burst ?? 0).toBe(0);
     expect(countPatterns(withLevel({ streams: 6 }), 6).burst ?? 0).toBeGreaterThan(20);
@@ -94,6 +101,34 @@ describe('slider shapes', () => {
       }
     }
     expect(seen).toBeGreaterThan(1500);
+  });
+});
+
+describe('zigzag sliders', () => {
+  it('bend 60 to 100 degrees, including the Level 6 case that used to fall to 57 degrees', () => {
+    const d = { ...LEVEL_PRESETS[5]!.difficulty, sliders: 10 };
+    const m = generateDynamic(launchFor(d, 158, 90));
+    for (const o of m.objects) {
+      if (o.kind !== 'slider') continue;
+      const bad = sliderShapeProblems(o, `${o.index}`).filter((p) => p.startsWith('zigzag bend'));
+      expect(bad).toEqual([]);
+    }
+  });
+
+  it('bend 60 to 100 degrees over many seeds and slider-heavy settings', () => {
+    let zigzags = 0;
+    for (const lp of LEVEL_PRESETS) {
+      for (let seed = 150; seed <= 260; seed++) {
+        const m = generateDynamic(launchFor({ ...lp.difficulty, sliders: 10 }, seed, 90));
+        for (const o of m.objects) {
+          if (o.kind !== 'slider' || sliderFamily(o) !== 'zigzag') continue;
+          zigzags++;
+          const bad = sliderShapeProblems(o, `${o.index}`).filter((p) => p.startsWith('zigzag bend'));
+          if (bad.length > 0) throw new Error(`bpm ${lp.difficulty.bpm} seed ${seed}: ${bad.join('; ')}`);
+        }
+      }
+    }
+    expect(zigzags).toBeGreaterThan(10);
   });
 });
 

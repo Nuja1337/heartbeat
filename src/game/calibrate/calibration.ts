@@ -48,6 +48,8 @@ class Calibration implements CalibrationHandle, InputSink {
   /** The page lost focus in the middle of a run, so the next press starts a new one. */
   private interrupted = false;
   private cursor = '';
+  /** Web Audio could not start, so the audio run is off. */
+  private silent = false;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -93,15 +95,16 @@ class Calibration implements CalibrationHandle, InputSink {
   }
 
   press(_slot: unknown, ts: number): void {
-    if (this.destroyed) return;
+    if (this.destroyed || this.silent) return;
     if (this.interrupted) {
       this.interrupted = false;
       this.run.reset();
     }
     const out = this.run.press(ts);
     if (out === 'started') {
-      // The first press is a user gesture, so the audio context can start now.
-      this.audio?.resume();
+      // The first press is a user gesture, so the audio context can start now. Without sound the run has nothing to
+      // tap to, so it stops and says why instead of going on in silence.
+      if (this.audio) void this.audio.start().then((ok) => ok || this.soundFailed());
       return;
     }
     if (out === 'tap' || out === 'finished') this.callbacks.onTap(this.run.taps, this.run.needed);
@@ -109,6 +112,15 @@ class Calibration implements CalibrationHandle, InputSink {
       this.audio?.quiet();
       this.callbacks.onDone(this.run.result());
     }
+  }
+
+  private soundFailed(): void {
+    if (this.destroyed || this.silent) return;
+    this.silent = true;
+    this.audio?.quiet();
+    this.run.reset();
+    this.callbacks.onTap(0, this.run.needed);
+    this.callbacks.onError(S.noSound);
   }
 
   /* ------------------------------------------------------------------ api */

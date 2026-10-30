@@ -7,7 +7,7 @@ import { PERFECT_PLAYER, WEAK_PLAYER } from '../sim/autoplay';
 import { runHeadless } from '../sim/headless';
 import { launchFor } from '../testing/fixtures';
 import { buildSet, isSuccess, maxLevelFor, paramsAtLevel, successShare } from './modules';
-import { setupPlay } from './runner';
+import { PLACEMENT_SETS, ringSetsFor, setupPlay } from './runner';
 import { Staircase } from './staircase';
 
 describe('Staircase', () => {
@@ -330,6 +330,19 @@ describe('placement', () => {
     expect(run.session.over).toBe(true);
     expect(run.result.status).toBe('completed');
     expect(run.result.healthAtEnd).toBeNull();
+  });
+
+  it('measures progress against ten sets, not the 240 s cap, and counts the HUD ring in sets', () => {
+    const launch = placement();
+    expect(launch.lengthSec).toBe(240);
+    expect(ringSetsFor(launch)).toBe(10);
+    expect(PLACEMENT_SETS).toBe(10);
+    expect(ringSetsFor({ ...launch, modeId: 'mix' })).toBeNull();
+    const run = runHeadless({ launch, model: PERFECT_PLAYER });
+    expect(run.session.progressMs).toBeLessThan(120000);
+    const last = run.session.features[run.session.features.length - 1]!;
+    // The play ends at 49 to 72 s, so the last object sits near the end of the measure, not a quarter of the way.
+    expect(last.progress).toBeGreaterThan(0.6);
   });
 
   it('takes a step of 1 at the start: a clean first set moves the module up a whole level', () => {

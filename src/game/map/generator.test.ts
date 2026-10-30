@@ -6,6 +6,7 @@ import { endTime, violations } from '../testing/mapRules';
 import { deriveParams, halfBeatProb } from './difficulty';
 import { computeFeatures, endPosition } from './features';
 import { generateDynamic } from './generator';
+import { rateFor } from './mods';
 
 const EXTREMES: DifficultySettings[] = [
   { radius: 30, approachMs: 300, bpm: 260, density: 10, spacing: 10, complexity: 10, streams: 10, streamMaxLength: 32, sliders: 10, spinners: 10, timing: 10 },
@@ -64,10 +65,11 @@ describe('generator constraints', () => {
     }
   });
 
-  it('holds with Tight, Wide and Fast', () => {
-    for (const mods of [['tight'], ['wide'], ['fast']] as const) {
+  it('holds with Tight, Wide, Fast and Slow, at the rate the map is made for', () => {
+    for (const mods of [['tight'], ['wide'], ['fast'], ['slow']] as const) {
+      const rate = rateFor(mods);
       for (let seed = 1; seed <= 6; seed++) {
-        const v = violations(generateDynamic(launchFor(LEVEL_PRESETS[4]!.difficulty, seed, 60, [...mods])));
+        const v = violations(generateDynamic(launchFor(LEVEL_PRESETS[4]!.difficulty, seed, 60, [...mods]), rate), rate);
         if (v.length > 0) throw new Error(`${mods.join()} seed ${seed}: ${v.slice(0, 5).join('; ')}`);
       }
     }

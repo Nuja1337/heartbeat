@@ -2,10 +2,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { DEFAULT_DIFFICULTY, LEVEL_PRESETS, MODES, TRACE_OP } from '../../shared/catalog';
 import type { LaunchRequest, ReplayData } from '../../shared/types';
 import { GameSession } from '../engine/session';
-import { NOISY_PLAYER } from '../sim/autoplay';
+import type { FeedbackEvent } from '../engine/session';
+import { NOISY_PLAYER, PERFECT_PLAYER } from '../sim/autoplay';
 import { runHeadless } from '../sim/headless';
 import { launchFor } from '../testing/fixtures';
-import { countMismatches, ReplayRunner, replayDuration, sessionForReplay } from './feed';
+import { countMismatches, ReplayController, ReplayRunner, replayDuration, sessionForReplay } from './feed';
 
 const dyn = launchFor(LEVEL_PRESETS[2]!.difficulty, 91, 30);
 const mix: LaunchRequest = { ...launchFor(DEFAULT_DIFFICULTY, 92, 40, [], 'mix'), options: MODES.mix.defaultOptions, levels: { jumps: 4, streams: 4, tracking: 3 } };
@@ -217,5 +218,53 @@ describe('mismatches', () => {
     const broken = new ReplayRunner({ ...replay, trace });
     broken.feedAll();
     expect(countMismatches(broken.judgments(), replay.judgments)).toBeGreaterThan(5);
+  });
+});
+
+describe('set-end results', () => {
+  const placement: LaunchRequest = { ...launchFor(undefined, 5, 240, [], 'placement'), levels: {} };
+  const key = (e: FeedbackEvent) => {
+    const i = e.setEnd;
+    return i ? `${i.set}:${i.module}:${i.from}->${i.to}:${i.direction}:${i.success}` : '';
+  };
+
+  for (const [name, launch, model] of [['placement', placement, PERFECT_PLAYER], ['Mix', { ...mix, lengthSec: 120 }, NOISY_PLAYER]] as const) {
+    it(`${name}: every set-end result in the replay equals the live play's, last set of each module included`, () => {
+      const live: string[] = [];
+      const run = runHeadless({ launch, model, stepMs: 5, listener: (e) => e.type === 'setEnd' && live.push(key(e)) });
+      const replay = run.result.replay as ReplayData;
+      const again: string[] = [];
+      const r = new ReplayRunner(replay, (e) => e.type === 'setEnd' && again.push(key(e)));
+      r.feedAll();
+      expect(live.length).toBeGreaterThan(5);
+      expect(again).toEqual(live);
+      // The last set of a module must not be reported as a hold when the live play moved the level.
+      expect(live.some((k) => !k.includes(':hold:'))).toBe(true);
+    });
+  }
+
+  it('hands out a new info object for every set end', () => {
+    const { replay } = record(mix);
+    const infos: object[] = [];
+    const r = new ReplayRunner(replay, (e) => e.type === 'setEnd' && e.setEnd && infos.push(e.setEnd));
+    r.feedAll();
+    expect(infos.length).toBeGreaterThan(2);
+    expect(new Set(infos).size).toBe(infos.length);
+  });
+
+  it('works out the level of a set that never closed once, not on every frame', () => {
+    const { replay } = record(mix);
+    // No steps at all: set 0 never closed, so its level is rebuilt.
+    const c = new ReplayController({ ...replay, levels: [] });
+    const filter = vi.spyOn(Array.prototype, 'filter');
+    try {
+      const level = c.status().level;
+      const first = filter.mock.calls.length;
+      expect(first).toBeGreaterThan(0);
+      for (let i = 0; i < 50; i++) expect(c.status().level).toBe(level);
+      expect(filter.mock.calls.length).toBe(first);
+    } finally {
+      filter.mockRestore();
+    }
   });
 });

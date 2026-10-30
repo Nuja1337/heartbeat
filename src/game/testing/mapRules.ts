@@ -111,7 +111,22 @@ export function sliderShapeProblems(s: SliderObject, label: string): string[] {
       }
     }
   }
-  // 5. The shape label matches the segments.
+  // 5. A zigzag bends 60 to 100 degrees at each corner (PLAN-2 4.11). A bend gentler than that is not a zigzag.
+  if (sliderFamily(s) === 'zigzag') {
+    const heads: number[] = [];
+    let from = s.pos;
+    for (const seg of s.path) {
+      if (seg.type === 'line') heads.push(Math.atan2(seg.to.y - from.y, seg.to.x - from.x));
+      from = seg.to;
+    }
+    for (let k = 1; k < heads.length; k++) {
+      let bend = Math.abs(((heads[k]! - heads[k - 1]!) * 180) / Math.PI) % 360;
+      if (bend > 180) bend = 360 - bend;
+      // The ends of the arcs are rounded to a tenth of a unit, which moves a short leg's heading a little.
+      if (bend < 58.5 || bend > 101.5) out.push(`zigzag bend ${label} ${bend.toFixed(1)}`);
+    }
+  }
+  // 6. The shape label matches the segments.
   const kinds = s.path.map((p) => p.type);
   const want = kinds.length === 1 && kinds[0] === 'line' ? 'straight' : kinds.length === 1 && kinds[0] === 'arc' ? 'arc' : 'curve';
   if (s.shape !== want) out.push(`shape label ${label} ${s.shape} vs ${want}`);
@@ -132,8 +147,12 @@ export interface RuleOptions {
   checkPhrases?: boolean;
 }
 
-/** Every rule. Returns a list of violations, empty when the map is clean. */
-export function violations(map: GeneratedMap): string[] {
+/**
+ * Every rule. Returns a list of violations, empty when the map is clean.
+ * `rate` is the Fast or Slow rate the map was generated for. The map is in source time, which is play time times the
+ * rate, so the rules that are written in seconds of play (spinner start and end) scale with it.
+ */
+export function violations(map: GeneratedMap, rate = 1): string[] {
   const out: string[] = [];
   const objs = map.objects;
   const first = objs[0];
@@ -233,8 +252,8 @@ export function violations(map: GeneratedMap): string[] {
     if (o.kind === 'spinner') {
       const prev = objs[i - 1];
       const next = objs[i + 1];
-      if (o.time < 8000) out.push(`spinner early ${i}`);
-      if (o.endTime > map.durationMs - 5000 + 0.5) out.push(`spinner late ${i}`);
+      if (o.time < 8000 * rate - 1e-6) out.push(`spinner early ${i}`);
+      if (o.endTime > map.durationMs - 5000 * rate + 0.5) out.push(`spinner late ${i}`);
       if (prev && o.time - endTime(prev) < Math.max(beat, 400) - 1e-6) out.push(`spinner before ${i}`);
       if (!next) out.push(`spinner last ${i}`);
       if (next) {
@@ -289,7 +308,8 @@ export function violations(map: GeneratedMap): string[] {
     if (Math.abs(b - Math.round(b)) * beat > 0.25) out.push(`rule 12 motif ${i} starts off the beat`);
   });
 
-  // Rule 13: neighbouring phrases differ in intensity by 0.2 or less, except into or out of a rest and into the outro.
+  // Rule 13 (PLAN-2 6.4): neighbouring phrases differ in intensity by 0.2 or less, except into or out of a rest and
+  // into the outro. The outro is a cool-down after the last peak, so its drop is intended.
   const phraseMs = 16 * beat;
   const roleAt = (t: number) => map.sections.find((s) => t >= s.start - 0.01 && t < s.end - 0.01)?.role;
   let prevI: number | null = null;

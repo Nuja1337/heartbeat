@@ -17,15 +17,11 @@ const ONE: Record<SkillId, number> = { aim: 1, speed: 1, tracking: 1, precision:
 const AIM_TARGETS = [4.6, 5.91, 7.34, 8.56, 9.87, 11.27, 12.73, 14.57];
 
 /**
- * Level 1 cannot reach 4.6 with the generator alone: at density 2 only about 14% of its jumps fall on half beats,
- * and a jump on a full beat at its spacing tops out near 3.5. Density 3 puts it at 4.57. The catalog should carry
- * density 3 for Level 1; until it does, the calibration applies it here. It is a no-op once the catalog has it.
+ * Level 1 cannot reach 4.6 with the generator alone at density 2: only about 14% of its jumps fall on half beats, and
+ * a jump on a full beat at its spacing tops out near 3.5. The catalog carries density 3 for Level 1, which puts it at
+ * 4.57, and the calibration measures the presets as they are.
  */
-const LEVEL_1_MIN_DENSITY = 3;
-
-const presets = LEVEL_PRESETS.map((p) =>
-  p.level === 1 ? { ...p, difficulty: { ...p.difficulty, density: Math.max(p.difficulty.density, LEVEL_1_MIN_DENSITY) } } : p,
-);
+const presets = LEVEL_PRESETS;
 
 function launchFor(level: number, seed: number): LaunchRequest {
   const p = presets[level - 1]!;
@@ -64,6 +60,10 @@ describe.skipIf(!process.env.CALIBRATE)('calibration', () => {
       const want = AIM_TARGETS[i]!;
       if (Math.abs(v - want) / want > 0.05) throw new Error(`aim at Level ${i + 1}: measured ${v.toFixed(3)}, anchor ${want}`);
     });
+  });
+
+  it('uses density 3 for Level 1, which it needs to reach its aim anchor', () => {
+    expect(LEVEL_PRESETS[0]!.difficulty.density).toBeGreaterThanOrEqual(3);
   });
 
   it('keeps Levels 2 to 8 on the catalog aim anchors', () => {

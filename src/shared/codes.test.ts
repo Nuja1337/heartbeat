@@ -198,6 +198,26 @@ describe('share code rejection', () => {
     expect(kindOf(() => decodeShare(codeOf(header({ version: 255 }))))).toBe('newer');
   });
 
+  it('calls a code newer only when it is otherwise well formed', () => {
+    // Garbage with a first byte above the version, and a valid code with any one character changed.
+    expect(kindOf(() => decodeShare('Zm9vYmFyYmF6cXV4cXV4cXV4'))).toBe('invalid');
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    for (let i = 0; i < VECTOR.length; i++) {
+      for (const c of alphabet) {
+        if (c === VECTOR[i]) continue;
+        const changed = VECTOR.slice(0, i) + c + VECTOR.slice(i + 1);
+        expect(kindOf(() => decodeShare(changed)), changed).not.toBe('newer');
+      }
+    }
+    // A newer code with a bad checksum, or with text that is not canonical, is invalid too.
+    const newer = header({ version: 2, flags: 1 }).concat([4]);
+    const good = codeOf(newer);
+    expect(kindOf(() => decodeShare(good))).toBe('newer');
+    const wrong = Buffer.from([...newer, (newer.reduce((a, b) => (a + b) & 255, 0) ^ 0xa5) ^ 1]).toString('base64url');
+    expect(kindOf(() => decodeShare(wrong))).toBe('invalid');
+    expect(kindOf(() => decodeShare(good.slice(0, -1) + 'B'))).toBe('invalid');
+  });
+
   it('rejects version 0, empty, too short, and characters outside base64url', () => {
     expect(kindOf(() => decodeShare(codeOf(header({ version: 0, flags: 1 }).concat([4]))))).toBe('invalid');
     expect(kindOf(() => decodeShare(''))).toBe('invalid');

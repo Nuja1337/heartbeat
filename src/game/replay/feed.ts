@@ -8,7 +8,7 @@ import { INPUT_SLOT_ORDER, TRACE_OP } from '../../shared/catalog';
 import type { HitObject, HitRecord, InputTrace, LevelStep, ModuleId, Ms, ReplayData, Vec2 } from '../../shared/types';
 import { GameSession } from '../engine/session';
 import type { FeedbackListener, SetController, SetEndInfo } from '../engine/session';
-import { openSetLevel } from '../modes/runner';
+import { levelAfter, openSetLevel } from '../modes/runner';
 
 /**
  * Stands in for the mode runner during playback. The live play appended each set when the one before it closed, and
@@ -19,7 +19,8 @@ export class ReplayController implements SetController {
   private bySet = new Map<number, HitObject[]>();
   private built = 0;
   private statusObj = { level: 0, set: 0 };
-  private info: SetEndInfo = { set: 0, module: 'jumps', from: 0, to: 0, success: 0, direction: 'hold' };
+  /** The level of each set that never closed, so the viewer does not rebuild it every frame. */
+  private openLevels = new Map<number, number>();
 
   constructor(private replay: ReplayData) {
     for (const o of replay.map.objects) {
@@ -31,16 +32,18 @@ export class ReplayController implements SetController {
   }
 
   closeSet(set: number, _records: readonly HitRecord[], _tClose: Ms): { objects: HitObject[] | null; info: SetEndInfo } {
-    const steps = this.replay.levels;
-    const step = steps.find((s) => s.set === set);
-    const info = this.info;
-    info.set = set;
-    if (step) info.module = step.module;
-    info.from = step ? step.level : 0;
-    info.success = step ? step.success : 0;
-    const later = step ? steps.find((s) => s.set > set && s.module === step.module) : undefined;
-    info.to = later ? later.level : info.from;
-    info.direction = info.to > info.from ? 'up' : info.to < info.from ? 'down' : 'hold';
+    const step = this.replay.levels.find((s) => s.set === set);
+    const from = step ? step.level : 0;
+    // The level after the set comes from the staircase, so a module's last set reports up or down as the live play did.
+    const to = step ? levelAfter(this.replay.launch, this.replay.levels, set, step.module) : from;
+    const info: SetEndInfo = {
+      set,
+      module: step ? step.module : 'jumps',
+      from,
+      to,
+      success: step ? step.success : 0,
+      direction: to > from ? 'up' : to < from ? 'down' : 'hold',
+    };
     const objects = this.bySet.get(set + 1) ?? null;
     if (objects) this.built = set + 1;
     return { objects, info };
@@ -54,12 +57,17 @@ export class ReplayController implements SetController {
     return {};
   }
 
-  /** The set being played and its level. A set still open when the play ended has no step, so its level is rebuilt. */
+  /** The set being played and its level. A set still open when the play ended has no step, so its level is rebuilt once. */
   status(): { level: number; set: number } {
     const set = this.built;
-    const step = this.replay.levels.find((s) => s.set === set);
+    let level = this.openLevels.get(set);
+    if (level === undefined) {
+      const step = this.replay.levels.find((s) => s.set === set);
+      level = step ? step.level : openSetLevel(this.replay.launch, this.replay.levels, set);
+      this.openLevels.set(set, level);
+    }
     this.statusObj.set = set;
-    this.statusObj.level = step ? step.level : openSetLevel(this.replay.launch, this.replay.levels, set);
+    this.statusObj.level = level;
     return this.statusObj;
   }
 }

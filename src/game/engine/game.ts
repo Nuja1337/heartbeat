@@ -4,7 +4,7 @@ import { MODES, RETRY_HOLD_MS } from '../../shared/catalog';
 import type { CreateGame, GameCallbacks, GameHandle, InputInfo, InputSlot, LaunchRequest, PlayStatus, Settings } from '../../shared/types';
 import { AudioEngine } from '../audio/audio';
 import type { Grid } from '../audio/metronome';
-import { setupPlay } from '../modes/runner';
+import { ringSetsFor, setupPlay } from '../modes/runner';
 import { SYSTEM_CURSOR } from '../render/cursor';
 import { Effects } from '../render/effects';
 import type { DisplayFlags } from '../render/effects';
@@ -114,6 +114,7 @@ class Game implements GameHandle, InputSink {
       level: status ? status.level : null,
       set: status ? status.set : null,
       lengthMs: this.lengthMs,
+      ringSets: ringSetsFor(launch),
       retry: 0,
       frames: this.frames,
     };

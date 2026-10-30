@@ -164,7 +164,7 @@ export function patternWeights(p: GenParams, intensity: number): Record<PatternK
     stack: c >= 3 ? 0.15 * c * (0.5 + intensity) : 0,
     triple: p.streams >= 1 ? 0.2 * p.streams : 0,
     cutstream: p.streams >= 4 && c >= 5 && p.streamMaxLength >= 8 ? 0.15 * p.streams * intensity : 0,
-    spacedstream: p.spacing >= 6 && intensity >= 0.85 && p.streams >= 1 ? 0.1 * p.streams : 0,
+    spacedstream: p.spacing >= 6 && intensity >= 0.85 && p.streams >= 1 && p.streamMaxLength >= 5 ? 0.1 * p.streams : 0,
     kick: c >= 6 && p.sliders > 0 ? 0.08 * c : 0,
   };
 }

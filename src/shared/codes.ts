@@ -216,11 +216,13 @@ export function encodeShare(launch: LaunchRequest, generatorVersion: number): st
 export function decodeShare(code: string): { launch: Partial<LaunchRequest>; generatorVersion: number } {
   const bytes = fromBase64Url(code);
   if (!bytes || bytes.length < HEADER_BYTES + 1) throw invalid();
+  // A code is only called newer when it is well formed: canonical text and a checksum byte that matches. Garbage and
+  // damaged codes have an arbitrary first byte, so they are invalid whatever that byte says.
+  if (toBase64Url(bytes) !== code) throw invalid();
+  if (checksum(bytes.slice(0, -1)) !== bytes[bytes.length - 1]) throw invalid();
   const version = bytes[0]!;
   if (version > SHARE_CODE_VERSION) throw new ShareCodeError('newer');
   if (version !== SHARE_CODE_VERSION) throw invalid();
-  if (toBase64Url(bytes) !== code) throw invalid();
-  if (checksum(bytes.slice(0, -1)) !== bytes[bytes.length - 1]) throw invalid();
 
   const end = bytes.length - 1;
   let at = HEADER_BYTES;

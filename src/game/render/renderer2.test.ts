@@ -13,7 +13,7 @@ import type { CallLog } from '../testing/fakes';
 import { launchFor, makeCircle, makeMap, makeSlider, makeSpinner } from '../testing/fixtures';
 import { Effects } from './effects';
 import { FrameStats } from './frameStats';
-import { Renderer } from './renderer';
+import { Renderer, ringFraction } from './renderer';
 import type { RenderState } from './renderer';
 import { resolveSkin } from './skin';
 
@@ -354,5 +354,18 @@ describe('Effects pools', () => {
     expect(fx.live.particles).toBeLessThanOrEqual(512);
     expect(fx.live.popups).toBeLessThanOrEqual(64);
     expect(fx.capacity).toEqual({ particles: 512, popups: 64, ripples: 16 });
+  });
+});
+
+describe('ring fraction', () => {
+  it('counts play time out of the length, or sets done out of the set count when there is one', () => {
+    expect(ringFraction(30000, 60000, 2, null)).toBe(0.5);
+    expect(ringFraction(30000, 60000, 2, undefined)).toBe(0.5);
+    expect(ringFraction(30000, 0, null, null)).toBe(0);
+    // Placement: 240 s declared, but the ring follows the sets.
+    expect(ringFraction(30000, 240000, 5, 10)).toBe(0.5);
+    expect(ringFraction(60000, 240000, 9, 10)).toBe(0.9);
+    expect(ringFraction(60000, 240000, null, 10)).toBe(0);
+    expect(ringFraction(1000, 240000, 12, 10)).toBe(1);
   });
 });

@@ -24,4 +24,5 @@ export const CALIBRATION_STRINGS = {
   progress: (taps: number, needed: number): string => `${taps} of ${needed}`,
   beat: (n: number, total: number): string => `Beat ${n} of ${total}`,
   noCanvas: 'This browser could not start the calibration canvas.',
+  noSound: "Sound couldn't start in this browser, so the audio calibration can't run.",
 };

@@ -18,6 +18,7 @@ import { AudioEngine } from '../audio/audio';
 import { Loop } from '../engine/loop';
 import { Playfield } from '../engine/playfield';
 import type { FeedbackEvent } from '../engine/session';
+import { ringSetsFor } from '../modes/runner';
 import { Effects } from '../render/effects';
 import type { DisplayFlags } from '../render/effects';
 import { Renderer } from '../render/renderer';
@@ -137,6 +138,7 @@ class Playback implements PlaybackHandle {
       level: null,
       set: null,
       lengthMs: adaptive ? replay.launch.lengthSec * 1000 : runner.session.map.durationMs,
+      ringSets: ringSetsFor(replay.launch),
       retry: 0,
     };
   }

@@ -385,7 +385,8 @@ function zigzagLocal(L: number, follow: number, spec: SliderSpec): Seg[] | null 
   const R = follow * 1.08;
   const legs = spec.legs;
   const bends = legs - 1;
-  const beta = 60 + ((spec.alpha - 20) / 40) * 40;
+  // Alpha is held to 20..60 so a gentler fallback never bends under 60 degrees.
+  const beta = 60 + Math.min(40, Math.max(0, spec.alpha - 20));
   const per = (L - bends * R * beta * RAD) / legs;
   if (per < 0.5 * R) return null;
   const out: Seg[] = [];
@@ -765,6 +766,7 @@ export class MapBuilder {
     // Tries the wanted shape, then its other side, then gentler versions, then a line.
     const shapes: SliderSpec[] = [base, { ...base, bend: -base.bend as 1 | -1 }];
     if (base.shape !== 'straight') {
+      // A zigzag keeps its bend at 60 degrees or more whatever the scale (see zigzagLocal), so these stay zigzags.
       for (const f of [0.7, 0.45]) shapes.push({ ...base, alpha: base.alpha * f, k: base.k * f, headTurn: 0 });
       if (base.family === 'zigzag' || base.family === 'hook') shapes.push({ ...base, family: 'cubic', alpha: base.alpha * 0.7 });
     }

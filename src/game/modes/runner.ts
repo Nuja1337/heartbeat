@@ -31,6 +31,20 @@ export interface PlaySetup {
   progressMs: number;
 }
 
+/** Sets in a placement play: every module, PLACEMENT.setsPerModule times. */
+export const PLACEMENT_SETS = PLACEMENT.modules.length * PLACEMENT.setsPerModule;
+
+/**
+ * Length that feature progress is measured against in placement. The catalog length (240 s) is only the cap: ten sets
+ * take 49 to 72 s, so measuring against the cap would leave progress under a third.
+ */
+export const PLACEMENT_PROGRESS_MS = 60000;
+
+/** How many sets the HUD ring counts for a launch, or null when it counts time. */
+export function ringSetsFor(launch: LaunchRequest): number | null {
+  return launch.modeId === 'placement' ? PLACEMENT_SETS : null;
+}
+
 /** Quiet time between sets, ms. */
 export const SET_REST_MS = 1200;
 
@@ -133,8 +147,6 @@ export class ModeRunner implements SetController {
   private groupCount = 0;
   private lastSet = 0;
   private readonly placement: boolean;
-  /** Sets in a placement play: every module, PLACEMENT.setsPerModule times. */
-  private readonly placementSets: number;
 
   constructor(
     private launch: LaunchRequest,
@@ -142,7 +154,6 @@ export class ModeRunner implements SetController {
   ) {
     this.placement = launch.modeId === 'placement';
     this.modules = setModules(launch);
-    this.placementSets = this.modules.length * PLACEMENT.setsPerModule;
     for (const m of this.modules) this.stairs.set(m, startStaircase(launch, m));
     const first = this.build(0, 0);
     this.map = shell(launch, first.objects, [first.section], mods);
@@ -191,7 +202,7 @@ export class ModeRunner implements SetController {
     this.steps.push({ set, module, level: played, success, objects: records.length });
     const info: SetEndInfo = { set, module, from: played, to: st.next, success, direction: st.direction };
     // Placement ends after its last set. Every other adaptive mode ends at its length.
-    if (this.placement ? set + 1 >= this.placementSets : tClose >= this.launch.lengthSec * 1000) return { objects: null, info };
+    if (this.placement ? set + 1 >= PLACEMENT_SETS : tClose >= this.launch.lengthSec * 1000) return { objects: null, info };
     const next = this.build(set + 1, tClose);
     if (next.objects.length === 0) return { objects: null, info };
     this.map.sections.push(next.section);
@@ -233,7 +244,7 @@ export function setupPlay(launch: LaunchRequest): PlaySetup {
     return { map, controller: null, progressMs: map.durationMs };
   }
   const runner = new ModeRunner(launch, mods);
-  return { map: runner.map, controller: runner, progressMs: launch.lengthSec * 1000 };
+  return { map: runner.map, controller: runner, progressMs: launch.modeId === 'placement' ? PLACEMENT_PROGRESS_MS : launch.lengthSec * 1000 };
 }
 
 /** A module's staircase at the start of a play. Placement starts at the saved level (or 3) and takes a full step. */
@@ -253,16 +264,29 @@ function setModules(launch: LaunchRequest): ModuleId[] {
   return valid.length >= 2 ? valid : (MODES.mix.defaultOptions.mixModules as ModuleId[]);
 }
 
+/** Each module's staircase after the steps of the sets up to and including `upTo`, run again on their success shares. */
+function replayStairs(launch: LaunchRequest, steps: readonly LevelStep[], upTo: number): Map<ModuleId, Staircase> {
+  const stairs = new Map<ModuleId, Staircase>();
+  for (const m of setModules(launch)) stairs.set(m, startStaircase(launch, m));
+  const done = steps.filter((s) => s.set <= upTo).sort((a, b) => a.set - b.set);
+  for (const s of done) stairs.get(s.module)?.update(s.success);
+  return stairs;
+}
+
 /**
  * The level that `set` was played at, from the steps of the sets before it. The live runner knows it from its
  * staircases. A replay only has the steps of closed sets, so this runs the staircases again on their success shares.
  */
 export function openSetLevel(launch: LaunchRequest, steps: readonly LevelStep[], set: number): number {
   const modules = setModules(launch);
-  const stairs = new Map<ModuleId, Staircase>();
-  for (const m of modules) stairs.set(m, startStaircase(launch, m));
-  const done = steps.filter((s) => s.set < set).sort((a, b) => a.set - b.set);
-  for (const s of done) stairs.get(s.module)?.update(s.success);
   const module = modules[set % modules.length] as ModuleId;
-  return (stairs.get(module) as Staircase).level;
+  return (replayStairs(launch, steps, set - 1).get(module) as Staircase).level;
+}
+
+/**
+ * Where `module`'s staircase stands after the set `set` closed: the `to` of the live set-end result. A module's last
+ * set has no later step to read it from, so this runs the staircase again over the steps up to that set.
+ */
+export function levelAfter(launch: LaunchRequest, steps: readonly LevelStep[], set: number, module: ModuleId): number {
+  return (replayStairs(launch, steps, set).get(module) as Staircase).level;
 }

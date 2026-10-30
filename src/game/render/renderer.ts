@@ -46,10 +46,18 @@ export interface RenderState {
   set: number | null;
   /** Length that the time ring is measured against. */
   lengthMs: number;
+  /** Sets in the play when the ring counts sets done instead of time (placement). */
+  ringSets?: number | null;
   /** How far the quick retry hold has got, 0..1. 0 hides the bar. */
   retry?: number;
   /** Frame times for the frame graph. Drawn only when the setting is on. */
   frames?: FrameStats | null;
+}
+
+/** How full the HUD ring is: sets done out of `ringSets` when given, else play time out of the length. */
+export function ringFraction(playT: number, lengthMs: number, set: number | null, ringSets: number | null | undefined): number {
+  if (ringSets && ringSets > 0) return set === null ? 0 : Math.min(1, Math.max(0, set / ringSets));
+  return lengthMs > 0 ? playT / lengthMs : 0;
 }
 
 const TAU = Math.PI * 2;
@@ -671,7 +679,7 @@ export class Renderer {
     d.combo = s.scoring.combo;
     d.accuracy = s.scoring.accuracy;
     d.health = s.map.health ? s.scoring.health : null;
-    d.timeFraction = rs.lengthMs > 0 ? rs.playT / rs.lengthMs : 0;
+    d.timeFraction = ringFraction(rs.playT, rs.lengthMs, rs.set, rs.ringSets);
     d.level = rs.level;
     d.set = rs.set;
     if (first) d.windows = first.windows;

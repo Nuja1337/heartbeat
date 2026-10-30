@@ -254,7 +254,8 @@ export class Effects {
       case 'sliderDone': {
         const j = e.judgment as Judgment;
         this.burst(e.x, e.y, r, j, now, flags);
-        if (j !== 'crisp') this.judgmentPopup(e.x, e.y, r, j, 0, now, { ...flags, earlyLate: false });
+        // The error is 0, so the early/late flag changes nothing here and the flags go through as they are.
+        if (j !== 'crisp') this.judgmentPopup(e.x, e.y, r, j, 0, now, flags);
         break;
       }
       case 'spinDone': {

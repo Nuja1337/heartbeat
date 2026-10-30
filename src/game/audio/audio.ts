@@ -48,6 +48,22 @@ export class AudioEngine {
     }
   }
 
+  /**
+   * Like `resume`, and then waits for the context to run. Resolves false when the context could not be made or did not
+   * start, so a caller that needs sound can say so.
+   */
+  async start(): Promise<boolean> {
+    this.resume();
+    const b = this.bus;
+    if (!b || this.failed) return false;
+    try {
+      if (b.ctx.state !== 'running') await b.ctx.resume();
+    } catch {
+      return false;
+    }
+    return (b.ctx.state as string) === 'running';
+  }
+
   private build(): void {
     const ctx = this.factory();
     const master = ctx.createGain();
