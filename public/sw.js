@@ -25,7 +25,10 @@ function assetsFromManifest(json) {
   const add = (v) => {
     if (typeof v === 'string' && v.length > 0) out.add(v.startsWith('/') ? v : '/' + v);
   };
-  for (const entry of Object.values(json)) {
+  for (const key of Object.keys(json)) {
+    const entry = json[key];
+    // Translation dictionaries are not precached. The one in use is cached when it is first fetched.
+    if (key.startsWith('src/i18n/locales/')) continue;
     if (!entry || typeof entry !== 'object') continue;
     add(entry.file);
     for (const list of [entry.css, entry.assets]) if (Array.isArray(list)) list.forEach(add);

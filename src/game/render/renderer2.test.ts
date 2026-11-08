@@ -30,7 +30,11 @@ function setup(log: CallLog): Renderer {
   return new Renderer(fakeContext(log), pf, fakeCanvasFactory(log));
 }
 
-function settingsWith(skin: Partial<Settings['skin']> = {}, display: Partial<Settings['display']> = {}, input: Partial<Settings['input']> = {}): Settings {
+function settingsWith(
+  skin: Partial<Settings['skin']> = {},
+  display: Partial<Settings['display']> = {},
+  input: Partial<Settings['input']> = {},
+): Settings {
   return {
     ...DEFAULT_SETTINGS,
     skin: { ...DEFAULT_SETTINGS.skin, ...skin },

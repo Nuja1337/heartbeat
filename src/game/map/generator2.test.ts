@@ -13,8 +13,32 @@ import { createRng } from './rng';
 import { planStructure } from './structure';
 
 const EXTREMES: DifficultySettings[] = [
-  { radius: 30, approachMs: 300, bpm: 260, density: 10, spacing: 10, complexity: 10, streams: 10, streamMaxLength: 32, sliders: 10, spinners: 10, timing: 10 },
-  { radius: 50, approachMs: 1800, bpm: 240, density: 10, spacing: 6, complexity: 8, streams: 6, streamMaxLength: 20, sliders: 6, spinners: 4, timing: 5 },
+  {
+    radius: 30,
+    approachMs: 300,
+    bpm: 260,
+    density: 10,
+    spacing: 10,
+    complexity: 10,
+    streams: 10,
+    streamMaxLength: 32,
+    sliders: 10,
+    spinners: 10,
+    timing: 10,
+  },
+  {
+    radius: 50,
+    approachMs: 1800,
+    bpm: 240,
+    density: 10,
+    spacing: 6,
+    complexity: 8,
+    streams: 6,
+    streamMaxLength: 20,
+    sliders: 6,
+    spinners: 4,
+    timing: 5,
+  },
 ];
 
 const withLevel = (over: Partial<DifficultySettings>): DifficultySettings => ({ ...LEVEL_PRESETS[7]!.difficulty, ...over });
@@ -66,7 +90,8 @@ describe('pattern frequencies', () => {
     const sliders = (c: number) => {
       const out: SliderObject[] = [];
       for (let seed = 1; seed <= 25; seed++) {
-        for (const o of generateDynamic(launchFor(withLevel({ complexity: c, sliders: 10, spinners: 0 }), seed, 120)).objects) if (o.kind === 'slider') out.push(o);
+        for (const o of generateDynamic(launchFor(withLevel({ complexity: c, sliders: 10, spinners: 0 }), seed, 120)).objects)
+          if (o.kind === 'slider') out.push(o);
       }
       return out;
     };
@@ -81,7 +106,11 @@ describe('pattern frequencies', () => {
     expect(share((s) => s.shape === 'arc')).toBeGreaterThan(0.25);
     expect(share((s) => s.shape === 'arc')).toBeLessThan(0.5);
     expect(share((s) => s.shape === 'curve')).toBeGreaterThan(0.2);
-    for (const f of ['cubic', 'wave', 'hook'] as const) expect(high.some((s) => sliderFamily(s) === f), f).toBe(true);
+    for (const f of ['cubic', 'wave', 'hook'] as const)
+      expect(
+        high.some((s) => sliderFamily(s) === f),
+        f,
+      ).toBe(true);
   });
 });
 
@@ -155,13 +184,19 @@ describe('structure in the map', () => {
 
   it('plans every spinner and places exactly those', () => {
     let placed = 0;
-    const all = [...LEVEL_PRESETS.map((p) => ({ level: p.level, difficulty: p.difficulty, lengthSec: p.lengthSec })), ...EXTREMES.map((d, i) => ({ level: 9 + i, difficulty: d, lengthSec: 60 }))];
+    const all = [
+      ...LEVEL_PRESETS.map((p) => ({ level: p.level, difficulty: p.difficulty, lengthSec: p.lengthSec })),
+      ...EXTREMES.map((d, i) => ({ level: 9 + i, difficulty: d, lengthSec: 60 })),
+    ];
     for (const lp of all) {
       for (let seed = 1; seed <= 30; seed++) {
         const len = Math.min(lp.lengthSec, 90);
         const map = generateDynamic(launchFor(lp.difficulty, seed, len));
         const p = deriveParams(lp.difficulty, []);
-        const plan = planStructure({ p, t0: map.beatOffsetMs!, endMs: Math.max(20000, len * 1000) - 1000, rate: 1 }, createRng(seed).fork('dynamic').fork('structure'));
+        const plan = planStructure(
+          { p, t0: map.beatOffsetMs!, endMs: Math.max(20000, len * 1000) - 1000, rate: 1 },
+          createRng(seed).fork('dynamic').fork('structure'),
+        );
         const n = map.objects.filter((o) => o.kind === 'spinner').length;
         expect(n, `level ${lp.level} seed ${seed}`).toBe(plan.spinners.length);
         placed += n;
@@ -226,7 +261,8 @@ describe('structure in the map', () => {
     const mean = (role: string) => {
       const v: number[] = [];
       for (let seed = 1; seed <= 10; seed++) {
-        for (const s of generateDynamic(launchFor(LEVEL_PRESETS[5]!.difficulty, seed, 120)).sections) if (s.role === role) v.push(s.intensity);
+        for (const s of generateDynamic(launchFor(LEVEL_PRESETS[5]!.difficulty, seed, 120)).sections)
+          if (s.role === role) v.push(s.intensity);
       }
       return v.reduce((a, b) => a + b, 0) / v.length;
     };
@@ -271,7 +307,11 @@ describe('mirrored sections', () => {
               expect(b.repeats).toBe(a.repeats);
               const f = (p: { x: number; y: number }) => mirrorPoint(p, axis!);
               const want = a.path.map((seg) =>
-                seg.type === 'line' ? { type: 'line', to: f(seg.to) } : seg.type === 'arc' ? { type: 'arc', through: f(seg.through), to: f(seg.to) } : { type: 'cubic', c1: f(seg.c1), c2: f(seg.c2), to: f(seg.to) },
+                seg.type === 'line'
+                  ? { type: 'line', to: f(seg.to) }
+                  : seg.type === 'arc'
+                    ? { type: 'arc', through: f(seg.through), to: f(seg.to) }
+                    : { type: 'cubic', c1: f(seg.c1), c2: f(seg.c2), to: f(seg.to) },
               );
               expect(b.path).toEqual(want);
             }

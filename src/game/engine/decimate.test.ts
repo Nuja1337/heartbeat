@@ -4,7 +4,12 @@ import type { InputSlot, Vec2 } from '../../shared/types';
 import { Decimator, MIN_GAP_MS } from './decimate';
 import type { DecimatorTarget } from './decimate';
 
-type Call = ['move', number, number, number] | ['press', InputSlot, number, Vec2 | null] | ['release', InputSlot, number] | ['advance', number] | ['pause', number];
+type Call =
+  | ['move', number, number, number]
+  | ['press', InputSlot, number, Vec2 | null]
+  | ['release', InputSlot, number]
+  | ['advance', number]
+  | ['pause', number];
 
 function rig() {
   const calls: Call[] = [];
@@ -46,7 +51,10 @@ describe('Decimator', () => {
     dec.move(10.2, 3, 3);
     expect(calls).toEqual([['move', 10, 1, 1]]);
     dec.flush();
-    expect(calls).toEqual([['move', 10, 1, 1], ['move', 10.2, 3, 3]]);
+    expect(calls).toEqual([
+      ['move', 10, 1, 1],
+      ['move', 10.2, 3, 3],
+    ]);
     dec.flush();
     expect(calls).toHaveLength(2);
   });
@@ -80,7 +88,11 @@ describe('Decimator', () => {
     dec.move(10, 1, 1);
     dec.move(10.1, 2, 2);
     dec.moveNow(10.2, 3, 3);
-    expect(calls).toEqual([['move', 10, 1, 1], ['move', 10.1, 2, 2], ['move', 10.2, 3, 3]]);
+    expect(calls).toEqual([
+      ['move', 10, 1, 1],
+      ['move', 10.1, 2, 2],
+      ['move', 10.2, 3, 3],
+    ]);
   });
 
   it('measures the gap from the last sample that went through', () => {
@@ -88,6 +100,9 @@ describe('Decimator', () => {
     dec.move(0, 0, 0);
     dec.move(0.3, 1, 0);
     dec.move(0.6, 2, 0);
-    expect(calls).toEqual([['move', 0, 0, 0], ['move', 0.6, 2, 0]]);
+    expect(calls).toEqual([
+      ['move', 0, 0, 0],
+      ['move', 0.6, 2, 0],
+    ]);
   });
 });

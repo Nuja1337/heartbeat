@@ -78,9 +78,7 @@ describe('features', () => {
   });
 
   it('does not call two short gaps of different length a run', () => {
-    const f = computeFeatures(
-      makeMap([makeCircle(0, 1000, 100, 100), makeCircle(1, 1080, 200, 100), makeCircle(2, 1240, 300, 100)]),
-    );
+    const f = computeFeatures(makeMap([makeCircle(0, 1000, 100, 100), makeCircle(1, 1080, 200, 100), makeCircle(2, 1240, 300, 100)]));
     expect(f[1]!.runLength).toBe(0);
   });
 

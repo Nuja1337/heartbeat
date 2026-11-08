@@ -27,7 +27,9 @@ function codeOf(bytes: number[]): string {
   return Buffer.from([...bytes, sum]).toString('base64url');
 }
 
-function header(opts: { mode?: number; flags?: number; seed?: number; length?: number; mods?: number; gen?: number; version?: number } = {}): number[] {
+function header(
+  opts: { mode?: number; flags?: number; seed?: number; length?: number; mods?: number; gen?: number; version?: number } = {},
+): number[] {
   const seed = (opts.seed ?? 1) >>> 0;
   const length = opts.length ?? 90;
   const mods = opts.mods ?? 0;
@@ -81,7 +83,9 @@ describe('share code vector', () => {
   });
 
   it('has the documented bytes', () => {
-    expect([...Buffer.from(VECTOR, 'base64url')]).toEqual([0x01, 0x00, 0x01, 0x15, 0xcd, 0x5b, 0x07, 0x5a, 0x00, 0x40, 0x00, 0x02, 0x04, 0x43]);
+    expect([...Buffer.from(VECTOR, 'base64url')]).toEqual([
+      0x01, 0x00, 0x01, 0x15, 0xcd, 0x5b, 0x07, 0x5a, 0x00, 0x40, 0x00, 0x02, 0x04, 0x43,
+    ]);
   });
 });
 
@@ -206,14 +210,17 @@ describe('share code rejection', () => {
       for (const c of alphabet) {
         if (c === VECTOR[i]) continue;
         const changed = VECTOR.slice(0, i) + c + VECTOR.slice(i + 1);
-        expect(kindOf(() => decodeShare(changed)), changed).not.toBe('newer');
+        expect(
+          kindOf(() => decodeShare(changed)),
+          changed,
+        ).not.toBe('newer');
       }
     }
     // A newer code with a bad checksum, or with text that is not canonical, is invalid too.
     const newer = header({ version: 2, flags: 1 }).concat([4]);
     const good = codeOf(newer);
     expect(kindOf(() => decodeShare(good))).toBe('newer');
-    const wrong = Buffer.from([...newer, (newer.reduce((a, b) => (a + b) & 255, 0) ^ 0xa5) ^ 1]).toString('base64url');
+    const wrong = Buffer.from([...newer, newer.reduce((a, b) => (a + b) & 255, 0) ^ 0xa5 ^ 1]).toString('base64url');
     expect(kindOf(() => decodeShare(wrong))).toBe('invalid');
     expect(kindOf(() => decodeShare(good.slice(0, -1) + 'B'))).toBe('invalid');
   });

@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
+import { t } from '../i18n';
 import { keyLabel } from './ui';
 
 /** Why a key can't be a hit key, or null when it can. */
 export function rejectHitKey(code: string, other: string): string | null {
-  if (code === 'Tab') return "Tab moves between controls, so it can't be a hit key.";
-  if (code === 'Escape') return "Esc is used to pause, so it can't be a hit key.";
-  if (code === other) return "Both hit keys can't be the same.";
+  if (code === 'Tab') return t("Tab moves between controls, so it can't be a hit key.");
+  if (code === 'Escape') return t("Esc is used to pause, so it can't be a hit key.");
+  if (code === other) return t("Both hit keys can't be the same.");
   return null;
 }
 
@@ -58,9 +59,9 @@ export function KeyCapture({
           }}
           onBlur={() => setListening(false)}
           className="min-w-24 rounded-md border border-line-2 bg-bg px-3 py-1.5 font-mono text-sm hover:border-ink-3"
-          aria-label={`${label}, currently ${keyLabel(value)}. Press to change.`}
+          aria-label={t('{label}, currently {key}. Press to change.', { label, key: keyLabel(value) })}
         >
-          {listening ? 'Press a key' : keyLabel(value)}
+          {listening ? t('Press a key') : keyLabel(value)}
         </button>
       </div>
       {message && (

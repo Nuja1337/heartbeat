@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import type { ReactNode } from 'react';
 import { ImportError, importBytes } from '../../data/exportImport';
 import type { ImportReport } from '../../data/exportImport';
@@ -8,62 +8,69 @@ import { deleteAllData } from '../../data/plays';
 import { countReplayRemovals, replayStorage } from '../../data/replays';
 import { RETENTION_CHOICES } from '../../data/settings';
 import { PALETTES, REPLAY_LIMIT_CHOICES, RETRY_HOLD_MS, SETTING_RANGES, SHARE_CODE_VERSION, SOUND_SETS } from '../../shared/catalog';
+import { LOCALES } from '../../shared/locales';
+import type { LanguageChoice } from '../../shared/locales';
+import type { TextSize, ThemeChoice } from '../../shared/theme';
 import type { ApproachStyle, CursorStyle, MetronomeMode, PaletteId, SoundSetId, TestSound } from '../../shared/types';
 import { KeyCapture } from '../components/KeyCapture';
 import { OffsetField } from '../components/OffsetField';
 import { SkinPreview } from '../components/SkinPreview';
 import { Button, Card, Field, Notice, PageHeader, Segmented, SectionTitle, Slider, Toggle, keyLabel } from '../components/ui';
 import { INTRO } from '../copy';
-import { bytes, count, dateTime } from '../format';
+import { bytes, dateTime } from '../format';
 import { invalidateAnalysis, useAnalysis } from '../state/analysis';
 import { useGame } from '../state/engine';
 import { saveExport } from '../state/exportFile';
 import { promptInstall, usePwa } from '../pwa';
 import { useSettings } from '../state/store';
+import { msg, t, tx } from '../i18n';
+import { formatNumber } from '../../shared/i18n';
 
-const RETENTION_LABEL = (d: number | null) => (d === null ? 'Forever' : `${d} days`);
-const REPLAY_LIMIT_LABEL = (n: number | null) => (n === null ? 'All' : String(n));
+const RETENTION_LABEL = (d: number | null) => (d === null ? t('Forever') : t('{n, plural, one {# day} other {# days}}', { n: d }));
+const REPLAY_LIMIT_LABEL = (n: number | null) => (n === null ? t('All') : String(n));
 const percent = (v: number) => `${Math.round(v * 100)}%`;
 
 const SECTIONS = [
-  ['input', 'Input'],
-  ['look', 'Look'],
-  ['sound', 'Sound'],
-  ['timing', 'Timing'],
-  ['display', 'Display'],
-  ['goals', 'Goals'],
-  ['data', 'Data'],
-  ['app', 'App'],
+  ['input', msg('Input')],
+  ['look', msg('Look')],
+  ['sound', msg('Sound')],
+  ['timing', msg('Timing')],
+  ['display', msg('Display')],
+  ['access', msg('Accessibility')],
+  ['goals', msg('Goals')],
+  ['data', msg('Data')],
+  ['app', msg('App')],
 ] as const;
 
 const TEST_SOUNDS: { sound: TestSound; label: string }[] = [
-  { sound: 'hit', label: 'Hit' },
-  { sound: 'miss', label: 'Miss' },
-  { sound: 'combo', label: 'Combo' },
-  { sound: 'tick', label: 'Tick' },
-  { sound: 'metronome', label: 'Metronome' },
-  { sound: 'countdown', label: 'Countdown' },
+  { sound: 'hit', label: msg('Hit') },
+  { sound: 'miss', label: msg('Miss') },
+  { sound: 'combo', label: msg('Combo') },
+  { sound: 'tick', label: msg('Tick') },
+  { sound: 'metronome', label: msg('Metronome') },
+  { sound: 'countdown', label: msg('Countdown') },
 ];
 
 /** Why a key can't be the retry key, or null when it can. */
 export function rejectRetryKey(code: string, hitKeys: readonly string[]): string | null {
-  if (code === 'Escape') return "Esc is used to pause, so it can't be the retry key.";
-  if (code === 'Tab') return "Tab moves between controls, so it can't be the retry key.";
-  if (hitKeys.includes(code)) return "The retry key can't be one of the hit keys.";
+  if (code === 'Escape') return t("Esc is used to pause, so it can't be the retry key.");
+  if (code === 'Tab') return t("Tab moves between controls, so it can't be the retry key.");
+  if (hitKeys.includes(code)) return t("The retry key can't be one of the hit keys.");
   return null;
 }
 
 /** About how large an export with every stored replay is. The replays are stored gzipped and the file writes them as base64. */
 export function replayExportMb(storedBytes: number): string {
   const mb = (storedBytes * 4) / 3 / 1024 ** 2;
-  return mb < 0.1 ? 'under 0.1 MB' : `${mb.toFixed(1)} MB`;
+  return mb < 0.1 ? t('under 0.1 MB') : `${formatNumber(mb, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} MB`;
 }
 
-function Section({ id, title, children }: { id: (typeof SECTIONS)[number][0]; title: string; children: ReactNode }) {
+function Section({ id, children }: { id: (typeof SECTIONS)[number][0]; children: ReactNode }) {
+  const title = SECTIONS.find(([key]) => key === id)![1];
   return (
     <div id={`settings-${id}`} className="mb-6 scroll-mt-20 break-inside-avoid">
       <Card>
-        <SectionTitle>{title}</SectionTitle>
+        <SectionTitle>{t(title)}</SectionTitle>
         {children}
       </Card>
     </div>
@@ -80,7 +87,15 @@ export function Settings() {
 
   // A link such as /settings#settings-data lands here from another page, where the router does not scroll to the anchor.
   useEffect(() => {
-    if (hash.length > 1) document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView();
+    if (hash.length > 1) {
+      let id = hash.slice(1);
+      try {
+        id = decodeURIComponent(id);
+      } catch {
+        // A hash that is not valid UTF-8 is used as it is.
+      }
+      document.getElementById(id)?.scrollIntoView();
+    }
   }, [hash]);
 
   const test = (sound: TestSound) => {
@@ -106,85 +121,116 @@ export function Settings() {
 
   return (
     <>
-      <PageHeader title="Settings" intro={INTRO.settings} />
-      <nav aria-label="Settings sections" className="mb-6 flex gap-1 overflow-x-auto border-b border-line">
+      <PageHeader title={t('Settings')} intro={INTRO.settings} />
+      <nav aria-label={t('Settings sections')} className="mb-6 flex gap-1 overflow-x-auto border-b border-line">
         {SECTIONS.map(([id, label]) => (
           <a key={id} href={`#settings-${id}`} className="shrink-0 whitespace-nowrap px-3 py-2 text-ink-2 transition hover:text-ink">
-            {label}
+            {t(label)}
           </a>
         ))}
       </nav>
 
       <div className="lg:columns-2 lg:gap-6">
-        <Section id="input" title="Input">
+        <Section id="input">
           <Toggle
-            label="Raw input"
-            help="Locks the pointer and reads mouse movement directly. Turn it off if the cursor feels wrong or your device is a pen or tablet."
+            label={t('Raw input')}
+            help={t(
+              'Locks the pointer and reads mouse movement directly. Turn it off if the cursor feels wrong or your device is a pen or tablet.',
+            )}
             checked={s.input.rawInput}
             onChange={(v) => setInput({ rawInput: v })}
           />
           <Slider
-            label="Sensitivity"
+            label={t('Sensitivity')}
             value={s.input.sensitivity}
             min={0.1}
             max={5}
             step={0.05}
             format={(v) => `${v.toFixed(2)}x`}
-            help="Raw input only. At 1x one mouse count moves the cursor one pixel at 100% browser zoom."
+            help={t('Raw input only. At 1x one mouse count moves the cursor one pixel at 100% browser zoom.')}
             disabled={!s.input.rawInput}
             onChange={(v) => setInput({ sensitivity: v })}
           />
-          <KeyCapture label="Hit key 1" value={s.input.keys[0]} other={s.input.keys[1]} onChange={(code) => setHitKey(0, code)} />
-          <KeyCapture label="Hit key 2" value={s.input.keys[1]} other={s.input.keys[0]} onChange={(code) => setHitKey(1, code)} />
+          <KeyCapture label={t('Hit key 1')} value={s.input.keys[0]} other={s.input.keys[1]} onChange={(code) => setHitKey(0, code)} />
+          <KeyCapture label={t('Hit key 2')} value={s.input.keys[1]} other={s.input.keys[0]} onChange={(code) => setHitKey(1, code)} />
           <RetryKeyField value={s.input.retryKey} hitKeys={s.input.keys} onChange={(code) => setInput({ retryKey: code })} />
           <Toggle
-            label="Mouse buttons count as hits"
-            help="Left and right buttons, and a pen tip and barrel button."
+            label={t('Mouse buttons count as hits')}
+            help={t('Left and right buttons, and a pen tip and barrel button.')}
             checked={s.input.mouseButtons}
             onChange={(v) => setInput({ mouseButtons: v })}
           />
-          <Field label="Cursor" help="The system cursor has the least delay. Raw input always draws its own cursor.">
+          <Field label={t('Cursor')} help={t('The system cursor has the least delay. Raw input always draws its own cursor.')}>
             <Segmented
-              legend="Cursor"
+              legend={t('Cursor')}
               value={s.input.cursor}
               options={[
-                { value: 'system', label: 'System' },
-                { value: 'drawn', label: 'Drawn' },
+                { value: 'system', label: t('System') },
+                { value: 'drawn', label: t('Drawn') },
               ]}
               onChange={(v) => setInput({ cursor: v })}
             />
           </Field>
           <p className="mt-2 text-sm text-ink-2">
-            The hit keys are {keyLabel(s.input.keys[0])} and {keyLabel(s.input.keys[1])}. Esc pauses and can't be changed.
+            {t("The hit keys are {first} and {second}. Esc pauses and can't be changed.", {
+              first: keyLabel(s.input.keys[0]),
+              second: keyLabel(s.input.keys[1]),
+            })}
           </p>
           <div className="mt-4 border-t border-line pt-4">
-            <h3 className="mb-2 text-sm text-ink-2">Detected on your last play</h3>
+            <h3 className="mb-2 text-sm text-ink-2">{t('Detected on your last play')}</h3>
             {lastInput ? (
               <dl className="grid grid-cols-2 gap-y-1 text-sm">
-                <dt className="text-ink-2">Pointer</dt>
-                <dd>{lastInput.pointer ?? 'unknown'}</dd>
-                <dt className="text-ink-2">Pointer rate</dt>
-                <dd>{lastInput.pointerHz ? `${Math.round(lastInput.pointerHz)} Hz` : 'unknown'}</dd>
-                <dt className="text-ink-2">Display rate</dt>
-                <dd>{lastInput.displayHz ? `${Math.round(lastInput.displayHz)} Hz` : 'unknown'}</dd>
-                <dt className="text-ink-2">Raw input</dt>
-                <dd>{lastInput.rawInput ? (lastInput.unadjusted ? 'on, without acceleration' : 'on, the browser kept acceleration') : 'off'}</dd>
+                <dt className="text-ink-2">{t('Pointer')}</dt>
+                <dd>{lastInput.pointer ?? t('unknown')}</dd>
+                <dt className="text-ink-2">{t('Pointer rate')}</dt>
+                <dd>{lastInput.pointerHz ? `${Math.round(lastInput.pointerHz)} Hz` : t('unknown')}</dd>
+                <dt className="text-ink-2">{t('Display rate')}</dt>
+                <dd>{lastInput.displayHz ? `${Math.round(lastInput.displayHz)} Hz` : t('unknown')}</dd>
+                <dt className="text-ink-2">{t('Raw input')}</dt>
+                <dd>
+                  {lastInput.rawInput
+                    ? lastInput.unadjusted
+                      ? t('on, without acceleration')
+                      : t('on, the browser kept acceleration')
+                    : t('off')}
+                </dd>
               </dl>
             ) : (
-              <p className="text-sm text-ink-2">Play once and the rates your browser reported will show up here.</p>
+              <p className="text-sm text-ink-2">{t('Play once and the rates your browser reported will show up here.')}</p>
             )}
           </div>
         </Section>
 
-        <Section id="look" title="Look">
+        <Section id="look">
           <SkinPreview settings={s} />
-          <Field label="Palette">
-            <div role="radiogroup" aria-label="Palette" className="grid gap-2 sm:grid-cols-2">
+          <Field label={t('Theme')} help={t('System follows your operating system. The playfield changes with the pages.')}>
+            <Segmented
+              legend={t('Theme')}
+              value={s.display.theme}
+              options={
+                [
+                  { value: 'system', label: t('System') },
+                  { value: 'dark', label: t('Dark') },
+                  { value: 'light', label: t('Light') },
+                ] satisfies { value: ThemeChoice; label: string }[]
+              }
+              onChange={(v) => setDisplay({ theme: v })}
+            />
+          </Field>
+          <Field label={t('Palette')}>
+            <div role="radiogroup" aria-label={t('Palette')} className="grid gap-2 sm:grid-cols-2">
               {(Object.keys(PALETTES) as PaletteId[]).map((id) => {
                 const p = PALETTES[id];
                 return (
                   <label key={id} className="hb-choice">
-                    <input type="radio" name="palette" className="sr-only" checked={s.skin.palette === id} onChange={() => setSkin({ palette: id })} />
+                    <input
+                      type="radio"
+                      name="palette"
+                      className="sr-only"
+                      checked={s.skin.palette === id}
+                      onChange={() => setSkin({ palette: id })}
+                    />
                     <span className="flex items-center justify-between gap-2">
                       <span className="font-display font-semibold">{p.label}</span>
                       <span aria-hidden className="flex gap-1">
@@ -199,32 +245,36 @@ export function Settings() {
               })}
             </div>
           </Field>
-          <Field label="Cursor style">
+          <Field label={t('Cursor style')}>
             <Segmented
-              legend="Cursor style"
+              legend={t('Cursor style')}
               value={s.skin.cursorStyle}
-              options={[
-                { value: 'ring', label: 'Ring' },
-                { value: 'cross', label: 'Cross' },
-                { value: 'dot', label: 'Dot' },
-              ] satisfies { value: CursorStyle; label: string }[]}
+              options={
+                [
+                  { value: 'ring', label: t('Ring') },
+                  { value: 'cross', label: t('Cross') },
+                  { value: 'dot', label: t('Dot') },
+                ] satisfies { value: CursorStyle; label: string }[]
+              }
               onChange={(v) => setSkin({ cursorStyle: v })}
             />
           </Field>
-          <Field label="Approach style" help="How a target shows the time you have left.">
+          <Field label={t('Approach style')} help={t('How a target shows the time you have left.')}>
             <Segmented
-              legend="Approach style"
+              legend={t('Approach style')}
               value={s.skin.approach}
-              options={[
-                { value: 'ring', label: 'Ring' },
-                { value: 'fill', label: 'Fill' },
-                { value: 'brackets', label: 'Brackets' },
-              ] satisfies { value: ApproachStyle; label: string }[]}
+              options={
+                [
+                  { value: 'ring', label: t('Ring') },
+                  { value: 'fill', label: t('Fill') },
+                  { value: 'brackets', label: t('Brackets') },
+                ] satisfies { value: ApproachStyle; label: string }[]
+              }
               onChange={(v) => setSkin({ approach: v })}
             />
           </Field>
           <Slider
-            label="Cursor size"
+            label={t('Cursor size')}
             value={s.input.cursorScale}
             min={0.5}
             max={2}
@@ -232,48 +282,92 @@ export function Settings() {
             format={(v) => `${v.toFixed(2)}x`}
             onChange={(v) => setInput({ cursorScale: v })}
           />
-          <Toggle label="Field grid" help="A faint grid on the playfield." checked={s.skin.fieldGrid} onChange={(v) => setSkin({ fieldGrid: v })} />
-          <Toggle label="Cursor trail" checked={s.input.cursorTrail} onChange={(v) => setInput({ cursorTrail: v })} />
-          <Toggle label="Click ripple" help="A ring that spreads from every click." checked={s.skin.clickRipple} onChange={(v) => setSkin({ clickRipple: v })} />
+          <Toggle
+            label={t('Field grid')}
+            help={t('A faint grid on the playfield.')}
+            checked={s.skin.fieldGrid}
+            onChange={(v) => setSkin({ fieldGrid: v })}
+          />
+          <Toggle label={t('Cursor trail')} checked={s.input.cursorTrail} onChange={(v) => setInput({ cursorTrail: v })} />
+          <Toggle
+            label={t('Click ripple')}
+            help={t('A ring that spreads from every click.')}
+            checked={s.skin.clickRipple}
+            onChange={(v) => setSkin({ clickRipple: v })}
+          />
         </Section>
 
-        <Section id="sound" title="Sound">
-          <Toggle label="Mute all sound" checked={s.audio.muted} onChange={(v) => setAudio({ muted: v })} />
-          <Field label="Sound set" help={SOUND_SETS[s.audio.soundSet].description}>
+        <Section id="sound">
+          <Toggle label={t('Mute all sound')} checked={s.audio.muted} onChange={(v) => setAudio({ muted: v })} />
+          <Field label={t('Sound set')} help={SOUND_SETS[s.audio.soundSet].description}>
             <Segmented
-              legend="Sound set"
+              legend={t('Sound set')}
               value={s.audio.soundSet}
               options={(Object.keys(SOUND_SETS) as SoundSetId[]).map((id) => ({ value: id, label: SOUND_SETS[id].label }))}
               onChange={(v) => setAudio({ soundSet: v })}
             />
           </Field>
-          <Field label="Try the sounds">
+          <Field label={t('Try the sounds')}>
             <div className="flex flex-wrap gap-2">
               {TEST_SOUNDS.map(({ sound, label }) => (
                 <Button key={sound} size="sm" onClick={() => test(sound)}>
-                  {label}
+                  {t(label)}
                 </Button>
               ))}
             </div>
           </Field>
-          <Slider label="Master volume" value={s.audio.master} min={0} max={1} step={0.01} format={percent} onChange={(v) => setAudio({ master: v })} />
-          <Slider label="Hit sounds" value={s.audio.hits} min={0} max={1} step={0.01} format={percent} onChange={(v) => setAudio({ hits: v })} />
-          <Slider label="Effects" value={s.audio.effects} min={0} max={1} step={0.01} format={percent} onChange={(v) => setAudio({ effects: v })} />
-          <Slider label="Ambient" value={s.audio.ambient} min={0} max={1} step={0.01} format={percent} onChange={(v) => setAudio({ ambient: v })} />
-          <Field label="Metronome" help="A click on the beat, or on the first beat of every bar.">
+          <Slider
+            label={t('Master volume')}
+            value={s.audio.master}
+            min={0}
+            max={1}
+            step={0.01}
+            format={percent}
+            onChange={(v) => setAudio({ master: v })}
+          />
+          <Slider
+            label={t('Hit sounds')}
+            value={s.audio.hits}
+            min={0}
+            max={1}
+            step={0.01}
+            format={percent}
+            onChange={(v) => setAudio({ hits: v })}
+          />
+          <Slider
+            label={t('Effects')}
+            value={s.audio.effects}
+            min={0}
+            max={1}
+            step={0.01}
+            format={percent}
+            onChange={(v) => setAudio({ effects: v })}
+          />
+          <Slider
+            label={t('Ambient')}
+            value={s.audio.ambient}
+            min={0}
+            max={1}
+            step={0.01}
+            format={percent}
+            onChange={(v) => setAudio({ ambient: v })}
+          />
+          <Field label={t('Metronome')} help={t('A click on the beat, or on the first beat of every bar.')}>
             <Segmented
-              legend="Metronome"
+              legend={t('Metronome')}
               value={s.audio.metronome}
-              options={[
-                { value: 'off', label: 'Off' },
-                { value: 'beat', label: 'Every beat' },
-                { value: 'bar', label: 'Every bar' },
-              ] satisfies { value: MetronomeMode; label: string }[]}
+              options={
+                [
+                  { value: 'off', label: t('Off') },
+                  { value: 'beat', label: t('Every beat') },
+                  { value: 'bar', label: t('Every bar') },
+                ] satisfies { value: MetronomeMode; label: string }[]
+              }
               onChange={(v) => setAudio({ metronome: v })}
             />
           </Field>
           <Slider
-            label="Metronome volume"
+            label={t('Metronome volume')}
             value={s.audio.metronomeVolume}
             min={SETTING_RANGES.metronomeVolume.min}
             max={SETTING_RANGES.metronomeVolume.max}
@@ -284,10 +378,10 @@ export function Settings() {
           />
         </Section>
 
-        <Section id="timing" title="Timing">
+        <Section id="timing">
           <OffsetField
-            label="Visual offset"
-            help="Positive values draw targets earlier. Use it if targets seem to arrive late."
+            label={t('Visual offset')}
+            help={t('Positive values draw targets earlier. Use it if targets seem to arrive late.')}
             value={s.display.visualOffsetMs}
             min={SETTING_RANGES.visualOffsetMs.min}
             max={SETTING_RANGES.visualOffsetMs.max}
@@ -296,8 +390,8 @@ export function Settings() {
             onChange={(v) => setDisplay({ visualOffsetMs: v })}
           />
           <OffsetField
-            label="Audio offset"
-            help="The metronome plays this many milliseconds earlier. Hit sounds always play at once."
+            label={t('Audio offset')}
+            help={t('The metronome plays this many milliseconds earlier. Hit sounds always play at once.')}
             value={s.audio.offsetMs}
             min={SETTING_RANGES.audioOffsetMs.min}
             max={SETTING_RANGES.audioOffsetMs.max}
@@ -307,39 +401,128 @@ export function Settings() {
           />
         </Section>
 
-        <Section id="display" title="Display">
-          <Toggle label="Error bar" help="Shows where each click landed in time." checked={s.display.errorBar} onChange={(v) => setDisplay({ errorBar: v })} />
-          <Toggle label="Path hints" help="Faint lines between targets." checked={s.display.pathHints} onChange={(v) => setDisplay({ pathHints: v })} />
-          <Toggle label="Crisp pop-ups" help="Shows a word on every Crisp hit. Solid, Rough and Miss always show." checked={s.display.crispPopups} onChange={(v) => setDisplay({ crispPopups: v })} />
-          <Toggle label="Early and late marks" checked={s.display.earlyLate} onChange={(v) => setDisplay({ earlyLate: v })} />
-          <Toggle label="Reduce motion" checked={s.display.reduceMotion} onChange={(v) => setDisplay({ reduceMotion: v })} />
-          <Toggle label="Low latency canvas" help="Applies from the next play. Turn it off if you see flicker." checked={s.display.lowLatency} onChange={(v) => setDisplay({ lowLatency: v })} />
-          <Toggle label="Show frame rate" checked={s.display.showFps} onChange={(v) => setDisplay({ showFps: v })} />
-          <Toggle label="Frame graph" help="Draws the time of recent frames in a play. Use it to find stutter." checked={s.display.frameGraph} onChange={(v) => setDisplay({ frameGraph: v })} />
+        <Section id="display">
+          <Toggle
+            label={t('Error bar')}
+            help={t('Shows where each click landed in time.')}
+            checked={s.display.errorBar}
+            onChange={(v) => setDisplay({ errorBar: v })}
+          />
+          <Toggle
+            label={t('Path hints')}
+            help={t('Faint lines between targets.')}
+            checked={s.display.pathHints}
+            onChange={(v) => setDisplay({ pathHints: v })}
+          />
+          <Toggle
+            label={t('Crisp pop-ups')}
+            help={t('Shows a word on every Crisp hit. Solid, Rough and Miss always show.')}
+            checked={s.display.crispPopups}
+            onChange={(v) => setDisplay({ crispPopups: v })}
+          />
+          <Toggle label={t('Early and late marks')} checked={s.display.earlyLate} onChange={(v) => setDisplay({ earlyLate: v })} />
+          <Toggle
+            label={t('Low latency canvas')}
+            help={t('Applies from the next play. Turn it off if you see flicker.')}
+            checked={s.display.lowLatency}
+            onChange={(v) => setDisplay({ lowLatency: v })}
+          />
+          <Toggle label={t('Show frame rate')} checked={s.display.showFps} onChange={(v) => setDisplay({ showFps: v })} />
+          <Toggle
+            label={t('Frame graph')}
+            help={t('Draws the time of recent frames in a play. Use it to find stutter.')}
+            checked={s.display.frameGraph}
+            onChange={(v) => setDisplay({ frameGraph: v })}
+          />
         </Section>
 
-        <Section id="goals" title="Goals">
+        <Section id="access">
+          <Field
+            label={t('Language')}
+            help={t("Automatic follows your browser's language. English is the source text, and the others are translations.")}
+          >
+            <select
+              aria-label={t('Language')}
+              value={s.language}
+              onChange={(e) => update((x) => ({ ...x, language: e.target.value as LanguageChoice }))}
+              className="w-full max-w-xs"
+            >
+              <option value="auto">{t('Automatic')}</option>
+              {LOCALES.map((l) => (
+                <option key={l.id} value={l.id} lang={l.id}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={t('Text size')} help={t('Scales the text on every page. The playfield keeps its size.')}>
+            <Segmented
+              legend={t('Text size')}
+              value={s.display.textSize}
+              options={
+                [
+                  { value: 'default', label: t('Default') },
+                  { value: 'large', label: t('Large') },
+                  { value: 'larger', label: t('Larger') },
+                ] satisfies { value: TextSize; label: string }[]
+              }
+              onChange={(v) => setDisplay({ textSize: v })}
+            />
+          </Field>
+          <Toggle
+            label={t('High contrast')}
+            help={t('Stronger text, lines and focus rings. It also turns on when your operating system asks for more contrast.')}
+            checked={s.display.highContrast}
+            onChange={(v) => setDisplay({ highContrast: v })}
+          />
+          <Toggle
+            label={t('Reduce motion')}
+            help={t(
+              'Turns off page animations, sparks, shakes and the flash on a miss. It also follows your operating system on the first visit.',
+            )}
+            checked={s.display.reduceMotion}
+            onChange={(v) => setDisplay({ reduceMotion: v })}
+          />
+          <p className="mt-2 text-sm text-ink-2">
+            {t(
+              'The Clear view palette under Look is easier to tell apart with red-green color blindness, and every target can be hit with the keyboard keys under Input.',
+            )}
+          </p>
+        </Section>
+
+        <Section id="goals">
           <Slider
-            label="Weekly goal"
+            label={t('Weekly goal')}
             value={s.goals.weeklyMinutes}
             min={SETTING_RANGES.weeklyMinutes.min}
             max={SETTING_RANGES.weeklyMinutes.max}
             step={SETTING_RANGES.weeklyMinutes.step}
-            format={(v) => (v === 0 ? 'No goal' : `${v} min`)}
-            help="Minutes of play a week. Set it to 0 for no goal."
+            format={(v) => (v === 0 ? t('No goal') : t('{n} min', { n: v }))}
+            help={t('Minutes of play a week. Set it to 0 for no goal.')}
             onChange={(v) => update((x) => ({ ...x, goals: { ...x.goals, weeklyMinutes: v } }))}
           />
         </Section>
 
         <DataSection />
 
-        <Section id="app" title="App">
+        <Section id="app">
           <AppInfo />
+          <p className="mt-3 text-sm text-ink-2">
+            {tx('The {guide} explains the modes, the controls and how the stats are worked out.', {
+              guide: (
+                <Link to="/guide" className="text-accent hover:underline">
+                  {t('guide')}
+                </Link>
+              ),
+            })}
+          </p>
           {canInstall && (
             <div className="mt-4 border-t border-line pt-4">
-              <p className="text-sm text-ink-2">Install Heartbeat to open it from your desktop or home screen and play without a connection.</p>
+              <p className="text-sm text-ink-2">
+                {t('Install Heartbeat to open it from your desktop or home screen and play without a connection.')}
+              </p>
               <Button variant="primary" className="mt-3" onClick={() => void promptInstall()}>
-                Install
+                {t('Install')}
               </Button>
             </div>
           )}
@@ -371,11 +554,11 @@ function RetryKeyField({ value, hitKeys, onChange }: { value: string; hitKeys: r
   return (
     <div className="py-2">
       <div className="flex items-center justify-between gap-3">
-        <span>Retry key</span>
+        <span>{t('Retry key')}</span>
         <span className="flex items-center gap-2">
           {value !== '' && (
             <Button size="sm" variant="ghost" onClick={() => onChange('')}>
-              Turn off
+              {t('Turn off')}
             </Button>
           )}
           <button
@@ -386,13 +569,15 @@ function RetryKeyField({ value, hitKeys, onChange }: { value: string; hitKeys: r
             }}
             onBlur={() => setListening(false)}
             className="min-w-24 rounded-md border border-line-2 bg-bg px-3 py-1.5 font-mono text-sm hover:border-ink-3"
-            aria-label={`Retry key, currently ${value === '' ? 'off' : keyLabel(value)}. Press to change.`}
+            aria-label={t('Retry key, currently {key}. Press to change.', { key: value === '' ? t('off') : keyLabel(value) })}
           >
-            {listening ? 'Press a key' : value === '' ? 'Off' : keyLabel(value)}
+            {listening ? t('Press a key') : value === '' ? t('Off') : keyLabel(value)}
           </button>
         </span>
       </div>
-      <p className="mt-1 text-sm text-ink-2">Hold it for {RETRY_HOLD_MS / 1000} seconds during a play to start the map again.</p>
+      <p className="mt-1 text-sm text-ink-2">
+        {t('Hold it for {n, plural, one {# second} other {# seconds}} during a play to start the map again.', { n: RETRY_HOLD_MS / 1000 })}
+      </p>
       {message && (
         <p role="status" className="mt-1 text-sm text-warn">
           {message}
@@ -405,9 +590,10 @@ function RetryKeyField({ value, hitKeys, onChange }: { value: string; hitKeys: r
 function AppInfo() {
   const { game } = useGame();
   const rows: [string, string][] = [
-    ['Game engine', game ? String(game.ENGINE_VERSION) : 'loading'],
-    ['Map generator', game ? String(game.GENERATOR_VERSION) : 'loading'],
-    ['Share link format', String(SHARE_CODE_VERSION)],
+    [t('Version'), __APP_VERSION__],
+    [t('Game engine'), game ? String(game.ENGINE_VERSION) : t('loading')],
+    [t('Map generator'), game ? String(game.GENERATOR_VERSION) : t('loading')],
+    [t('Share link format'), String(SHARE_CODE_VERSION)],
   ];
   return (
     <dl className="grid grid-cols-2 gap-y-1 text-sm">
@@ -438,8 +624,12 @@ function DataSection() {
   const refresh = () => {
     storageEstimate().then(setUsage);
     currentPersisted().then(setPersisted);
-    getLastExport().then(setLastExport).catch(() => undefined);
-    replayStorage().then(setReplays).catch(() => undefined);
+    getLastExport()
+      .then(setLastExport)
+      .catch(() => undefined);
+    replayStorage()
+      .then(setReplays)
+      .catch(() => undefined);
   };
   useEffect(refresh, []);
 
@@ -447,10 +637,10 @@ function DataSection() {
     setBusy(true);
     try {
       const n = await saveExport(gzip, includeReplays && (replays?.count ?? 0) > 0);
-      setMessage({ tone: 'good', text: `Exported ${count(n, 'play')}.` });
+      setMessage({ tone: 'good', text: t('Exported {n, plural, one {# play} other {# plays}}.', { n }) });
       refresh();
     } catch (e) {
-      setMessage({ tone: 'bad', text: e instanceof Error ? e.message : 'The export failed.' });
+      setMessage({ tone: 'bad', text: e instanceof Error ? e.message : t('The export failed.') });
     } finally {
       setBusy(false);
     }
@@ -463,11 +653,22 @@ function DataSection() {
       invalidateAnalysis();
       setMessage({
         tone: 'good',
-        text: `Added ${report.playsAdded} plays and skipped ${report.playsSkipped} that were already here.${report.tombstonesApplied ? ` Removed ${report.tombstonesApplied} that the file marks as deleted.` : ''}`,
+        text: [
+          t(
+            'Added {added, plural, one {# play} other {# plays}} and skipped {skipped} that {skipped, plural, one {was} other {were}} already here.',
+            {
+              added: report.playsAdded,
+              skipped: report.playsSkipped,
+            },
+          ),
+          report.tombstonesApplied ? t('Removed {n} that the file marks as deleted.', { n: report.tombstonesApplied }) : '',
+        ]
+          .filter(Boolean)
+          .join(' '),
       });
       refresh();
     } catch (e) {
-      setMessage({ tone: 'bad', text: e instanceof ImportError ? e.message : 'The file could not be imported.' });
+      setMessage({ tone: 'bad', text: e instanceof ImportError ? e.message : t('The file could not be imported.') });
     } finally {
       setBusy(false);
       if (fileInput.current) fileInput.current.value = '';
@@ -488,9 +689,9 @@ function DataSection() {
     try {
       await deleteAllData();
       invalidateAnalysis();
-      setMessage({ tone: 'good', text: 'All plays, progress and drills were deleted. Your settings stay.' });
+      setMessage({ tone: 'good', text: t('All plays, progress and drills were deleted. Your settings stay.') });
     } catch (e) {
-      setMessage({ tone: 'bad', text: e instanceof Error ? e.message : 'Deleting failed.' });
+      setMessage({ tone: 'bad', text: e instanceof Error ? e.message : t('Deleting failed.') });
     } finally {
       setConfirming(false);
       setBusy(false);
@@ -519,25 +720,39 @@ function DataSection() {
   const hasReplays = (replays?.count ?? 0) > 0;
 
   return (
-    <Section id="data" title="Data">
-      <p className="text-sm text-ink-2">Everything is stored in this browser only. Export a file to keep a copy or move to another browser.</p>
+    <Section id="data">
+      <p className="text-sm text-ink-2">
+        {t('Everything is stored in this browser only. Export a file to keep a copy or move to another browser.')}
+      </p>
       <Toggle
-        label={replays === null ? 'Include replays' : hasReplays ? `Include replays (about ${replayExportMb(replays.bytes)})` : 'Include replays (none stored)'}
-        help="Without replays the file is much smaller. Plays and stats are always included."
+        label={
+          replays === null
+            ? t('Include replays')
+            : hasReplays
+              ? t('Include replays (about {size})', { size: replayExportMb(replays.bytes) })
+              : t('Include replays (none stored)')
+        }
+        help={t('Without replays the file is much smaller. Plays and stats are always included.')}
         checked={includeReplays && hasReplays}
         disabled={!hasReplays}
         onChange={setIncludeReplays}
       />
       <div className="mt-2 flex flex-wrap gap-2">
-        <Button disabled={busy} onClick={() => void doExport(false)}>Export (.json)</Button>
-        <Button disabled={busy} onClick={() => void doExport(true)}>Export (.json.gz)</Button>
-        <Button disabled={busy} onClick={() => fileInput.current?.click()}>Import</Button>
+        <Button disabled={busy} onClick={() => void doExport(false)}>
+          {t('Export ({format})', { format: '.json' })}
+        </Button>
+        <Button disabled={busy} onClick={() => void doExport(true)}>
+          {t('Export ({format})', { format: '.json.gz' })}
+        </Button>
+        <Button disabled={busy} onClick={() => fileInput.current?.click()}>
+          {t('Import')}
+        </Button>
         <input
           ref={fileInput}
           type="file"
           accept=".json,.gz,application/json,application/gzip"
           className="sr-only"
-          aria-label="Import file"
+          aria-label={t('Import file')}
           onChange={(e) => {
             const f = e.target.files?.[0];
             if (f) void doImport(f);
@@ -550,34 +765,43 @@ function DataSection() {
         </div>
       )}
       <dl className="mt-4 grid grid-cols-2 gap-y-1 text-sm">
-        <dt className="text-ink-2">Space used</dt>
-        <dd>{usage ? `${bytes(usage.usage)} of ${bytes(usage.quota)}` : 'unknown'}</dd>
-        <dt className="text-ink-2">Replays stored</dt>
-        <dd>{replays ? `${replays.count}, ${bytes(replays.bytes)}` : 'unknown'}</dd>
-        <dt className="text-ink-2">Kept by the browser</dt>
+        <dt className="text-ink-2">{t('Space used')}</dt>
+        <dd>{usage ? t('{used} of {total}', { used: bytes(usage.usage), total: bytes(usage.quota) }) : t('unknown')}</dd>
+        <dt className="text-ink-2">{t('Replays stored')}</dt>
+        <dd>{replays ? `${replays.count}, ${bytes(replays.bytes)}` : t('unknown')}</dd>
+        <dt className="text-ink-2">{t('Kept by the browser')}</dt>
         <dd>
-          {persisted === null ? 'unknown' : persisted ? 'Yes' : 'No, the browser may clear it'}
+          {persisted === null ? t('unknown') : persisted ? t('Yes') : t('No, the browser may clear it')}
           {persisted === false && (
             <Button size="sm" variant="ghost" className="ml-2" onClick={() => void askPersist()}>
-              Ask again
+              {t('Ask again')}
             </Button>
           )}
         </dd>
-        <dt className="text-ink-2">Last export</dt>
-        <dd>{lastExport ? dateTime(lastExport) : 'never'}</dd>
+        <dt className="text-ink-2">{t('Last export')}</dt>
+        <dd>{lastExport ? dateTime(lastExport) : t('never')}</dd>
       </dl>
-      {persisted === false && <p className="mt-2 text-sm text-warn">The browser has not promised to keep this data. Export a file now and then.</p>}
+      {persisted === false && (
+        <p className="mt-2 text-sm text-warn">{t('The browser has not promised to keep this data. Export a file now and then.')}</p>
+      )}
 
-      <Field label="Keep the newest replays" help="Replays you mark to keep, and replays of new bests, are never removed. Older ones are removed after your next play or the next time Heartbeat starts.">
+      <Field
+        label={t('Keep the newest replays')}
+        help={t(
+          'Replays you mark to keep, and replays of new bests, are never removed. Older ones are removed after your next play or the next time Heartbeat starts.',
+        )}
+      >
         <Segmented
-          legend="Replay limit"
+          legend={t('Replay limit')}
           value={String(s.data.replayLimit)}
           options={REPLAY_LIMIT_CHOICES.map((n) => ({ value: String(n), label: REPLAY_LIMIT_LABEL(n) }))}
           onChange={(v) => void chooseReplayLimit(v)}
         />
         {pendingLimit && (
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="text-sm">This removes {count(pendingLimit.removing, 'replay')}.</span>
+            <span className="text-sm">
+              {t('This removes {n, plural, one {# replay} other {# replays}}.', { n: pendingLimit.removing })}
+            </span>
             <Button
               variant="danger"
               onClick={() => {
@@ -585,16 +809,21 @@ function DataSection() {
                 setPendingLimit(null);
               }}
             >
-              Remove them
+              {t('Remove them')}
             </Button>
-            <Button variant="ghost" onClick={() => setPendingLimit(null)}>Keep the current limit</Button>
+            <Button variant="ghost" onClick={() => setPendingLimit(null)}>
+              {t('Keep the current limit')}
+            </Button>
           </div>
         )}
       </Field>
 
-      <Field label="Keep per-object detail for" help="Older detail is removed. Play summaries, ratings, trends and bests are always kept.">
+      <Field
+        label={t('Keep per-object detail for')}
+        help={t('Older detail is removed. Play summaries, ratings, trends and bests are always kept.')}
+      >
         <Segmented
-          legend="Detail retention"
+          legend={t('Detail retention')}
           value={String(s.data.detailRetentionDays)}
           options={RETENTION_CHOICES.map((d) => ({ value: String(d), label: RETENTION_LABEL(d) }))}
           onChange={(v) => update((x) => ({ ...x, data: { ...x.data, detailRetentionDays: v === 'null' ? null : Number(v) } }))}
@@ -604,12 +833,18 @@ function DataSection() {
       <div className="mt-4 border-t border-line pt-4">
         {confirming ? (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm">This removes every play, progress and drill.</span>
-            <Button variant="danger" disabled={busy} onClick={() => void wipe()}>Yes, delete everything</Button>
-            <Button variant="ghost" onClick={() => setConfirming(false)}>Cancel</Button>
+            <span className="text-sm">{t('This removes every play, progress and drill.')}</span>
+            <Button variant="danger" disabled={busy} onClick={() => void wipe()}>
+              {t('Yes, delete everything')}
+            </Button>
+            <Button variant="ghost" onClick={() => setConfirming(false)}>
+              {t('Cancel')}
+            </Button>
           </div>
         ) : (
-          <Button variant="danger" onClick={() => setConfirming(true)}>Delete all data</Button>
+          <Button variant="danger" onClick={() => setConfirming(true)}>
+            {t('Delete all data')}
+          </Button>
         )}
       </div>
     </Section>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { OCTANT_PHRASE } from '../../analytics/insightCopy';
-import { CHART, divergingColor, sequentialColor } from './scale';
+import { t } from '../i18n';
+import { divergingColor, sequentialColor, useChartColors } from './scale';
 
 export interface RoseSector {
   octant: number;
@@ -28,6 +29,7 @@ export function Rose({
   size?: number;
   metricLabel: string;
 }) {
+  const C = useChartColors();
   const [hover, setHover] = useState<number | null>(null);
   const c = size / 2;
   const rMax = c - 24;
@@ -41,24 +43,38 @@ export function Rose({
     const p = (a: number) => `${(c + Math.cos(a) * r).toFixed(1)},${(c + Math.sin(a) * r).toFixed(1)}`;
     return `M${c},${c} L${p(a0)} A${r},${r} 0 0 1 ${p(a1)} Z`;
   };
-  const describe = (s: RoseSector) =>
-    s.n === 0 ? `Moving ${OCTANT_PHRASE[s.octant]}: no taps` : `Moving ${OCTANT_PHRASE[s.octant]}: ${s.value === null || s.n < minN ? 'too few taps for a value' : s.text}, ${s.n} taps`;
+  const describe = (s: RoseSector) => {
+    const direction = t(OCTANT_PHRASE[s.octant]!);
+    if (s.n === 0) return t('Moving {direction}: no taps', { direction });
+    return s.value === null || s.n < minN
+      ? t('Moving {direction}: too few taps for a value, {n, plural, one {# tap} other {# taps}}', { direction, n: s.n })
+      : t('Moving {direction}: {value}, {n, plural, one {# tap} other {# taps}}', { direction, value: s.text, n: s.n });
+  };
 
   return (
     <figure className="m-0">
-      <svg viewBox={`0 0 ${size} ${size}`} className="w-full max-w-xs" role="img" aria-label={`${metricLabel} by direction of movement`}>
-        <circle cx={c} cy={c} r={rMax} fill="none" stroke={CHART.grid} />
-        <circle cx={c} cy={c} r={rMax / 2} fill="none" stroke={CHART.grid} strokeDasharray="2 3" />
+      <svg
+        viewBox={`0 0 ${size} ${size}`}
+        className="w-full max-w-xs"
+        role="img"
+        aria-label={t('{metric} by direction of movement', { metric: metricLabel })}
+      >
+        <circle cx={c} cy={c} r={rMax} fill="none" stroke={C.grid} />
+        <circle cx={c} cy={c} r={rMax / 2} fill="none" stroke={C.grid} strokeDasharray="2 3" />
         {sectors.map((s) => {
           const r = Math.max(10, rMax * Math.sqrt(s.n / peak));
           const enough = s.value !== null && s.n >= minN;
-          const fill = !enough ? CHART.bg : scale === 'sequential' ? sequentialColor(Math.min(1, s.value! / max)) : divergingColor(Math.max(-1, Math.min(1, s.value! / max)));
+          const fill = !enough
+            ? C.bg
+            : scale === 'sequential'
+              ? sequentialColor(Math.min(1, s.value! / max), C)
+              : divergingColor(Math.max(-1, Math.min(1, s.value! / max)), C);
           return (
             <path
               key={s.octant}
               d={wedge(s.octant, r)}
               fill={fill}
-              stroke={hover === s.octant ? CHART.ink : CHART.empty}
+              stroke={hover === s.octant ? C.ink : C.empty}
               strokeWidth={hover === s.octant ? 2 : 1.5}
               tabIndex={0}
               aria-label={describe(s)}
@@ -69,13 +85,21 @@ export function Rose({
             />
           );
         })}
-        <text x={size - 4} y={c + 4} fontSize={11} fill={CHART.ink2} textAnchor="end">Right</text>
-        <text x={4} y={c + 4} fontSize={11} fill={CHART.ink2}>Left</text>
-        <text x={c} y={12} fontSize={11} fill={CHART.ink2} textAnchor="middle">Up</text>
-        <text x={c} y={size - 4} fontSize={11} fill={CHART.ink2} textAnchor="middle">Down</text>
+        <text x={size - 4} y={c + 4} fontSize={11} fill={C.ink2} textAnchor="end">
+          {t('Right')}
+        </text>
+        <text x={4} y={c + 4} fontSize={11} fill={C.ink2}>
+          {t('Left')}
+        </text>
+        <text x={c} y={12} fontSize={11} fill={C.ink2} textAnchor="middle">
+          {t('Up')}
+        </text>
+        <text x={c} y={size - 4} fontSize={11} fill={C.ink2} textAnchor="middle">
+          {t('Down')}
+        </text>
       </svg>
       <figcaption className="min-h-6 text-sm text-ink-2" aria-live="polite">
-        {hover !== null ? describe(sectors[hover]!) : 'Longer wedges hold more taps.'}
+        {hover !== null ? describe(sectors[hover]!) : t('Longer wedges hold more taps.')}
       </figcaption>
     </figure>
   );

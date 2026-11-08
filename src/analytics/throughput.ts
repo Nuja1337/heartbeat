@@ -33,7 +33,13 @@ export interface ThroughputBucket {
 /** Jumps with a direction and a press. Records after a pause are left out. */
 function usableJumps(records: readonly HitRecord[]): HitRecord[] {
   return records.filter(
-    (r) => !r.afterPause && isJump(r) && r.features.direction !== null && r.aimAlong !== null && r.features.spacing !== null && r.features.gapMs !== null,
+    (r) =>
+      !r.afterPause &&
+      isJump(r) &&
+      r.features.direction !== null &&
+      r.aimAlong !== null &&
+      r.features.spacing !== null &&
+      r.features.gapMs !== null,
   );
 }
 
@@ -56,7 +62,13 @@ export function throughputBuckets(records: readonly HitRecord[]): ThroughputBuck
     const de = Math.max(0, distance + mean(along));
     const ide = Math.log2(de / we + 1);
     out.push({
-      key, n: list.length, distance, radius, gapMs, we, de,
+      key,
+      n: list.length,
+      distance,
+      radius,
+      gapMs,
+      we,
+      de,
       idNominal: Math.log2(distance / (2 * radius) + 1),
       ide,
       tp: ide / (Math.max(gapMs, 1) / 1000),

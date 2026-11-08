@@ -10,7 +10,19 @@ export function countsForProgress(mods: readonly ModId[]): boolean {
 }
 
 function difficultyKey(d: DifficultySettings): string {
-  return [d.radius, d.approachMs, d.bpm, d.density, d.spacing, d.complexity, d.streams, d.streamMaxLength, d.sliders, d.spinners, d.timing].join('-');
+  return [
+    d.radius,
+    d.approachMs,
+    d.bpm,
+    d.density,
+    d.spacing,
+    d.complexity,
+    d.streams,
+    d.streamMaxLength,
+    d.sliders,
+    d.spinners,
+    d.timing,
+  ].join('-');
 }
 
 /** Scores compare only within the same setting, mod set and length. */
@@ -73,14 +85,19 @@ export function computeBests(summaries: readonly PlaySummary[]): { dynamic: Dyna
       combo: by((s) => s.maxCombo),
     });
   }
-  dynamic.sort((a, b) => (b.score.endedAt - a.score.endedAt));
+  dynamic.sort((a, b) => b.score.endedAt - a.score.endedAt);
 
   const best = new Map<ModuleId, ModuleBest>();
   for (const s of current) {
     if (!countsForProgress(s.mods)) continue;
     for (const [id, level] of Object.entries(s.finalLevels) as [ModuleId, number][]) {
       const prev = best.get(id);
-      best.set(id, { moduleId: id, level: Math.max(level, prev?.level ?? 0), summary: prev && prev.level >= level ? prev.summary : s, plays: (prev?.plays ?? 0) + 1 });
+      best.set(id, {
+        moduleId: id,
+        level: Math.max(level, prev?.level ?? 0),
+        summary: prev && prev.level >= level ? prev.summary : s,
+        plays: (prev?.plays ?? 0) + 1,
+      });
     }
   }
   return { dynamic, modules: [...best.values()] };

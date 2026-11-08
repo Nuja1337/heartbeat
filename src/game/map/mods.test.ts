@@ -10,7 +10,10 @@ const sample = () =>
   makeMap(
     [
       makeCircle(0, 2000, 100, 100),
-      makeSlider(1, 3000, { x: 200, y: 200 }, [{ type: 'arc', through: { x: 300, y: 250 }, to: { x: 400, y: 200 } }], { spanMs: 500, repeats: 1 }),
+      makeSlider(1, 3000, { x: 200, y: 200 }, [{ type: 'arc', through: { x: 300, y: 250 }, to: { x: 400, y: 200 } }], {
+        spanMs: 500,
+        repeats: 1,
+      }),
       makeSpinner(2, 6000, 2000, 6),
     ],
     { health: healthRulesFor(5, []), sections: [{ start: 0, end: 8000, intensity: 0.5, focus: 'jumps' }] },

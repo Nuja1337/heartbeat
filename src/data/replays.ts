@@ -32,10 +32,22 @@ export async function prepareReplay(data: ReplayData | undefined): Promise<Prepa
   }
 }
 
-export function makeReplayRows(playId: string, startedAt: number, keep: boolean, p: PreparedReplay): { row: ReplayRow; bytes: ReplayBytesRow } {
+export function makeReplayRows(
+  playId: string,
+  startedAt: number,
+  keep: boolean,
+  p: PreparedReplay,
+): { row: ReplayRow; bytes: ReplayBytesRow } {
   return {
     row: {
-      playId, v: 1, startedAt, keep: keep ? 1 : 0, size: p.bytes.byteLength, rawBytes: p.rawBytes, events: p.events, engineVersion: p.engineVersion,
+      playId,
+      v: 1,
+      startedAt,
+      keep: keep ? 1 : 0,
+      size: p.bytes.byteLength,
+      rawBytes: p.rawBytes,
+      events: p.events,
+      engineVersion: p.engineVersion,
     },
     bytes: { playId, bytes: p.bytes },
   };
@@ -87,7 +99,12 @@ export async function replayStorage(): Promise<{ count: number; bytes: number }>
 export async function countReplayRemovals(limit: number | null): Promise<number> {
   if (limit === null) return 0;
   const loose = await withTx('replays', 'readonly', (tx) =>
-    req<number>(tx.objectStore('replays').index('keep_startedAt').count(IDBKeyRange.bound([0, -Infinity], [0, Infinity]))),
+    req<number>(
+      tx
+        .objectStore('replays')
+        .index('keep_startedAt')
+        .count(IDBKeyRange.bound([0, -Infinity], [0, Infinity])),
+    ),
   );
   return Math.max(0, loose - Math.max(0, Math.floor(limit)));
 }

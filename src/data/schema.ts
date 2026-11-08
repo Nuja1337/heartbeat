@@ -245,9 +245,7 @@ export type RuleId =
   | 'corrections';
 
 export type DrillBaseline =
-  | { kind: 'mean'; mean: number; sd: number; n: number }
-  | { kind: 'rate'; rate: number; n: number }
-  | { kind: 'sd'; sd: number; n: number };
+  { kind: 'mean'; mean: number; sd: number; n: number } | { kind: 'rate'; rate: number; n: number } | { kind: 'sd'; sd: number; n: number };
 
 export type DrillOutcome = 'collecting' | 'better' | 'unclear' | 'worse';
 

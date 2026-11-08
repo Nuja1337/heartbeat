@@ -79,7 +79,8 @@ describe('columns missing from a stored table', () => {
   it('read as null where the field can be null and 0 otherwise', () => {
     const { records } = makeFixture({ seed: 3, objects: 30 });
     const packed = packRecords(records);
-    for (const name of ['headJudgment', 'missReason', 'input', 'corrections', 'visibleCount', 'afterPause', 'comboBefore']) delete packed.objects.columns[name];
+    for (const name of ['headJudgment', 'missReason', 'input', 'corrections', 'visibleCount', 'afterPause', 'comboBefore'])
+      delete packed.objects.columns[name];
     const back = unpackRecords(packed);
     expect(back[0]!.headJudgment).toBeNull();
     expect(back[0]!.missReason).toBeNull();

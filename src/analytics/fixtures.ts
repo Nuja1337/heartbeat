@@ -157,7 +157,18 @@ function layout(o: Required<Pick<FixtureOptions, 'objects' | 'radius'>> & Fixtur
     const spinnerShare = o.jumpsOnly ? 0 : (o.spinnerShare ?? 0.015);
     if (roll < spinnerShare) {
       t += 600;
-      slots.push({ kind: 'spinner', pattern: 'spinner', time: t, endTime: t + 3000, pos: { x: 500, y: 312.5 }, endPos: { x: 500, y: 312.5 }, shape: 'straight', repeats: 0, length: 0, velocity: 0 });
+      slots.push({
+        kind: 'spinner',
+        pattern: 'spinner',
+        time: t,
+        endTime: t + 3000,
+        pos: { x: 500, y: 312.5 },
+        endPos: { x: 500, y: 312.5 },
+        shape: 'straight',
+        repeats: 0,
+        length: 0,
+        velocity: 0,
+      });
       pos = { x: 500, y: 312.5 };
       t += 3000 + 500;
     } else if (roll < spinnerShare + sliderShare) {
@@ -170,7 +181,18 @@ function layout(o: Required<Pick<FixtureOptions, 'objects' | 'radius'>> & Fixtur
       const shape = r.pick<SliderStats['shape']>(['straight', 'arc', 'curve']);
       t += 500;
       const total = span * (repeats + 1);
-      slots.push({ kind: 'slider', pattern: 'slider', time: t, endTime: t + total, pos: head, endPos: repeats % 2 === 1 ? head : tail, shape, repeats, length, velocity });
+      slots.push({
+        kind: 'slider',
+        pattern: 'slider',
+        time: t,
+        endTime: t + total,
+        pos: head,
+        endPos: repeats % 2 === 1 ? head : tail,
+        shape,
+        repeats,
+        length,
+        velocity,
+      });
       pos = repeats % 2 === 1 ? head : tail;
       t += total + 250;
     } else if (roll < spinnerShare + sliderShare + streamShare / 6) {
@@ -181,7 +203,18 @@ function layout(o: Required<Pick<FixtureOptions, 'objects' | 'radius'>> & Fixtur
       t += 400;
       for (let i = 0; i < len && slots.length < o.objects; i++) {
         const next = place(pos, radius * 0.9, base + turn * i);
-        slots.push({ kind: 'circle', pattern: 'stream', time: t, endTime: t, pos: next, endPos: next, shape: 'straight', repeats: 0, length: 0, velocity: 0 });
+        slots.push({
+          kind: 'circle',
+          pattern: 'stream',
+          time: t,
+          endTime: t,
+          pos: next,
+          endPos: next,
+          shape: 'straight',
+          repeats: 0,
+          length: 0,
+          velocity: 0,
+        });
         pos = next;
         t += gap;
       }
@@ -190,7 +223,18 @@ function layout(o: Required<Pick<FixtureOptions, 'objects' | 'radius'>> & Fixtur
       const spacing = r.pick(o.jumpSpacings ?? [1.5, 2, 3, 4, 5, 5.5, 6, 7.5]);
       const next = place(pos, spacing * 2 * radius, r.range(0, Math.PI * 2));
       t += gap;
-      slots.push({ kind: 'circle', pattern: 'jump', time: t, endTime: t, pos: next, endPos: next, shape: 'straight', repeats: 0, length: 0, velocity: 0 });
+      slots.push({
+        kind: 'circle',
+        pattern: 'jump',
+        time: t,
+        endTime: t,
+        pos: next,
+        endPos: next,
+        shape: 'straight',
+        repeats: 0,
+        length: 0,
+        velocity: 0,
+      });
       pos = next;
     }
   }
@@ -311,7 +355,8 @@ export function makeFixture(options: FixtureOptions = {}): Fixture {
       // Miss chance without a press.
       let pMiss = o.baseMiss ?? 0.04;
       if (progress > 0.5) pMiss += o.secondHalfDrop ?? 0;
-      if (f.turnAngle !== null && f.spacing !== null && f.spacing >= 1.5) pMiss += f.turnAngle >= 100 ? (o.sharpExtraMiss ?? 0) : (o.wideExtraMiss ?? 0);
+      if (f.turnAngle !== null && f.spacing !== null && f.spacing >= 1.5)
+        pMiss += f.turnAngle >= 100 ? (o.sharpExtraMiss ?? 0) : (o.wideExtraMiss ?? 0);
       if (f.visibleCount >= (o.busyFrom ?? 4)) pMiss += o.busyExtraMiss ?? 0;
       const noPress = r.next() < pMiss;
 
@@ -328,7 +373,7 @@ export function makeFixture(options: FixtureOptions = {}): Fixture {
         else if (f.spacing >= 1 && f.spacing < 2.5) alongMean = o.shortAlong ?? 0;
       }
       let latMean = 0;
-      if (o.octantLateral && f.direction !== null && Math.floor((((f.direction + 22.5) % 360) / 45)) % 8 === o.octantLateral.octant) {
+      if (o.octantLateral && f.direction !== null && Math.floor(((f.direction + 22.5) % 360) / 45) % 8 === o.octantLateral.octant) {
         latMean = o.octantLateral.mean;
       }
       let a: number;
@@ -409,7 +454,9 @@ export function makeFixture(options: FixtureOptions = {}): Fixture {
       combo++;
       maxCombo = Math.max(maxCombo, combo);
     }
-    score += Math.round(100 * w * (0.8 + 0.2 * (radial === null ? 0 : Math.max(0, 1 - (radial / radius) ** 2))) * (1 + Math.min(comboBefore, 50) / 100));
+    score += Math.round(
+      100 * w * (0.8 + 0.2 * (radial === null ? 0 : Math.max(0, 1 - (radial / radius) ** 2))) * (1 + Math.min(comboBefore, 50) / 100),
+    );
     if (s.kind !== 'spinner' && judgment === 'miss' && missReason === 'aim') strayPresses++;
 
     function movementFor(): HitRecord['movement'] {
@@ -494,7 +541,14 @@ export function makeFixture(options: FixtureOptions = {}): Fixture {
   if ((moduleIds as string[]).includes(modeId)) {
     const m = modeId as ModuleId;
     const start = 3 + r.range(-0.5, 0.5);
-    for (let k = 0; k < 4; k++) levels.push({ set: k, module: m, level: start + k * 0.25, success: 0.75 + r.range(-0.05, 0.1), objects: Math.floor(records.length / 4) });
+    for (let k = 0; k < 4; k++)
+      levels.push({
+        set: k,
+        module: m,
+        level: start + k * 0.25,
+        success: 0.75 + r.range(-0.05, 0.1),
+        objects: Math.floor(records.length / 4),
+      });
     finalLevels[m] = Math.round((start + 0.5) * 20) / 20;
   }
 
@@ -511,7 +565,8 @@ export function makeFixture(options: FixtureOptions = {}): Fixture {
       durationMs: duration,
       rate: mods.includes('fast') ? 1.25 : mods.includes('slow') ? 0.8 : 1,
       mods,
-      health: modeId === 'dynamic' ? { drainPerSec: 0.02, missPenalty: 0.08, partPenalty: 0.03, canFail: true, failOnFirstMiss: false } : null,
+      health:
+        modeId === 'dynamic' ? { drainPerSec: 0.02, missPenalty: 0.08, partPenalty: 0.03, canFail: true, failOnFirstMiss: false } : null,
       counts: kindCounts,
     },
     startedAt,
@@ -522,7 +577,10 @@ export function makeFixture(options: FixtureOptions = {}): Fixture {
     accuracy,
     maxCombo,
     counts,
-    sliderParts: { hit: records.reduce((m, rec) => m + (rec.slider?.ticksHit ?? 0), 0), total: records.reduce((m, rec) => m + (rec.slider?.ticksTotal ?? 0), 0) },
+    sliderParts: {
+      hit: records.reduce((m, rec) => m + (rec.slider?.ticksHit ?? 0), 0),
+      total: records.reduce((m, rec) => m + (rec.slider?.ticksTotal ?? 0), 0),
+    },
     strayPresses,
     pauses: 0,
     levels,

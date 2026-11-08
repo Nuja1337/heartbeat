@@ -68,7 +68,9 @@ export function buildRows(plays: readonly PlayData[]): Rows {
 /** Plays from the last 30 days, newest first, until 3000 taps are reached. Null below 3 plays. */
 export function selectWindow(plays: readonly PlayData[], now: number): PlayData[] | null {
   const since = now - INSIGHT_WINDOW_DAYS * DAY;
-  const recent = plays.filter((p) => p.summary.startedAt >= since && p.summary.startedAt <= now).sort((a, b) => b.summary.startedAt - a.summary.startedAt);
+  const recent = plays
+    .filter((p) => p.summary.startedAt >= since && p.summary.startedAt <= now)
+    .sort((a, b) => b.summary.startedAt - a.summary.startedAt);
   if (recent.length < 3) return null;
   const out: PlayData[] = [];
   let taps = 0;
@@ -82,10 +84,7 @@ export function selectWindow(plays: readonly PlayData[], now: number): PlayData[
 
 /* ------------------------------------------------------------ samples */
 
-export type Sample =
-  | { kind: 'mean'; values: number[] }
-  | { kind: 'rate'; hits: number; n: number }
-  | { kind: 'sd'; values: number[] };
+export type Sample = { kind: 'mean'; values: number[] } | { kind: 'rate'; hits: number; n: number } | { kind: 'sd'; values: number[] };
 
 export const sampleN = (s: Sample): number => (s.kind === 'rate' ? s.n : s.values.length);
 
@@ -189,8 +188,27 @@ function jumpCuts(rows: Rows): JumpCuts | null {
   const jumps = rows.taps.filter((t) => isJump(t.rec) && t.rec.features.spacing !== null && t.rec.features.velocity !== null);
   if (jumps.length < 20) return null;
   return {
-    spacing: clean(Math.max(1.5, roundTo(quantile(jumps.map((t) => t.rec.features.spacing!), 0.75), 0.25))),
-    velocity: clean(roundTo(quantile(jumps.map((t) => t.rec.features.velocity!), 0.5), 0.05)),
+    spacing: clean(
+      Math.max(
+        1.5,
+        roundTo(
+          quantile(
+            jumps.map((t) => t.rec.features.spacing!),
+            0.75,
+          ),
+          0.25,
+        ),
+      ),
+    ),
+    velocity: clean(
+      roundTo(
+        quantile(
+          jumps.map((t) => t.rec.features.velocity!),
+          0.5,
+        ),
+        0.05,
+      ),
+    ),
   };
 }
 const cutVariant = (c: JumpCuts): string => `s${c.spacing}v${c.velocity}`;
@@ -221,12 +239,27 @@ function longFastPrimary(r: Rows, variant: string | null): number[] {
 const leaveShares = (r: Rows) =>
   nonNull(
     r.taps
-      .filter((t) => isJump(t.rec) && t.rec.features.gapMs !== null && t.rec.features.gapMs > 0 && t.rec.features.gapMs <= 350 && t.rec.movement.leaveMs != null)
+      .filter(
+        (t) =>
+          isJump(t.rec) &&
+          t.rec.features.gapMs !== null &&
+          t.rec.features.gapMs > 0 &&
+          t.rec.features.gapMs <= 350 &&
+          t.rec.movement.leaveMs != null,
+      )
       .map((t) => t.rec.movement.leaveMs! / t.rec.features.gapMs!),
   );
 /** Hit jumps of 2.5 widths or more that have correction data. */
 const correctionTaps = (r: Rows): Tap[] =>
-  r.taps.filter((t) => isJump(t.rec) && !t.missed && t.rec.features.spacing !== null && t.rec.features.spacing >= 2.5 && t.rec.movement.corrections !== null && t.rec.movement.correctionPath != null);
+  r.taps.filter(
+    (t) =>
+      isJump(t.rec) &&
+      !t.missed &&
+      t.rec.features.spacing !== null &&
+      t.rec.features.spacing >= 2.5 &&
+      t.rec.movement.corrections !== null &&
+      t.rec.movement.correctionPath != null,
+  );
 const corrected = (t: Tap): boolean => (t.rec.movement.corrections ?? 0) >= 1;
 const shortAlong = (r: Rows) => nonNull(r.taps.filter(isShort).map((t) => t.along));
 
@@ -237,11 +270,16 @@ function jumpsRec(options: ModuleOptions) {
   return { modeId: 'jumps' as ModeId, options: withDefaults('jumps', options) };
 }
 
-const streamNotesFast = (r: Rows) => nonNull(r.taps.filter((t) => isStreamNote(t.rec) && (t.rec.features.gapMs ?? 999) < 140).map((t) => t.timing));
+const streamNotesFast = (r: Rows) =>
+  nonNull(r.taps.filter((t) => isStreamNote(t.rec) && (t.rec.features.gapMs ?? 999) < 140).map((t) => t.timing));
 const lateStream = (r: Rows) => nonNull(r.taps.filter((t) => isStreamNote(t.rec) && t.rec.features.runIndex >= 6).map((t) => t.timing));
-const earlyStream = (r: Rows) => nonNull(r.taps.filter((t) => isStreamNote(t.rec) && t.rec.features.runIndex >= 1 && t.rec.features.runIndex <= 3).map((t) => t.timing));
+const earlyStream = (r: Rows) =>
+  nonNull(r.taps.filter((t) => isStreamNote(t.rec) && t.rec.features.runIndex >= 1 && t.rec.features.runIndex <= 3).map((t) => t.timing));
 
-const turnTaps = (r: Rows) => r.taps.filter((t) => isJump(t.rec) && t.rec.features.spacing !== null && t.rec.features.spacing >= 1.5 && t.rec.features.turnAngle !== null);
+const turnTaps = (r: Rows) =>
+  r.taps.filter(
+    (t) => isJump(t.rec) && t.rec.features.spacing !== null && t.rec.features.spacing >= 1.5 && t.rec.features.turnAngle !== null,
+  );
 const sharpTaps = (r: Rows) => turnTaps(r).filter((t) => t.rec.features.turnAngle! >= 100);
 const wideTaps = (r: Rows) => turnTaps(r).filter((t) => t.rec.features.turnAngle! < 100);
 
@@ -261,7 +299,9 @@ const busyTaps = (r: Rows, cut: number): Tap[] => r.taps.filter((t) => t.rec.fea
 const rate = (taps: Tap[]): Sample => ({ kind: 'rate', hits: taps.filter((t) => t.missed).length, n: taps.length });
 
 function octantTaps(r: Rows, octant: number): Tap[] {
-  return r.taps.filter((t) => isJump(t.rec) && t.lateral !== null && t.rec.features.direction !== null && octantOf(t.rec.features.direction) === octant);
+  return r.taps.filter(
+    (t) => isJump(t.rec) && t.lateral !== null && t.rec.features.direction !== null && octantOf(t.rec.features.direction) === octant,
+  );
 }
 const parseOctant = (variant: string | null): number => Number(variant?.match(/^o(\d)/)?.[1] ?? 0);
 
@@ -276,8 +316,12 @@ const rules: Rule[] = [
       const t = meanTest(values, 40, 0.25, -1, scale);
       if (!t) return null;
       return {
-        variant: cutVariant(cuts), ratio: Math.abs(t.mean) / 0.25, n: t.n, params: { pct: pctWidth(t.mean), cut: cuts.spacing },
-        ...jumpsRec({ distanceFocus: 'long' }), sample: { kind: 'mean', values },
+        variant: cutVariant(cuts),
+        ratio: Math.abs(t.mean) / 0.25,
+        n: t.n,
+        params: { pct: pctWidth(t.mean), cut: cuts.spacing },
+        ...jumpsRec({ distanceFocus: 'long' }),
+        sample: { kind: 'mean', values },
       };
     },
     sample: (r, variant) => ({ kind: 'mean', values: longFastAlong(r, variant) }),
@@ -294,8 +338,12 @@ const rules: Rule[] = [
       const t = meanTest(values, 40, 0.25, 1, scale);
       if (!t) return null;
       return {
-        variant: cutVariant(cuts), ratio: Math.abs(t.mean) / 0.25, n: t.n, params: { pct: pctWidth(t.mean), cut: cuts.spacing },
-        ...jumpsRec({ distanceFocus: 'long' }), sample: { kind: 'mean', values },
+        variant: cutVariant(cuts),
+        ratio: Math.abs(t.mean) / 0.25,
+        n: t.n,
+        params: { pct: pctWidth(t.mean), cut: cuts.spacing },
+        ...jumpsRec({ distanceFocus: 'long' }),
+        sample: { kind: 'mean', values },
       };
     },
     sample: (r, variant) => ({ kind: 'mean', values: longFastAlong(r, variant) }),
@@ -310,8 +358,12 @@ const rules: Rule[] = [
       const t = meanTest(values, 40, 0.25, 1, scale);
       if (!t) return null;
       return {
-        variant: null, ratio: Math.abs(t.mean) / 0.25, n: t.n, params: { pct: pctWidth(t.mean) },
-        ...jumpsRec({ distanceFocus: 'short' }), sample: { kind: 'mean', values },
+        variant: null,
+        ratio: Math.abs(t.mean) / 0.25,
+        n: t.n,
+        params: { pct: pctWidth(t.mean) },
+        ...jumpsRec({ distanceFocus: 'short' }),
+        sample: { kind: 'mean', values },
       };
     },
     sample: (r) => ({ kind: 'mean', values: shortAlong(r) }),
@@ -328,23 +380,39 @@ const rules: Rule[] = [
         if (values.length < need(40, scale)) continue;
         const a = aggOf(values);
         // The spread is compared with the jumps in every other direction.
-        const others = nonNull(rows.taps.filter((t) => isJump(t.rec) && t.rec.features.direction !== null && octantOf(t.rec.features.direction) !== o).map((t) => t.lateral));
+        const others = nonNull(
+          rows.taps
+            .filter((t) => isJump(t.rec) && t.rec.features.direction !== null && octantOf(t.rec.features.direction) !== o)
+            .map((t) => t.lateral),
+        );
         const overall = sd(others);
         const consider = (d: Detection) => {
           if (!best || d.ratio > best.ratio) best = d;
         };
         if (Math.abs(a.mean) >= 0.25 && Math.abs(a.mean) >= (2 * a.sd) / Math.sqrt(a.n)) {
           consider({
-            variant: `o${o}:bias`, ratio: Math.abs(a.mean) / 0.25, n: a.n,
+            variant: `o${o}:bias`,
+            ratio: Math.abs(a.mean) / 0.25,
+            n: a.n,
             params: { dir: OCTANT_PHRASE[o]!, pct: pctWidth(a.mean), side: lateralSide(o, a.mean > 0 ? 1 : -1) },
-            ...jumpsRec({ directionFocus: o }), sample: { kind: 'mean', values },
+            ...jumpsRec({ directionFocus: o }),
+            sample: { kind: 'mean', values },
           });
         }
-        if (overall > 0 && a.sd >= 1.3 * overall && a.sd - overall >= 0.1 && distinct(a.sd, overall, 'width') && logSdZ(a.sd, a.n, overall, others.length) >= 2) {
+        if (
+          overall > 0 &&
+          a.sd >= 1.3 * overall &&
+          a.sd - overall >= 0.1 &&
+          distinct(a.sd, overall, 'width') &&
+          logSdZ(a.sd, a.n, overall, others.length) >= 2
+        ) {
           consider({
-            variant: `o${o}:spread`, ratio: a.sd / overall / 1.3, n: a.n,
+            variant: `o${o}:spread`,
+            ratio: a.sd / overall / 1.3,
+            n: a.n,
             params: { dir: OCTANT_PHRASE[o]!, pct: pctWidth(a.sd), other: pctWidth(overall) },
-            ...jumpsRec({ directionFocus: o }), sample: { kind: 'sd', values },
+            ...jumpsRec({ directionFocus: o }),
+            sample: { kind: 'sd', values },
           });
         }
       }
@@ -365,8 +433,13 @@ const rules: Rule[] = [
       const t = meanTest(values, 60, 12, 0, scale);
       if (!t) return null;
       return {
-        variant: t.mean > 0 ? 'late' : 'early', ratio: Math.abs(t.mean) / 12, n: t.n, params: { ms: Math.round(Math.abs(t.mean)) },
-        modeId: 'streams', options: withDefaults('streams', { streamLength: 'short' }), sample: { kind: 'mean', values },
+        variant: t.mean > 0 ? 'late' : 'early',
+        ratio: Math.abs(t.mean) / 12,
+        n: t.n,
+        params: { ms: Math.round(Math.abs(t.mean)) },
+        modeId: 'streams',
+        options: withDefaults('streams', { streamLength: 'short' }),
+        sample: { kind: 'mean', values },
       };
     },
     sample: (r) => ({ kind: 'mean', values: streamNotesFast(r) }),
@@ -384,8 +457,13 @@ const rules: Rule[] = [
       const b = sd(early);
       if (b <= 0 || a / b < 1.35 || !distinct(a, b, 'ms') || logSdZ(a, late.length, b, early.length) < 2) return null;
       return {
-        variant: null, ratio: a / b / 1.35, n: Math.min(late.length, early.length), params: { a: Math.round(a), b: Math.round(b) },
-        modeId: 'streams', options: withDefaults('streams', { streamLength: 'long' }), sample: { kind: 'sd', values: late },
+        variant: null,
+        ratio: a / b / 1.35,
+        n: Math.min(late.length, early.length),
+        params: { a: Math.round(a), b: Math.round(b) },
+        modeId: 'streams',
+        options: withDefaults('streams', { streamLength: 'long' }),
+        sample: { kind: 'sd', values: late },
       };
     },
     sample: (r) => ({ kind: 'sd', values: lateStream(r) }),
@@ -402,8 +480,13 @@ const rules: Rule[] = [
       const positive = diffs.filter((d) => d > 0).length / diffs.length;
       if (m < 3 || positive < 0.7) return null;
       return {
-        variant: null, ratio: m / 3, n: diffs.length, params: { points: Math.round(m) },
-        modeId: 'stamina', options: withDefaults('stamina', {}), sample: { kind: 'mean', values: diffs },
+        variant: null,
+        ratio: m / 3,
+        n: diffs.length,
+        params: { points: Math.round(m) },
+        modeId: 'stamina',
+        options: withDefaults('stamina', {}),
+        sample: { kind: 'mean', values: diffs },
       };
     },
     sample: (r) => ({ kind: 'mean', values: secondHalfDrops(r) }),
@@ -427,9 +510,12 @@ const rules: Rule[] = [
       if (Math.abs(z) < 2) return null;
       const sharpWorse = diff > 0;
       return {
-        variant: sharpWorse ? 'sharp' : 'wide', ratio: Math.abs(diff) / 0.06, n: Math.min(sharp.length, wide.length),
+        variant: sharpWorse ? 'sharp' : 'wide',
+        ratio: Math.abs(diff) / 0.06,
+        n: Math.min(sharp.length, wide.length),
         params: sharpWorse ? { a: Math.round(rs * 100), b: Math.round(rw * 100) } : { a: Math.round(rw * 100), b: Math.round(rs * 100) },
-        modeId: 'angles', options: withDefaults('angles', { angleFocus: sharpWorse ? 'sharp' : 'wide' }),
+        modeId: 'angles',
+        options: withDefaults('angles', { angleFocus: sharpWorse ? 'sharp' : 'wide' }),
         sample: rate(sharpWorse ? sharp : wide),
       };
     },
@@ -445,8 +531,13 @@ const rules: Rule[] = [
       const t = meanTest(values, 20, 0.3, -1, scale);
       if (!t) return null;
       return {
-        variant: null, ratio: Math.abs(t.mean) / 0.3, n: t.n, params: { pct: pctWidth(t.mean) },
-        modeId: 'tracking', options: withDefaults('tracking', { sliderFocus: 'mixed' }), sample: { kind: 'mean', values },
+        variant: null,
+        ratio: Math.abs(t.mean) / 0.3,
+        n: t.n,
+        params: { pct: pctWidth(t.mean) },
+        modeId: 'tracking',
+        options: withDefaults('tracking', { sliderFocus: 'mixed' }),
+        sample: { kind: 'mean', values },
       };
     },
     sample: (r) => ({ kind: 'mean', values: sliderLag(r) }),
@@ -463,9 +554,13 @@ const rules: Rule[] = [
       const w = welch(aggOf(curve), aggOf(straight));
       if (w.diff > -0.08 || Math.abs(w.t) < 2 || !distinct(mean(curve), mean(straight), 'share')) return null;
       return {
-        variant: null, ratio: Math.abs(w.diff) / 0.08, n: Math.min(curve.length, straight.length),
+        variant: null,
+        ratio: Math.abs(w.diff) / 0.08,
+        n: Math.min(curve.length, straight.length),
         params: { a: Math.round(mean(curve) * 100), b: Math.round(mean(straight) * 100) },
-        modeId: 'tracking', options: withDefaults('tracking', { sliderFocus: 'curves' }), sample: { kind: 'mean', values: curve },
+        modeId: 'tracking',
+        options: withDefaults('tracking', { sliderFocus: 'curves' }),
+        sample: { kind: 'mean', values: curve },
       };
     },
     sample: (r) => ({ kind: 'mean', values: trackedBy(r, 'curve') }),
@@ -487,8 +582,12 @@ const rules: Rule[] = [
       if (endRate > 0.85 || tickRate < 0.95 || !distinct(endRate, tickRate, 'share')) return null;
       if (twoPropZ(ticksHit, ticksTotal, ends, s.length) < 2) return null;
       return {
-        variant: null, ratio: (1 - endRate) / 0.15, n: s.length, params: { pct: Math.round(endRate * 100), ticks: Math.round(tickRate * 100) },
-        modeId: 'tracking', options: withDefaults('tracking', { sliderFocus: 'repeats' }),
+        variant: null,
+        ratio: (1 - endRate) / 0.15,
+        n: s.length,
+        params: { pct: Math.round(endRate * 100), ticks: Math.round(tickRate * 100) },
+        modeId: 'tracking',
+        options: withDefaults('tracking', { sliderFocus: 'repeats' }),
         sample: { kind: 'rate', hits: ends, n: s.length },
       };
     },
@@ -507,8 +606,13 @@ const rules: Rule[] = [
       const t = meanTest(values, 200, 10, 0, scale);
       if (!t || Math.abs(t.mean) / (t.sd / Math.sqrt(t.n)) < 3) return null;
       return {
-        variant: t.mean > 0 ? 'late' : 'early', ratio: Math.abs(t.mean) / 10, n: t.n, params: { ms: Math.round(Math.abs(t.mean)) },
-        modeId: 'timing', options: withDefaults('timing', {}), sample: { kind: 'mean', values },
+        variant: t.mean > 0 ? 'late' : 'early',
+        ratio: Math.abs(t.mean) / 10,
+        n: t.n,
+        params: { ms: Math.round(Math.abs(t.mean)) },
+        modeId: 'timing',
+        options: withDefaults('timing', {}),
+        sample: { kind: 'mean', values },
       };
     },
     sample: (r) => ({ kind: 'mean', values: nonNull(r.taps.map((t) => t.timing)) }),
@@ -527,11 +631,16 @@ const rules: Rule[] = [
       const mb = busy.filter((t) => t.missed).length;
       const mc = calm.filter((t) => t.missed).length;
       const diff = mb / busy.length - mc / calm.length;
-      if (diff < 0.06 || !distinct(mb / busy.length, mc / calm.length, 'share') || twoPropZ(mb, busy.length, mc, calm.length) < 2) return null;
+      if (diff < 0.06 || !distinct(mb / busy.length, mc / calm.length, 'share') || twoPropZ(mb, busy.length, mc, calm.length) < 2)
+        return null;
       return {
-        variant: `b${cuts.busy}c${cuts.calm}`, ratio: diff / 0.06, n: Math.min(busy.length, calm.length),
+        variant: `b${cuts.busy}c${cuts.calm}`,
+        ratio: diff / 0.06,
+        n: Math.min(busy.length, calm.length),
         params: { cut: cuts.busy, a: Math.round((mb / busy.length) * 100), b: Math.round((mc / calm.length) * 100) },
-        modeId: 'reading', options: withDefaults('reading', {}), sample: rate(busy),
+        modeId: 'reading',
+        options: withDefaults('reading', {}),
+        sample: rate(busy),
       };
     },
     sample: (r, variant) => {
@@ -553,8 +662,13 @@ const rules: Rule[] = [
       const m = mean(values);
       if (m < 0.55) return null;
       return {
-        variant: null, ratio: m / 0.55, n: rows.taps.length, params: { pct: pctWidth(m) },
-        modeId: 'precision', options: withDefaults('precision', {}), sample: { kind: 'mean', values },
+        variant: null,
+        ratio: m / 0.55,
+        n: rows.taps.length,
+        params: { pct: pctWidth(m) },
+        modeId: 'precision',
+        options: withDefaults('precision', {}),
+        sample: { kind: 'mean', values },
       };
     },
     sample: (r) => ({ kind: 'mean', values: offCenter(r) }),
@@ -570,8 +684,13 @@ const rules: Rule[] = [
       const share = crisp / rows.spinners.length;
       if (share > 0.7) return null;
       return {
-        variant: null, ratio: (1 - share) / 0.3, n: rows.spinners.length, params: { pct: Math.round(share * 100) },
-        modeId: 'spinning', options: withDefaults('spinning', {}), sample: { kind: 'rate', hits: crisp, n: rows.spinners.length },
+        variant: null,
+        ratio: (1 - share) / 0.3,
+        n: rows.spinners.length,
+        params: { pct: Math.round(share * 100) },
+        modeId: 'spinning',
+        options: withDefaults('spinning', {}),
+        sample: { kind: 'rate', hits: crisp, n: rows.spinners.length },
       };
     },
     sample: (r) => ({ kind: 'rate', hits: r.spinners.filter((t) => t.rec.judgment === 'crisp').length, n: r.spinners.length }),
@@ -586,8 +705,12 @@ const rules: Rule[] = [
       const t = meanTest(values, 60, 0.35, 1, scale);
       if (!t) return null;
       return {
-        variant: null, ratio: t.mean / 0.35, n: t.n, params: { pct: pct(t.mean) },
-        ...jumpsRec({}), sample: { kind: 'mean', values },
+        variant: null,
+        ratio: t.mean / 0.35,
+        n: t.n,
+        params: { pct: pct(t.mean) },
+        ...jumpsRec({}),
+        sample: { kind: 'mean', values },
       };
     },
     sample: (r) => ({ kind: 'mean', values: leaveShares(r) }),
@@ -604,8 +727,12 @@ const rules: Rule[] = [
       const t = meanTest(values, 40, 0.5, 0, scale);
       if (!t) return null;
       return {
-        variant: `${t.mean < 0 ? 'short' : 'over'}:${cutVariant(cuts)}`, ratio: Math.abs(t.mean) / 0.5, n: t.n, params: { pct: pctWidth(t.mean), cut: cuts.spacing },
-        ...jumpsRec({ distanceFocus: 'long' }), sample: { kind: 'mean', values },
+        variant: `${t.mean < 0 ? 'short' : 'over'}:${cutVariant(cuts)}`,
+        ratio: Math.abs(t.mean) / 0.5,
+        n: t.n,
+        params: { pct: pctWidth(t.mean), cut: cuts.spacing },
+        ...jumpsRec({ distanceFocus: 'long' }),
+        sample: { kind: 'mean', values },
       };
     },
     sample: (r, variant) => ({ kind: 'mean', values: longFastPrimary(r, variant) }),
@@ -622,8 +749,12 @@ const rules: Rule[] = [
       const path = mean(taps.map((t) => t.rec.movement.correctionPath! / t.rec.radius));
       if (share < 0.45 || path < 0.6) return null;
       return {
-        variant: null, ratio: Math.min(share / 0.45, path / 0.6), n: taps.length, params: { pct: pct(share) },
-        ...jumpsRec({}), sample: correctionRate(taps),
+        variant: null,
+        ratio: Math.min(share / 0.45, path / 0.6),
+        n: taps.length,
+        params: { pct: pct(share) },
+        ...jumpsRec({}),
+        sample: correctionRate(taps),
       };
     },
     sample: (r) => correctionRate(correctionTaps(r)),
@@ -641,7 +772,9 @@ function secondHalfDrops(rows: Rows): number[] {
 }
 const sliderLag = (r: Rows) => nonNull(r.sliders.map((t) => (t.rec.slider ? t.rec.slider.meanLag / t.rec.radius : null)));
 const trackedBy = (r: Rows, shape: 'curve' | 'straight') =>
-  r.sliders.filter((t) => (shape === 'straight' ? t.rec.slider?.shape === 'straight' : t.rec.slider !== null && t.rec.slider.shape !== 'straight')).map((t) => t.rec.slider!.trackedFraction);
+  r.sliders
+    .filter((t) => (shape === 'straight' ? t.rec.slider?.shape === 'straight' : t.rec.slider !== null && t.rec.slider.shape !== 'straight'))
+    .map((t) => t.rec.slider!.trackedFraction);
 const offCenter = (r: Rows) => nonNull(r.taps.filter((t) => !t.missed).map((t) => t.radial));
 
 const RULES_BY_ID = new Map<RuleId, Rule>(rules.map((r) => [r.id, r]));
@@ -675,7 +808,9 @@ const NO_RECENT: RankContext = { recent: new Set() };
 const freshOf = (modeId: ModeId | null, ctx: RankContext): number => (modeId && ctx.recent.has(modeId) ? FRESH_FACTOR : 1);
 
 function toInsight(rule: Rule, d: Detection, scope: 'window' | 'play', ctx: RankContext = NO_RECENT): Insight {
-  const recommendation: Recommendation | null = d.modeId ? { modeId: d.modeId, options: d.options, label: recommendationLabel(d.modeId, d.options) } : null;
+  const recommendation: Recommendation | null = d.modeId
+    ? { modeId: d.modeId, options: d.options, label: recommendationLabel(d.modeId, d.options) }
+    : null;
   return {
     key: d.variant ? `${rule.id}:${d.variant}` : rule.id,
     ruleId: rule.id,
@@ -750,7 +885,7 @@ function longSession(plays: PlaySummary[], now: number): Insight | null {
     n: session.plays.length,
     title: ruleTitle('long-session', null),
     text: insightText('long-session', null, { last: Math.round(last * 100), avg: Math.round(avg * 100) }),
-    basis: basisText('long-session', session.plays.length, 'window').replace('from the last 30 days', 'in this session'),
+    basis: basisText('long-session', session.plays.length, 'session'),
     recommendation: null,
     baseline: null,
   };
@@ -795,7 +930,9 @@ export function detectInsights(plays: readonly PlayData[], now: number, options:
   const hidden = (key: string): boolean => (snoozed[key] ?? 0) > now;
   const rows = buildRows(window);
   const summaries = window.map((p) => p.summary);
-  const ctx: RankContext = { recent: new Set(summaries.filter((s) => s.startedAt >= now - FRESH_DAYS * DAY && s.startedAt <= now).map((s) => s.modeId)) };
+  const ctx: RankContext = {
+    recent: new Set(summaries.filter((s) => s.startedAt >= now - FRESH_DAYS * DAY && s.startedAt <= now).map((s) => s.modeId)),
+  };
   const out: Insight[] = [];
   for (const rule of rules) {
     const d = rule.detect(rows, 1);

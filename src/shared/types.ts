@@ -4,6 +4,9 @@
 // Units: positions and lengths are playfield units (PLAYFIELD in catalog.ts: 1000 x 625, origin top-left,
 // y grows downward). Times are milliseconds. Angles are degrees unless a name says otherwise.
 
+import type { LanguageChoice } from './locales';
+import type { TextSize, ThemeChoice } from './theme';
+
 export type Ms = number;
 
 export interface Vec2 {
@@ -30,28 +33,9 @@ export type ModeId =
   | 'placement';
 
 /** Training modules whose level adapts after every set. */
-export type ModuleId =
-  | 'jumps'
-  | 'angles'
-  | 'streams'
-  | 'tracking'
-  | 'spinning'
-  | 'precision'
-  | 'reading'
-  | 'timing';
+export type ModuleId = 'jumps' | 'angles' | 'streams' | 'tracking' | 'spinning' | 'precision' | 'reading' | 'timing';
 
-export type ModId =
-  | 'fade'
-  | 'spotlight'
-  | 'fast'
-  | 'slow'
-  | 'tight'
-  | 'wide'
-  | 'mirror'
-  | 'nofail'
-  | 'onelife'
-  | 'bullseye'
-  | 'norings';
+export type ModId = 'fade' | 'spotlight' | 'fast' | 'slow' | 'tight' | 'wide' | 'mirror' | 'nofail' | 'onelife' | 'bullseye' | 'norings';
 
 export type SkillId = 'aim' | 'speed' | 'tracking' | 'precision' | 'timing' | 'reading' | 'spin';
 
@@ -239,9 +223,7 @@ export interface CircleObject extends HitObjectBase {
  * line: straight to `to`. arc: circular arc through `through` to `to`. cubic: Bezier with controls c1, c2.
  */
 export type PathSegment =
-  | { type: 'line'; to: Vec2 }
-  | { type: 'arc'; through: Vec2; to: Vec2 }
-  | { type: 'cubic'; c1: Vec2; c2: Vec2; to: Vec2 };
+  { type: 'line'; to: Vec2 } | { type: 'arc'; through: Vec2; to: Vec2 } | { type: 'cubic'; c1: Vec2; c2: Vec2; to: Vec2 };
 
 export interface SliderObject extends HitObjectBase {
   kind: 'slider';
@@ -597,6 +579,8 @@ export type MetronomeMode = 'off' | 'beat' | 'bar';
 
 export interface Settings {
   v: 1;
+  /** The language of every piece of text. 'auto' follows the browser. */
+  language: LanguageChoice;
   input: {
     /** Pointer lock with unadjusted movement where the browser allows it. */
     rawInput: boolean;
@@ -640,6 +624,12 @@ export interface Settings {
     /** -50..150. Objects are drawn this many ms ahead of play time. */
     visualOffsetMs: number;
     frameGraph: boolean;
+    /** Dark, light, or whatever the operating system uses. */
+    theme: ThemeChoice;
+    /** Scales every piece of text on the pages. The playfield is not affected. */
+    textSize: TextSize;
+    /** Stronger text and lines. */
+    highContrast: boolean;
   };
   skin: {
     palette: PaletteId;
@@ -664,6 +654,8 @@ export interface Settings {
 /* ----------------------------------------------------------- game API */
 
 export interface GameCallbacks {
+  /** Fires once, when the first click or key press starts the play. */
+  onStart?(): void;
   onPause(paused: boolean): void;
   /** Fires once, when the play completes, fails or is quit. Never after destroy(). */
   onFinish(result: PlayResult): void;
@@ -691,12 +683,7 @@ export interface MapPreview {
   features: ObjectFeatures[];
 }
 
-export type CreateGame = (
-  canvas: HTMLCanvasElement,
-  launch: LaunchRequest,
-  settings: Settings,
-  callbacks: GameCallbacks,
-) => GameHandle;
+export type CreateGame = (canvas: HTMLCanvasElement, launch: LaunchRequest, settings: Settings, callbacks: GameCallbacks) => GameHandle;
 
 export type PreviewLaunch = (launch: LaunchRequest) => MapPreview;
 
@@ -704,9 +691,7 @@ export type TestSound = 'hit' | 'miss' | 'combo' | 'tick' | 'metronome' | 'count
 /** Plays one feedback sound. Call from a click handler (audio needs a user gesture). */
 export type PlayTestSound = (settings: Settings, sound: TestSound) => void;
 
-export type PlaybackSource =
-  | { kind: 'replay'; replay: ReplayData }
-  | { kind: 'autoplay'; launch: LaunchRequest; loop: boolean };
+export type PlaybackSource = { kind: 'replay'; replay: ReplayData } | { kind: 'autoplay'; launch: LaunchRequest; loop: boolean };
 export interface PlaybackInfo {
   durationMs: Ms;
   /** Objects whose judgment in this run differs from ReplayData.judgments. 0 for autoplay. */

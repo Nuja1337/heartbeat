@@ -113,7 +113,10 @@ describe('sound sets', () => {
     expect(wr.voices[0]).toEqual({ type: 'triangle', f0: 520 });
     const p = recordingBus();
     SOUND_SET_RECIPES.pulse.crisp(p.bus, 0);
-    expect(p.voices.map((v) => [v.type, v.f0])).toEqual([['square', 1320], ['square', 1980]]);
+    expect(p.voices.map((v) => [v.type, v.f0])).toEqual([
+      ['square', 1320],
+      ['square', 1980],
+    ]);
     const ps = recordingBus();
     SOUND_SET_RECIPES.pulse.solid(ps.bus);
     expect(ps.voices[0]).toEqual({ type: 'square', f0: 990 });

@@ -21,15 +21,20 @@ function optionsFor(launch: LaunchRequest): FixtureOptions {
     streamOffsetMs: 14,
   };
   switch (launch.modeId) {
-    case 'tracking': return { ...base, jumpsOnly: false, sliderShare: 0.8, streamShare: 0, spinnerShare: 0, objects: 60 };
-    case 'spinning': return { ...base, jumpsOnly: false, spinnerShare: 0.9, sliderShare: 0, streamShare: 0, objects: 14, spinnerFail: 0.3 };
-    case 'streams': return { ...base, jumpsOnly: false, streamShare: 3, sliderShare: 0, spinnerShare: 0 };
+    case 'tracking':
+      return { ...base, jumpsOnly: false, sliderShare: 0.8, streamShare: 0, spinnerShare: 0, objects: 60 };
+    case 'spinning':
+      return { ...base, jumpsOnly: false, spinnerShare: 0.9, sliderShare: 0, streamShare: 0, objects: 14, spinnerFail: 0.3 };
+    case 'streams':
+      return { ...base, jumpsOnly: false, streamShare: 3, sliderShare: 0, spinnerShare: 0 };
     case 'jumps':
     case 'angles':
     case 'precision':
     case 'reading':
-    case 'timing': return { ...base, jumpsOnly: true };
-    default: return base;
+    case 'timing':
+      return { ...base, jumpsOnly: true };
+    default:
+      return base;
   }
 }
 
@@ -46,7 +51,12 @@ export function fakeResult(launch: LaunchRequest, status: PlayResult['status'] =
   };
 }
 
-export const createFakeGame: CreateGame = (canvas: HTMLCanvasElement, launch: LaunchRequest, settings: Settings, cb: GameCallbacks): GameHandle => {
+export const createFakeGame: CreateGame = (
+  canvas: HTMLCanvasElement,
+  launch: LaunchRequest,
+  settings: Settings,
+  cb: GameCallbacks,
+): GameHandle => {
   let paused = false;
   let destroyed = false;
   let finished = false;

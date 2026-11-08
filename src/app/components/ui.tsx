@@ -1,6 +1,7 @@
 // Small building blocks shared by every screen (PLAN-2 §9). Native elements carry the keyboard behavior.
 
-import { useId } from 'react';
+import { useEffect, useId } from 'react';
+import { createPortal } from 'react-dom';
 import type { ComponentProps, CSSProperties, ReactNode } from 'react';
 import { Link, NavLink } from 'react-router';
 import type { LinkProps } from 'react-router';
@@ -17,7 +18,8 @@ const VARIANT: Record<Variant, string> = {
   secondary:
     'bg-surface-2 text-ink border border-line-2 hover:border-ink-3 hover:bg-surface-3 disabled:text-ink-3 disabled:hover:border-line-2 disabled:hover:bg-surface-2',
   ghost: 'text-ink-2 hover:text-ink hover:bg-surface-2 disabled:text-ink-3 disabled:hover:bg-transparent',
-  danger: 'bg-transparent text-danger border border-danger/50 hover:bg-danger/10 disabled:text-ink-3 disabled:border-line-2 disabled:hover:bg-transparent',
+  danger:
+    'bg-transparent text-danger border border-danger/50 hover:bg-danger/10 disabled:text-ink-3 disabled:border-line-2 disabled:hover:bg-transparent',
 };
 // 40 px is the standard button. Small is 32 and large is 48.
 const SIZE: Record<Size, string> = {
@@ -52,7 +54,25 @@ export function LinkButton({
   return <Link className={buttonClass(variant, size, className)} {...rest} />;
 }
 
+/**
+ * Sets the browser tab's title to "{title} · Heartbeat". A title that already names the app, such as "Set up Heartbeat",
+ * stands alone. The canonical link follows the path, so every page points at itself and not at the home page.
+ */
+export function usePageTitle(title: string | null): void {
+  useEffect(() => {
+    document.title = title && !title.includes('Heartbeat') ? `${title} · Heartbeat` : title || 'Heartbeat';
+    let link = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'canonical';
+      document.head.append(link);
+    }
+    link.href = `${window.location.origin}${window.location.pathname}`;
+  }, [title]);
+}
+
 export function PageHeader({ title, intro, actions }: { title: string; intro?: string; actions?: ReactNode }) {
+  usePageTitle(title);
   return (
     <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
@@ -61,6 +81,32 @@ export function PageHeader({ title, intro, actions }: { title: string; intro?: s
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </header>
+  );
+}
+
+/**
+ * A bar fixed to the bottom of narrow screens, for a setup page's Start button. On large screens the button sits in
+ * the side column instead, so the bar is hidden there. The page adds bottom padding so nothing ends up underneath it.
+ * It renders on the body, because the page enter animation would otherwise position it against the page column.
+ * The server renderer has no body, so the render tests get nothing here.
+ */
+export function StickyStart({ summary, children }: { summary: ReactNode; children: ReactNode }) {
+  if (typeof document === 'undefined') return null;
+  return createPortal(
+    <>
+      {/* Rendered after the app root, so the page and its footer can scroll clear of the bar. */}
+      <div aria-hidden className="h-24 lg:hidden" />
+      <div
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/90 backdrop-blur-md lg:hidden"
+        style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+      >
+        <div className="mx-auto flex max-w-[1200px] items-center gap-3 px-4 pt-3 sm:px-6">
+          <span className="min-w-0 flex-1 truncate text-sm text-ink-2">{summary}</span>
+          {children}
+        </div>
+      </div>
+    </>,
+    document.body,
   );
 }
 
@@ -79,7 +125,9 @@ export function Panel({
   marks?: boolean;
   interactive?: boolean;
 }) {
-  const cls = ['hb-panel p-4 sm:p-6', marks || interactive ? 'hb-marks' : '', interactive ? 'hb-interactive' : '', className].filter(Boolean).join(' ');
+  const cls = ['hb-panel p-4 sm:p-6', marks || interactive ? 'hb-marks' : '', interactive ? 'hb-interactive' : '', className]
+    .filter(Boolean)
+    .join(' ');
   return <Tag className={cls}>{children}</Tag>;
 }
 
@@ -216,7 +264,15 @@ export function Toggle({
         <span className="block">{label}</span>
         {help && <span className="block text-sm text-ink-2">{help}</span>}
       </span>
-      <input id={id} type="checkbox" role="switch" className="peer sr-only" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
+      <input
+        id={id}
+        type="checkbox"
+        role="switch"
+        className="peer sr-only"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+      />
       {/* 36 by 20. The knob is 14 px with a 2 px margin. */}
       <span
         aria-hidden
@@ -354,9 +410,4 @@ export function Field({ label, children, help }: { label: string; children: Reac
   );
 }
 
-/** Ellipsis-safe key name from a KeyboardEvent.code. */
-export function keyLabel(code: string): string {
-  if (code.startsWith('Key')) return code.slice(3);
-  if (code.startsWith('Digit')) return code.slice(5);
-  return code.replace(/([a-z])([A-Z0-9])/g, '$1 $2');
-}
+export { keyLabel } from '../../shared/keys';

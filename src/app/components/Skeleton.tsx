@@ -1,8 +1,10 @@
 // What a lazy route shows while its chunk loads. The blocks match the layout of the real pages.
 
+import { t } from '../i18n';
+
 export function PageSkeleton() {
   return (
-    <div role="status" aria-busy="true" aria-label="Loading">
+    <div role="status" aria-busy="true" aria-label={t('Loading')}>
       <div className="mb-8 space-y-3">
         <div className="hb-skeleton h-8 w-56" />
         <div className="hb-skeleton h-5 w-96 max-w-full" />
@@ -11,12 +13,12 @@ export function PageSkeleton() {
         <div className="hb-skeleton h-56" />
         <div className="hb-skeleton h-56" />
       </div>
-      <span className="sr-only">Loading.</span>
+      <span className="sr-only">{t('Loading.')}</span>
     </div>
   );
 }
 
 /** The play screen is full bleed, so its placeholder is a plain dark field. */
 export function SessionSkeleton() {
-  return <div role="status" aria-busy="true" aria-label="Loading" className="fixed inset-0 bg-bg" />;
+  return <div role="status" aria-busy="true" aria-label={t('Loading')} className="fixed inset-0 bg-bg" />;
 }

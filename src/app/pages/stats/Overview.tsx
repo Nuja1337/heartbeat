@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { ratingHistory } from '../../../analytics/index';
-import { OUTCOME_LABEL, drillText } from '../../../analytics/insightCopy';
+import { drillText, OUTCOME_LABEL, ruleTitle } from '../../../analytics/insightCopy';
 import { weekCompare } from '../../../analytics/sessions';
 import { saveDrill } from '../../../data/drills';
 import type { Drill, DrillEval } from '../../../data/schema';
@@ -16,6 +16,7 @@ import { SKILLS } from '../../../shared/catalog';
 import type { SkillId } from '../../../shared/types';
 import { dateOf, int, pct } from '../../format';
 import { invalidateAnalysis, useAnalysis } from '../../state/analysis';
+import { t } from '../../i18n';
 
 const TONE = { collecting: 'neutral', better: 'good', unclear: 'neutral', worse: 'warn' } as const;
 
@@ -23,18 +24,25 @@ function DrillRow({ drill, ev, onStop }: { drill: Drill; ev: DrillEval; onStop?:
   return (
     <li className="py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="font-medium">{drill.title}</span>
+        <span className="font-medium">{ruleTitle(drill.ruleId, drill.variant)}</span>
         <span className="flex items-center gap-2">
           <Badge tone={TONE[ev.outcome]}>{OUTCOME_LABEL[ev.outcome]}</Badge>
           {onStop && (
             <Button size="sm" variant="ghost" onClick={onStop}>
-              Stop tracking
+              {t('Stop tracking')}
             </Button>
           )}
         </span>
       </div>
-      <p className="text-sm text-ink-2">{drillText({ ruleId: drill.ruleId, variant: drill.variant, createdAt: drill.createdAt, eval: ev })}</p>
-      <p className="text-xs text-ink-3">Started {dateOf(drill.createdAt)}. {ev.sessions} drill {ev.sessions === 1 ? 'session' : 'sessions'} so far.</p>
+      <p className="text-sm text-ink-2">
+        {drillText({ ruleId: drill.ruleId, variant: drill.variant, createdAt: drill.createdAt, eval: ev })}
+      </p>
+      <p className="text-xs text-ink-3">
+        {t('Started {date}. {n, plural, one {# drill session} other {# drill sessions}} so far.', {
+          date: dateOf(drill.createdAt),
+          n: ev.sessions,
+        })}
+      </p>
     </li>
   );
 }
@@ -49,8 +57,8 @@ function History({ summaries, now }: { summaries: Parameters<typeof ratingHistor
   return (
     <Card>
       <div className="mb-3 flex flex-wrap items-end justify-between gap-4">
-        <Field label="Skill">
-          <select aria-label="Skill" value={skill} onChange={(e) => setSkill(e.target.value as SkillId)}>
+        <Field label={t('Skill')}>
+          <select aria-label={t('Skill')} value={skill} onChange={(e) => setSkill(e.target.value as SkillId)}>
             {series.map((l) => (
               <option key={l.skill} value={l.skill}>
                 {SKILLS[l.skill].label}
@@ -66,7 +74,7 @@ function History({ summaries, now }: { summaries: Parameters<typeof ratingHistor
 
 export function Overview() {
   const { data } = useAnalysis();
-  if (!data) return <p className="text-ink-2">Loading.</p>;
+  if (!data) return <p className="text-ink-2">{t('Loading.')}</p>;
   const week = weekCompare(data.summaries, data.now);
   const active = data.drills.filter((d) => d.drill.status === 'active' && !d.drill.final);
   const finished = data.drills.filter((d) => d.drill.final || d.drill.status === 'archived');
@@ -77,15 +85,15 @@ export function Overview() {
 
   return (
     <>
-      <PageHeader title="Stats" intro={INTRO.overview} />
+      <PageHeader title={t('Stats')} intro={INTRO.overview} />
       {data.summaries.length === 0 ? (
         <Card>
-          <p className="text-ink-2">{EMPTY_STATS}</p>
+          <p className="text-ink-2">{t(EMPTY_STATS)}</p>
         </Card>
       ) : (
         <div className="space-y-8">
           <section>
-            <SectionTitle>Ratings</SectionTitle>
+            <SectionTitle>{t('Ratings')}</SectionTitle>
             <div className="grid items-start gap-6 lg:grid-cols-5">
               <div className="lg:col-span-3">
                 <Ratings ratings={data.ratings} />
@@ -94,21 +102,23 @@ export function Overview() {
                 <Radar axes={data.radar} max={data.radarMax} />
               </Card>
             </div>
-            <p className="mt-2 text-sm text-ink-2">{TIER_NOTE}</p>
+            <p className="mt-2 text-sm text-ink-2">{t(TIER_NOTE)}</p>
           </section>
 
           <section>
-            <SectionTitle aside="Last 90 days">Rating history</SectionTitle>
+            <SectionTitle aside={t('Last 90 days')}>{t('Rating history')}</SectionTitle>
             <History summaries={data.summaries} now={data.now} />
           </section>
 
           <WeeklyChanges changes={data.changes} />
 
           <section>
-            <SectionTitle>What to work on</SectionTitle>
+            <SectionTitle>{t('What to work on')}</SectionTitle>
             {data.insights.length === 0 ? (
               <Card>
-                <p className="text-ink-2">No pattern stands out yet. Insights need 3 plays in the last 30 days and enough clicks to be sure of a pattern.</p>
+                <p className="text-ink-2">
+                  {t('No pattern stands out yet. Insights need 3 plays in the last 30 days and enough clicks to be sure of a pattern.')}
+                </p>
               </Card>
             ) : (
               <div className="space-y-3">
@@ -121,7 +131,7 @@ export function Overview() {
 
           {active.length > 0 && (
             <section>
-              <SectionTitle>Active drills</SectionTitle>
+              <SectionTitle>{t('Active drills')}</SectionTitle>
               <Card>
                 <ul className="divide-y divide-line">
                   {active.map((d) => (
@@ -134,11 +144,15 @@ export function Overview() {
 
           {finished.length > 0 && (
             <section>
-              <SectionTitle>Finished drills</SectionTitle>
+              <SectionTitle>{t('Finished drills')}</SectionTitle>
               <Card>
                 <ul className="divide-y divide-line">
                   {[...finished]
-                    .sort((a, b) => ['better', 'unclear', 'collecting', 'worse'].indexOf(a.eval.outcome) - ['better', 'unclear', 'collecting', 'worse'].indexOf(b.eval.outcome))
+                    .sort(
+                      (a, b) =>
+                        ['better', 'unclear', 'collecting', 'worse'].indexOf(a.eval.outcome) -
+                        ['better', 'unclear', 'collecting', 'worse'].indexOf(b.eval.outcome),
+                    )
                     .map((d) => (
                       <DrillRow key={d.drill.id} drill={d.drill} ev={d.eval} />
                     ))}
@@ -148,19 +162,21 @@ export function Overview() {
           )}
 
           <section>
-            <SectionTitle aside="Last 7 days against the 7 before">This week</SectionTitle>
+            <SectionTitle aside={t('Last 7 days against the 7 before')}>{t('This week')}</SectionTitle>
             <Card>
               <div className="flex flex-wrap gap-x-12 gap-y-4">
-                <Stat label="Plays" value={week.thisWeek.plays} sub={`${week.lastWeek.plays} last week`} />
-                <Stat label="Minutes" value={int(week.thisWeek.minutes)} sub={`${int(week.lastWeek.minutes)} last week`} />
+                <Stat label={t('Plays')} value={week.thisWeek.plays} sub={t('{n} last week', { n: week.lastWeek.plays })} />
+                <Stat label={t('Minutes')} value={int(week.thisWeek.minutes)} sub={t('{n} last week', { n: int(week.lastWeek.minutes) })} />
                 <Stat
-                  label="Accuracy"
-                  value={week.thisWeek.accuracy === null ? 'none' : pct(week.thisWeek.accuracy)}
-                  sub={week.lastWeek.accuracy === null ? 'no plays last week' : `${pct(week.lastWeek.accuracy)} last week`}
+                  label={t('Accuracy')}
+                  value={week.thisWeek.accuracy === null ? t('none') : pct(week.thisWeek.accuracy)}
+                  sub={week.lastWeek.accuracy === null ? t('no plays last week') : t('{n} last week', { n: pct(week.lastWeek.accuracy) })}
                 />
               </div>
               <p className="mt-3 text-sm">
-                <Link to="/stats/trends" className="text-accent hover:underline">See trends</Link>
+                <Link to="/stats/trends" className="text-accent hover:underline">
+                  {t('See trends')}
+                </Link>
               </p>
             </Card>
           </section>

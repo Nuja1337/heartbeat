@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { BEAT_MS, calibrationResult, CalibrationRun, DROP_MS, FIRST_BEAT_MS, KEEP_LAST, LEAD_IN_BEATS, nearestBeat, TAPS_NEEDED } from './run';
+import {
+  BEAT_MS,
+  calibrationResult,
+  CalibrationRun,
+  DROP_MS,
+  FIRST_BEAT_MS,
+  KEEP_LAST,
+  LEAD_IN_BEATS,
+  nearestBeat,
+  TAPS_NEEDED,
+} from './run';
 
 describe('calibrationResult', () => {
   it('gives the median and the sample standard deviation', () => {

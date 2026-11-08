@@ -19,10 +19,18 @@ import { previewRunning } from './components/SkinPreview';
 import { canShare, shareText } from './components/ShareButton';
 import { andList, count } from './format';
 import { bestOfDay, dailyHistory, dailyLaunch, dailyLevel } from './state/daily';
-import { recordDrillBetter } from './state/drills';
+import { recordDrillBetter } from './state/analysis';
 import * as Analytics from '../analytics/index';
 import { ensurePlan, planButtonLabel, planIsStale, planStatus } from './state/plan';
-import { SEEK_LEAD_MS, markersFromJudgments, markersFromRecords, nextMissTarget, replayLink, replayMarkers, seekTarget } from './state/replayMarkers';
+import {
+  SEEK_LEAD_MS,
+  markersFromJudgments,
+  markersFromRecords,
+  nextMissTarget,
+  replayLink,
+  replayMarkers,
+  seekTarget,
+} from './state/replayMarkers';
 
 const NOW = new Date(2026, 5, 10, 12, 0, 0).getTime();
 const DATE = localDateKey(NOW);
@@ -75,7 +83,15 @@ describe('replay markers', () => {
   });
 
   it('prefers the records and falls back to the judgments', () => {
-    const replay = { judgments: 'cm', map: { objects: [{ kind: 'circle' as const, time: 1 }, { kind: 'circle' as const, time: 2500 }] } };
+    const replay = {
+      judgments: 'cm',
+      map: {
+        objects: [
+          { kind: 'circle' as const, time: 1 },
+          { kind: 'circle' as const, time: 2500 },
+        ],
+      },
+    };
     expect(replayMarkers(records, replay).length).toBe(3);
     expect(replayMarkers(null, replay).map((x) => x.time)).toEqual([2500]);
     expect(replayMarkers([], replay).map((x) => x.time)).toEqual([2500]);
@@ -140,7 +156,13 @@ describe('plan status', () => {
   });
 
   it('has no next step when all are done', () => {
-    const s = planStatus(plan, planStepsDone(plan, [0, 1, 2, 3].map((i) => from(i))));
+    const s = planStatus(
+      plan,
+      planStepsDone(
+        plan,
+        [0, 1, 2, 3].map((i) => from(i)),
+      ),
+    );
     expect(s.next).toBeNull();
     expect(planButtonLabel(s)).toBeNull();
   });
@@ -237,7 +259,9 @@ describe('share text', () => {
   });
 
   it('names the mode, the level and the mods', () => {
-    expect(shareText({ modeId: 'dynamic', presetLevel: 4, mods: ['mirror'] }, 'https://x.test/s/abc')).toBe('Heartbeat map: Dynamic, Level 4, Mirror. https://x.test/s/abc');
+    expect(shareText({ modeId: 'dynamic', presetLevel: 4, mods: ['mirror'] }, 'https://x.test/s/abc')).toBe(
+      'Heartbeat map: Dynamic, Level 4, Mirror. https://x.test/s/abc',
+    );
     expect(shareText({ modeId: 'jumps', presetLevel: null, mods: [] }, 'u')).toBe('Heartbeat map: Jumps. u');
   });
 });

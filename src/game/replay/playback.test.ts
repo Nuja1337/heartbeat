@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_DIFFICULTY, DEFAULT_SETTINGS, LEVEL_PRESETS, MODES, TRACE_OP } from '../../shared/catalog';
-import type { LaunchRequest, PlaybackCallbacks, PlaybackHandle, PlaybackInfo, PlaybackSource, ReplayData, Settings } from '../../shared/types';
+import type {
+  LaunchRequest,
+  PlaybackCallbacks,
+  PlaybackHandle,
+  PlaybackInfo,
+  PlaybackSource,
+  ReplayData,
+  Settings,
+} from '../../shared/types';
 import { AudioEngine } from '../audio/audio';
 import { NOISY_PLAYER } from '../sim/autoplay';
 import { runHeadless } from '../sim/headless';

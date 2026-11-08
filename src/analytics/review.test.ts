@@ -13,14 +13,30 @@ import { summarizePlay } from './summary';
 const DAY = 86_400_000;
 const NOW = 1_800_000_000_000;
 
-const data = (list: ReturnType<typeof makeHistory>): PlayData[] => list.map((fx) => ({ summary: summarizePlay(fx.result), records: fx.records }));
-const hist = (o: FixtureOptions, count: number, endAt: number, seedStart: number, step = DAY, vary?: (i: number) => FixtureOptions): PlayData[] =>
-  data(makeHistory(count, { objects: 200, jumpsOnly: true, ...o }, { endAt, spacingMs: step, seedStart, vary }));
+const data = (list: ReturnType<typeof makeHistory>): PlayData[] =>
+  list.map((fx) => ({ summary: summarizePlay(fx.result), records: fx.records }));
+const hist = (
+  o: FixtureOptions,
+  count: number,
+  endAt: number,
+  seedStart: number,
+  step = DAY,
+  vary?: (i: number) => FixtureOptions,
+): PlayData[] => data(makeHistory(count, { objects: 200, jumpsOnly: true, ...o }, { endAt, spacingMs: step, seedStart, vary }));
 
 describe('direction wording uses the screen side', () => {
   it('maps every octant and sign to the side where the click lands', () => {
     // Lateral + is the heading turned a quarter clockwise on screen (y points down).
-    const phrase = ['to the right of', 'down and to the right of', 'below', 'down and to the left of', 'to the left of', 'up and to the left of', 'above', 'up and to the right of'];
+    const phrase = [
+      'to the right of',
+      'down and to the right of',
+      'below',
+      'down and to the left of',
+      'to the left of',
+      'up and to the left of',
+      'above',
+      'up and to the right of',
+    ];
     for (let o = 0; o < 8; o++) {
       for (const sign of [1, -1] as const) {
         const h = (o * Math.PI) / 4;
@@ -40,7 +56,12 @@ describe('direction wording uses the screen side', () => {
 
 describe('rules that talk about jumps count jumps', () => {
   it('does not fire direction-drift from stream notes', () => {
-    const streams = hist({ jumpsOnly: false, streamShare: 3, sliderShare: 0, spinnerShare: 0, octantLateral: { octant: 0, mean: 0.6 } }, 7, NOW - 600_000, 10);
+    const streams = hist(
+      { jumpsOnly: false, streamShare: 3, sliderShare: 0, spinnerShare: 0, octantLateral: { octant: 0, mean: 0.6 } },
+      7,
+      NOW - 600_000,
+      10,
+    );
     const found = detectInsights(streams, NOW);
     expect(found.find((i) => i.ruleId === 'direction-drift')).toBeUndefined();
   });
@@ -48,7 +69,15 @@ describe('rules that talk about jumps count jumps', () => {
   it('counts only jumps in the numbers it reports', () => {
     const plays = hist({ octantLateral: { octant: 2, mean: 0.5 } }, 7, NOW - 600_000, 20);
     const drift = detectInsights(plays, NOW).find((i) => i.ruleId === 'direction-drift')!;
-    const jumps = plays.flatMap((p) => p.records).filter((r) => isJump(r) && r.aimLateral !== null && r.features.direction !== null && Math.floor((((r.features.direction + 22.5) % 360) / 45)) % 8 === 2);
+    const jumps = plays
+      .flatMap((p) => p.records)
+      .filter(
+        (r) =>
+          isJump(r) &&
+          r.aimLateral !== null &&
+          r.features.direction !== null &&
+          Math.floor(((r.features.direction + 22.5) % 360) / 45) % 8 === 2,
+      );
     expect(drift.n).toBe(jumps.length);
   });
 
@@ -110,7 +139,13 @@ describe('locking', () => {
 
 describe('session insight timing', () => {
   const session = (): PlayData[] =>
-    data(makeHistory(7, { objects: 120, jumpsOnly: true }, { endAt: NOW - 2 * 60_000, spacingMs: 6 * 60_000, vary: (i) => ({ baseMiss: i < 4 ? 0.02 : 0.2 }) }));
+    data(
+      makeHistory(
+        7,
+        { objects: 120, jumpsOnly: true },
+        { endAt: NOW - 2 * 60_000, spacingMs: 6 * 60_000, vary: (i) => ({ baseMiss: i < 4 ? 0.02 : 0.2 }) },
+      ),
+    );
 
   it('stops once the session has ended (30 minutes without a play)', () => {
     const list = session();
@@ -177,7 +212,9 @@ describe('insights on realistic jump distances', () => {
     const cut = Number(i.variant!.match(/^s([\d.]+)/)![1]);
     const harder = hist({ jumpSpacings: [3, 4, 5, 6, 7], longAlong: -0.4, longFrom: 2.8, fastFrom: 0 }, 4, NOW + DAY, 380);
     const sample = ruleSample('long-undershoot', i.variant, buildRows(harder))!;
-    const expected = harder.flatMap((p) => p.records).filter((r) => isJump(r) && r.aimAlong !== null && (r.features.spacing ?? 0) >= cut).length;
+    const expected = harder
+      .flatMap((p) => p.records)
+      .filter((r) => isJump(r) && r.aimAlong !== null && (r.features.spacing ?? 0) >= cut).length;
     expect(sample.kind === 'mean' && sample.values.length).toBeLessThanOrEqual(expected);
     expect(sample.kind === 'mean' && sample.values.length).toBeGreaterThan(0);
   });

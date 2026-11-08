@@ -2,6 +2,8 @@
 // The renderer resolves it when the settings change, so no frame builds a colour string.
 
 import { PALETTES } from '../../shared/catalog';
+import { paletteForTheme } from '../../shared/theme';
+import type { ThemeId } from '../../shared/theme';
 import type { ApproachStyle, CursorStyle, Judgment, PaletteId, Settings } from '../../shared/types';
 import { hexAlpha } from './theme';
 
@@ -37,13 +39,14 @@ export interface Skin extends PaletteStrings {
   bitmapKey: string;
 }
 
-const palettes = new Map<PaletteId, PaletteStrings>();
+const palettes = new Map<string, PaletteStrings>();
 
-function paletteStrings(id: PaletteId): PaletteStrings {
+function paletteStrings(id: PaletteId, theme: ThemeId): PaletteStrings {
   const known = id in PALETTES ? id : 'heartbeat';
-  let p = palettes.get(known);
+  const key = `${known}|${theme}`;
+  let p = palettes.get(key);
   if (p) return p;
-  const src = PALETTES[known];
+  const src = paletteForTheme(known, PALETTES[known], theme);
   const judge = JUDGE_ORDER.map((j) => src.judgments[j]);
   p = {
     palette: known,
@@ -56,23 +59,23 @@ function paletteStrings(id: PaletteId): PaletteStrings {
     missSolid: hexAlpha(src.judgments.miss, 1),
     fx: [...judge, ...src.groups],
   };
-  palettes.set(known, p);
+  palettes.set(key, p);
   return p;
 }
 
 /** The colour group (0 to 3) of an object. */
 export const groupOf = (group: number): number => ((group % 4) + 4) % 4;
 
-/** Resolve the skin settings. The palette strings are built once per palette, and shared between skins. */
-export function resolveSkin(settings: Pick<Settings, 'skin'>): Skin {
+/** Resolve the skin settings. The palette strings are built once per palette and theme, and shared between skins. */
+export function resolveSkin(settings: Pick<Settings, 'skin'>, theme: ThemeId = 'dark'): Skin {
   const s = settings.skin;
-  const p = paletteStrings(s.palette);
+  const p = paletteStrings(s.palette, theme);
   return {
     ...p,
     approach: s.approach === 'fill' || s.approach === 'brackets' ? s.approach : 'ring',
     cursorStyle: s.cursorStyle === 'cross' || s.cursorStyle === 'dot' ? s.cursorStyle : 'ring',
     fieldGrid: s.fieldGrid,
     clickRipple: s.clickRipple,
-    bitmapKey: `${p.palette}|${s.fieldGrid ? 1 : 0}`,
+    bitmapKey: `${p.palette}|${theme}|${s.fieldGrid ? 1 : 0}`,
   };
 }

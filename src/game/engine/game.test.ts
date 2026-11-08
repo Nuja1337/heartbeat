@@ -45,7 +45,13 @@ function start(
     audio: { ...DEFAULT_SETTINGS.audio, ...overrides.audio },
   };
   const mode = overrides.mode ?? 'dynamic';
-  const launch = launchFor(mode === 'dynamic' ? LEVEL_PRESETS[2]!.difficulty : DEFAULT_DIFFICULTY, 5, overrides.length ?? 20, overrides.mods ?? [], mode);
+  const launch = launchFor(
+    mode === 'dynamic' ? LEVEL_PRESETS[2]!.difficulty : DEFAULT_DIFFICULTY,
+    5,
+    overrides.length ?? 20,
+    overrides.mods ?? [],
+    mode,
+  );
   const handle: GameHandle = createGameImpl(e.canvas as unknown as HTMLCanvasElement, launch, settings, callbacks);
   return { e, handle, results, pauses, errors, retries };
 }
@@ -286,7 +292,11 @@ describe('createGame', () => {
     env = e;
     e.canvas.getContext = () => null;
     const errors: string[] = [];
-    createGameImpl(e.canvas as unknown as HTMLCanvasElement, launchFor(), DEFAULT_SETTINGS, { onPause: vi.fn(), onFinish: vi.fn(), onError: (m) => errors.push(m) });
+    createGameImpl(e.canvas as unknown as HTMLCanvasElement, launchFor(), DEFAULT_SETTINGS, {
+      onPause: vi.fn(),
+      onFinish: vi.fn(),
+      onError: (m) => errors.push(m),
+    });
     expect(errors).toHaveLength(1);
   });
 });
@@ -548,7 +558,12 @@ describe('recording in the game', () => {
   it('makes a click ripple on a press, unless the skin or reduced motion turns it off', () => {
     const ripples = (opts: Parameters<typeof start>[0], skin: Partial<Settings['skin']> = {}) => {
       const { e, handle } = start(opts);
-      if (Object.keys(skin).length > 0) handle.setSettings({ ...DEFAULT_SETTINGS, display: { ...DEFAULT_SETTINGS.display, ...opts?.display }, skin: { ...DEFAULT_SETTINGS.skin, ...skin } });
+      if (Object.keys(skin).length > 0)
+        handle.setSettings({
+          ...DEFAULT_SETTINGS,
+          display: { ...DEFAULT_SETTINGS.display, ...opts?.display },
+          skin: { ...DEFAULT_SETTINGS.skin, ...skin },
+        });
       key(e, 'keydown', 'KeyZ');
       key(e, 'keyup', 'KeyZ');
       e.run(300);

@@ -5,7 +5,16 @@ import { resolve } from 'node:path';
 import { runInNewContext } from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { assetsFromManifest, cacheNameFor, hashText, isCacheable, reloadOnControllerChange, shouldRegister, updateAction, workerUrlFor } from './pwa';
+import {
+  assetsFromManifest,
+  cacheNameFor,
+  hashText,
+  isCacheable,
+  reloadOnControllerChange,
+  shouldRegister,
+  updateAction,
+  workerUrlFor,
+} from './pwa';
 
 const PUBLIC = resolve(fileURLToPath(new URL('.', import.meta.url)), '..', '..', 'public');
 const SW_SOURCE = readFileSync(resolve(PUBLIC, 'sw.js'), 'utf8');
@@ -13,9 +22,24 @@ const KILL_SOURCE = readFileSync(resolve(PUBLIC, 'sw-kill.js'), 'utf8');
 
 /** The shape Vite writes for build.manifest. */
 const MANIFEST = {
-  'index.html': { file: 'assets/index-abc.js', name: 'index', src: 'index.html', isEntry: true, css: ['assets/index-def.css'], assets: ['assets/font-1.woff2'] },
-  'src/app/pages/Results.tsx': { file: 'assets/Results-123.js', isDynamicEntry: true, imports: ['index.html'], css: ['assets/index-def.css'] },
-  'node_modules/@fontsource-variable/space-grotesk/files/font-1.woff2': { file: 'assets/font-1.woff2', src: 'node_modules/@fontsource-variable/space-grotesk/files/font-1.woff2' },
+  'index.html': {
+    file: 'assets/index-abc.js',
+    name: 'index',
+    src: 'index.html',
+    isEntry: true,
+    css: ['assets/index-def.css'],
+    assets: ['assets/font-1.woff2'],
+  },
+  'src/app/pages/Results.tsx': {
+    file: 'assets/Results-123.js',
+    isDynamicEntry: true,
+    imports: ['index.html'],
+    css: ['assets/index-def.css'],
+  },
+  'node_modules/@fontsource-variable/space-grotesk/files/font-1.woff2': {
+    file: 'assets/font-1.woff2',
+    src: 'node_modules/@fontsource-variable/space-grotesk/files/font-1.woff2',
+  },
 };
 
 describe('assetsFromManifest', () => {
@@ -27,6 +51,11 @@ describe('assetsFromManifest', () => {
 
   it('keeps a leading slash as it is', () => {
     expect(assetsFromManifest({ a: { file: '/assets/x.js' } })).toContain('/assets/x.js');
+  });
+
+  it('leaves the translation dictionaries out of the precache', () => {
+    const manifest = { 'src/i18n/locales/es.json': { file: 'assets/es-abc.js' }, 'src/main.tsx': { file: 'assets/index-abc.js' } };
+    expect(assetsFromManifest(manifest)).toEqual(['/', '/index.html', '/assets/index-abc.js']);
   });
 
   it('gives only the shell for anything that is not a manifest', () => {
@@ -136,11 +165,30 @@ function makeWorker(files: Record<string, () => Response | Promise<Response>>, s
     if (!make) return new Response('missing', { status: 404 });
     return make();
   };
-  runInNewContext(SW_SOURCE, { self, caches, fetch: fetchFake, Response, URL, Set, Promise, setTimeout: (...a: Parameters<typeof setTimeout>) => setTimeout(...a), clearTimeout: (t: Parameters<typeof clearTimeout>[0]) => clearTimeout(t), Math, Object, Array, JSON, Error });
+  runInNewContext(SW_SOURCE, {
+    self,
+    caches,
+    fetch: fetchFake,
+    Response,
+    URL,
+    Set,
+    Promise,
+    setTimeout: (...a: Parameters<typeof setTimeout>) => setTimeout(...a),
+    clearTimeout: (t: Parameters<typeof clearTimeout>[0]) => clearTimeout(t),
+    Math,
+    Object,
+    Array,
+    JSON,
+    Error,
+  });
 
   const run = async (type: string, event: Record<string, unknown> = {}) => {
     let pending: Promise<unknown> | undefined;
-    handlers.get(type)!({ ...event, waitUntil: (p: Promise<unknown>) => void (pending = p), respondWith: (p: Promise<unknown>) => void (pending = p) });
+    handlers.get(type)!({
+      ...event,
+      waitUntil: (p: Promise<unknown>) => void (pending = p),
+      respondWith: (p: Promise<unknown>) => void (pending = p),
+    });
     return { pending };
   };
   return { run, stores, fetched, handlers, state: () => ({ claimed, skipped }) };
@@ -165,7 +213,9 @@ describe('public/sw.js', () => {
 
   it('installs by precaching the shell and every manifest entry into hb- plus a hash of the manifest', async () => {
     const w = makeWorker(GOOD);
-    await (await w.run('install')).pending;
+    await (
+      await w.run('install')
+    ).pending;
     const name = cacheNameFor(MANIFEST_TEXT);
     expect([...w.stores.keys()]).toEqual([name]);
     expect([...w.stores.get(name)!.keys()].sort()).toEqual(assetsFromManifest(MANIFEST).sort());
@@ -181,16 +231,22 @@ describe('public/sw.js', () => {
 
   it('names its cache from its own ?v= address and keeps using it after a restart', async () => {
     const w = makeWorker(GOOD, '?v=abc123');
-    await (await w.run('install')).pending;
+    await (
+      await w.run('install')
+    ).pending;
     expect([...w.stores.keys()]).toEqual(['hb-abc123']);
     // An older build's cache sits last in the key list, and a restarted worker has lost its memory.
     const restarted = makeWorker({ ...GOOD, '/assets/new.js': js }, '?v=abc123');
     restarted.stores.set('hb-abc123', new Map());
     restarted.stores.set('hb-zzz-old', new Map());
-    await restarted.run('fetch', { request: { method: 'GET', url: 'https://app.test/assets/new.js', mode: 'cors' } }).then((r) => r.pending);
+    await restarted
+      .run('fetch', { request: { method: 'GET', url: 'https://app.test/assets/new.js', mode: 'cors' } })
+      .then((r) => r.pending);
     expect(restarted.stores.get('hb-abc123')!.has('/assets/new.js')).toBe(true);
     expect(restarted.stores.get('hb-zzz-old')!.has('/assets/new.js')).toBe(false);
-    await (await restarted.run('activate')).pending;
+    await (
+      await restarted.run('activate')
+    ).pending;
     expect([...restarted.stores.keys()]).toEqual(['hb-abc123']);
   });
 
@@ -203,9 +259,12 @@ describe('public/sw.js', () => {
   });
 
   it('stores a redirected shell as a plain response', async () => {
-    const redirected = () => Object.defineProperty(new Response('<html>', { headers: { 'Content-Type': 'text/html' } }), 'redirected', { value: true });
+    const redirected = () =>
+      Object.defineProperty(new Response('<html>', { headers: { 'Content-Type': 'text/html' } }), 'redirected', { value: true });
     const w = makeWorker({ ...GOOD, '/index.html': redirected });
-    await (await w.run('install')).pending;
+    await (
+      await w.run('install')
+    ).pending;
     const stored = w.stores.get(cacheNameFor(MANIFEST_TEXT))!.get('/index.html')!;
     expect(stored.redirected).toBe(false);
     expect(await stored.text()).toBe('<html>');
@@ -213,9 +272,13 @@ describe('public/sw.js', () => {
 
   it('serves /assets from the cache first, and caches only good non-HTML answers', async () => {
     const w = makeWorker({ ...GOOD, '/assets/new.js': js, '/assets/gone.js': html });
-    await (await w.run('install')).pending;
+    await (
+      await w.run('install')
+    ).pending;
     const before = w.fetched.length;
-    const hit = await (await w.run('fetch', { request: { method: 'GET', url: 'https://app.test/assets/index-abc.js', mode: 'cors' } })).pending;
+    const hit = await (
+      await w.run('fetch', { request: { method: 'GET', url: 'https://app.test/assets/index-abc.js', mode: 'cors' } })
+    ).pending;
     expect(await (hit as Response).text()).toBe('code');
     expect(w.fetched.length).toBe(before);
 
@@ -223,20 +286,26 @@ describe('public/sw.js', () => {
     expect(await (fresh as Response).text()).toBe('code');
     expect(w.stores.get(cacheNameFor(MANIFEST_TEXT))!.has('/assets/new.js')).toBe(true);
 
-    await (await w.run('fetch', { request: { method: 'GET', url: 'https://app.test/assets/gone.js', mode: 'cors' } })).pending;
+    await (
+      await w.run('fetch', { request: { method: 'GET', url: 'https://app.test/assets/gone.js', mode: 'cors' } })
+    ).pending;
     expect(w.stores.get(cacheNameFor(MANIFEST_TEXT))!.has('/assets/gone.js')).toBe(false);
   });
 
   it('answers a navigation from the network, and from the cached shell after 3 s without one', async () => {
     const w = makeWorker({ ...GOOD, '/stats': () => new Response('live', { headers: { 'Content-Type': 'text/html' } }) });
-    await (await w.run('install')).pending;
+    await (
+      await w.run('install')
+    ).pending;
     const nav = { method: 'GET', url: 'https://app.test/stats', mode: 'navigate' };
     const live = await (await w.run('fetch', { request: nav })).pending;
     expect(await (live as Response).text()).toBe('live');
 
     // A network that never answers.
     const slow = makeWorker({ ...GOOD, '/stats': () => new Promise<Response>(() => undefined) });
-    await (await slow.run('install')).pending;
+    await (
+      await slow.run('install')
+    ).pending;
     const { pending } = await slow.run('fetch', { request: nav });
     await vi.advanceTimersByTimeAsync(2900);
     let settled = false;
@@ -249,7 +318,9 @@ describe('public/sw.js', () => {
 
   it('leaves other requests to the network', async () => {
     const w = makeWorker(GOOD);
-    await (await w.run('install')).pending;
+    await (
+      await w.run('install')
+    ).pending;
     for (const request of [
       { method: 'POST', url: 'https://app.test/assets/x.js', mode: 'cors' },
       { method: 'GET', url: 'https://other.test/assets/x.js', mode: 'cors' },
@@ -261,11 +332,15 @@ describe('public/sw.js', () => {
 
   it('removes every cache but the current one on activate, whatever its prefix, and claims clients', async () => {
     const w = makeWorker(GOOD);
-    await (await w.run('install')).pending;
+    await (
+      await w.run('install')
+    ).pending;
     w.stores.set('hb-old', new Map());
     w.stores.set('earlier-build', new Map()); // Caches from before the rename start with another prefix.
     w.stores.set('other-app', new Map());
-    await (await w.run('activate')).pending;
+    await (
+      await w.run('activate')
+    ).pending;
     expect([...w.stores.keys()].sort()).toEqual([cacheNameFor(MANIFEST_TEXT)]);
     expect(w.state().claimed).toBe(true);
   });
@@ -297,8 +372,14 @@ describe('public/sw-kill.js', () => {
       registration: { unregister: async () => void log.unregistered++ },
       clients: {
         matchAll: async () => [
-          { url: 'https://app.test/stats', navigate: async (u: string) => (navigateFails ? Promise.reject(new Error('no')) : void log.navigated.push(u)) },
-          { url: 'https://app.test/', navigate: async (u: string) => (navigateFails ? Promise.reject(new Error('no')) : void log.navigated.push(u)) },
+          {
+            url: 'https://app.test/stats',
+            navigate: async (u: string) => (navigateFails ? Promise.reject(new Error('no')) : void log.navigated.push(u)),
+          },
+          {
+            url: 'https://app.test/',
+            navigate: async (u: string) => (navigateFails ? Promise.reject(new Error('no')) : void log.navigated.push(u)),
+          },
         ],
       },
       addEventListener: (type: string, fn: Handler) => void handlers.set(type, fn),

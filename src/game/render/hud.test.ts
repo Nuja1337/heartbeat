@@ -22,8 +22,21 @@ describe('Hud text', () => {
   const skin = resolveSkin(DEFAULT_SETTINGS);
   const layout = computeLayout(1280, 720);
   const data = (over: Partial<HudData>): HudData => ({
-    showScore: false, score: 0, combo: 0, accuracy: 1, health: null, timeFraction: 0, level: 3, set: 2,
-    windows: { crisp: 30, solid: 60, rough: 100 } as HudData['windows'], errorBar: true, fps: null, retry: 0, frames: null, frameBudgetMs: null, ...over,
+    showScore: false,
+    score: 0,
+    combo: 0,
+    accuracy: 1,
+    health: null,
+    timeFraction: 0,
+    level: 3,
+    set: 2,
+    windows: { crisp: 30, solid: 60, rough: 100 } as HudData['windows'],
+    errorBar: true,
+    fps: null,
+    retry: 0,
+    frames: null,
+    frameBudgetMs: null,
+    ...over,
   });
 
   it('builds the set text once per set, not on every frame', () => {

@@ -2,7 +2,7 @@
 
 import { Component, useState } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
-import { count as plural } from '../format';
+import { count, t } from '../i18n';
 import { IconDownload, IconHome, IconRefresh } from './icons';
 import { Button, Notice, buttonClass } from './ui';
 
@@ -42,9 +42,9 @@ function Broken({ error }: { error: Error }) {
       // Loaded now, so a broken chunk can't stop the export from being offered.
       const { downloadExport } = await import('../state/exportFile');
       const n = await downloadExport(false);
-      setMessage({ tone: 'good', text: `Exported ${plural(n, 'play')}.` });
+      setMessage({ tone: 'good', text: t('Exported {plays}.', { plays: count(n, 'play') }) });
     } catch (e) {
-      setMessage({ tone: 'bad', text: e instanceof Error ? e.message : 'The export failed.' });
+      setMessage({ tone: 'bad', text: e instanceof Error ? e.message : t('The export failed.') });
     } finally {
       setBusy(false);
     }
@@ -53,23 +53,23 @@ function Broken({ error }: { error: Error }) {
   return (
     <div role="alert" className="mx-auto my-12 max-w-xl px-4">
       <div className="hb-panel hb-marks p-6 sm:p-8">
-        <span className="hb-kicker text-danger before:bg-danger">Error</span>
-        <h1 className="mt-3 text-2xl">Something broke on this page.</h1>
-        <p className="mt-2 text-ink-2">Reloading usually fixes it. Your plays stay on this device.</p>
+        <span className="hb-kicker text-danger before:bg-danger">{t('Error')}</span>
+        <h1 className="mt-3 text-2xl">{t('Something broke on this page.')}</h1>
+        <p className="mt-2 text-ink-2">{t('Reloading usually fixes it. Your plays stay on this device.')}</p>
         {error.message && <p className="mt-3 break-words font-mono text-sm text-ink-3">{error.message}</p>}
         <div className="mt-6 flex flex-wrap gap-2">
           <Button variant="primary" onClick={() => window.location.reload()}>
             <IconRefresh size={16} />
-            Reload
+            {t('Reload')}
           </Button>
           {/* A plain link, so it works even when the router is what broke. */}
           <a href="/" className={buttonClass('secondary')}>
             <IconHome size={16} />
-            Go home
+            {t('Go home')}
           </a>
           <Button disabled={busy} onClick={() => void exportData()}>
             <IconDownload size={16} />
-            Export your data
+            {t('Export your data')}
           </Button>
         </div>
         {message && (

@@ -17,7 +17,26 @@ import {
   modConflicts,
 } from '../../shared/catalog';
 import { decodeReplay, encodeReplay } from '../../shared/replay';
-import type { ApproachStyle, CalibrationHandle, CalibrationKind, CursorStyle, DifficultySettings, GameHandle, LaunchRequest, MetronomeMode, ModId, ModeId, ModuleId, PaletteId, PlaybackHandle, PlaybackSource, PlayResult, Settings, SoundSetId, TestSound } from '../../shared/types';
+import type {
+  ApproachStyle,
+  CalibrationHandle,
+  CalibrationKind,
+  CursorStyle,
+  DifficultySettings,
+  GameHandle,
+  LaunchRequest,
+  MetronomeMode,
+  ModId,
+  ModeId,
+  ModuleId,
+  PaletteId,
+  PlaybackHandle,
+  PlaybackSource,
+  PlayResult,
+  Settings,
+  SoundSetId,
+  TestSound,
+} from '../../shared/types';
 import '@fontsource-variable/space-grotesk';
 import { ENGINE_VERSION, GENERATOR_VERSION, createCalibration, createGame, createPlayback, playTestSound, previewLaunch } from '../index';
 import { autoplayReplay } from '../replay/autoplayReplay';
@@ -89,14 +108,25 @@ let demoMisses = false;
 
 document.body.style.cssText = 'margin:0;background:#0b0f14;color:#e5e7eb;font:13px/1.4 system-ui,sans-serif;overflow:hidden';
 const canvas = el('canvas', { style: 'position:fixed;inset:0;width:100vw;height:100vh;display:block' });
-const panel = el('div', { style: 'position:fixed;top:0;left:0;bottom:0;width:380px;overflow:auto;padding:14px;box-sizing:border-box;background:rgba(11,15,20,0.96);border-right:1px solid #1f2937;z-index:5' });
-const pauseBox = el('div', { style: 'position:fixed;inset:0;display:none;align-items:center;justify-content:center;gap:12px;background:rgba(5,7,10,0.6);z-index:8' });
+const panel = el('div', {
+  style:
+    'position:fixed;top:0;left:0;bottom:0;width:380px;overflow:auto;padding:14px;box-sizing:border-box;background:rgba(11,15,20,0.96);border-right:1px solid #1f2937;z-index:5',
+});
+const pauseBox = el('div', {
+  style: 'position:fixed;inset:0;display:none;align-items:center;justify-content:center;gap:12px;background:rgba(5,7,10,0.6);z-index:8',
+});
 const panelButton = el('button', { style: 'position:fixed;top:8px;left:8px;z-index:9;display:none', textContent: 'Back to the harness' });
-const watchBar = el('div', { style: 'position:fixed;left:0;right:0;bottom:0;display:none;align-items:center;gap:10px;padding:8px 14px;background:rgba(5,7,10,0.85);z-index:9' });
+const watchBar = el('div', {
+  style:
+    'position:fixed;left:0;right:0;bottom:0;display:none;align-items:center;gap:10px;padding:8px 14px;background:rgba(5,7,10,0.85);z-index:9',
+});
 document.body.append(canvas, panel, pauseBox, panelButton, watchBar);
 
 const log = el('pre', { style: 'white-space:pre-wrap;margin:8px 0;font-size:12px' });
-const json = el('textarea', { style: 'width:100%;height:120px;font-size:11px;background:#0e141b;color:#9ca3af;border:1px solid #1f2937', readOnly: true });
+const json = el('textarea', {
+  style: 'width:100%;height:120px;font-size:11px;background:#0e141b;color:#9ca3af;border:1px solid #1f2937',
+  readOnly: true,
+});
 
 pauseBox.append(
   el('button', { textContent: 'Resume', style: 'padding:10px 18px;font-size:15px', click: () => handle?.resume() }),
@@ -106,7 +136,12 @@ pauseBox.append(
 /* ------------------------------------------------------------- the form */
 
 function row(label: string, control: HTMLElement): HTMLElement {
-  return el('label', { style: 'display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 0' }, el('span', {}, label), control);
+  return el(
+    'label',
+    { style: 'display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 0' },
+    el('span', {}, label),
+    control,
+  );
 }
 
 function number(value: number, min: number, max: number, step: number, on: (v: number) => void): HTMLInputElement {
@@ -153,38 +188,81 @@ function build(): void {
   const m = MODES[form.mode];
   panel.append(el('h3', { style: 'margin:0 0 8px' }, `Heartbeat harness (engine ${ENGINE_VERSION}, generator ${GENERATOR_VERSION})`));
   panel.append(
-    row('Mode', select(MODE_ORDER.map((id) => [id, MODES[id].label]), form.mode, (v) => {
-      form.mode = v as ModeId;
-      form.length = MODES[form.mode].defaultLengthSec;
-      build();
-    })),
+    row(
+      'Mode',
+      select(
+        MODE_ORDER.map((id) => [id, MODES[id].label]),
+        form.mode,
+        (v) => {
+          form.mode = v as ModeId;
+          form.length = MODES[form.mode].defaultLengthSec;
+          build();
+        },
+      ),
+    ),
   );
   if (form.mode === 'dynamic') {
     panel.append(
-      row('Preset', select([['0', 'Custom'], ...LEVEL_PRESETS.map((p) => [String(p.level), p.label] as [string, string])], String(form.preset), (v) => {
-        form.preset = Number(v);
-        const p = LEVEL_PRESETS.find((x) => x.level === form.preset);
-        if (p) {
-          form.difficulty = { ...p.difficulty };
-          form.length = p.lengthSec;
-        }
-        build();
-      })),
+      row(
+        'Preset',
+        select([['0', 'Custom'], ...LEVEL_PRESETS.map((p) => [String(p.level), p.label] as [string, string])], String(form.preset), (v) => {
+          form.preset = Number(v);
+          const p = LEVEL_PRESETS.find((x) => x.level === form.preset);
+          if (p) {
+            form.difficulty = { ...p.difficulty };
+            form.length = p.lengthSec;
+          }
+          build();
+        }),
+      ),
     );
     for (const key of Object.keys(DIFFICULTY_LIMITS) as (keyof DifficultySettings)[]) {
       const lim = DIFFICULTY_LIMITS[key];
       panel.append(
-        row(lim.label, number(form.difficulty[key], lim.min, lim.max, lim.step, (v) => {
-          form.difficulty = { ...form.difficulty, [key]: v };
-          form.preset = 0;
-        })),
+        row(
+          lim.label,
+          number(form.difficulty[key], lim.min, lim.max, lim.step, (v) => {
+            form.difficulty = { ...form.difficulty, [key]: v };
+            form.preset = 0;
+          }),
+        ),
       );
     }
   } else if ((MODULE_IDS as ModeId[]).includes(form.mode) || form.mode === 'mix' || form.mode === 'warmup' || form.mode === 'stamina') {
-    panel.append(row('Module level', number(form.level, 1, 15, 0.5, (v) => (form.level = v))));
+    panel.append(
+      row(
+        'Module level',
+        number(form.level, 1, 15, 0.5, (v) => (form.level = v)),
+      ),
+    );
   }
-  panel.append(row('Length (s)', select(m.lengthOptions.map((n) => [String(n), String(n)]), String(m.lengthOptions.includes(form.length) ? form.length : m.defaultLengthSec), (v) => (form.length = Number(v)))));
-  panel.append(row('Seed', el('span', {}, number(form.seed, 0, 4294967295, 1, (v) => (form.seed = v >>> 0)), el('button', { textContent: 'New', click: () => { form.seed = Math.floor(Math.random() * 2 ** 32); build(); } }))));
+  panel.append(
+    row(
+      'Length (s)',
+      select(
+        m.lengthOptions.map((n) => [String(n), String(n)]),
+        String(m.lengthOptions.includes(form.length) ? form.length : m.defaultLengthSec),
+        (v) => (form.length = Number(v)),
+      ),
+    ),
+  );
+  panel.append(
+    row(
+      'Seed',
+      el(
+        'span',
+        {},
+        number(form.seed, 0, 4294967295, 1, (v) => (form.seed = v >>> 0)),
+        el('button', {
+          textContent: 'New',
+          click: () => {
+            form.seed = Math.floor(Math.random() * 2 ** 32);
+            build();
+          },
+        }),
+      ),
+    ),
+  );
 
   panel.append(el('h4', { style: 'margin:10px 0 2px' }, 'Mods'));
   const conflicts = modConflicts(form.mods);
@@ -202,9 +280,24 @@ function build(): void {
 
   panel.append(el('h4', { style: 'margin:10px 0 2px' }, 'Input'));
   const s = form.settings;
-  panel.append(row('Raw input', check(s.input.rawInput, (v) => (s.input.rawInput = v))));
-  panel.append(row('Sensitivity', number(s.input.sensitivity, 0.1, 5, 0.1, (v) => (s.input.sensitivity = v))));
-  panel.append(row('Mouse buttons', check(s.input.mouseButtons, (v) => (s.input.mouseButtons = v))));
+  panel.append(
+    row(
+      'Raw input',
+      check(s.input.rawInput, (v) => (s.input.rawInput = v)),
+    ),
+  );
+  panel.append(
+    row(
+      'Sensitivity',
+      number(s.input.sensitivity, 0.1, 5, 0.1, (v) => (s.input.sensitivity = v)),
+    ),
+  );
+  panel.append(
+    row(
+      'Mouse buttons',
+      check(s.input.mouseButtons, (v) => (s.input.mouseButtons = v)),
+    ),
+  );
   for (const i of [0, 1] as const) {
     const box = el('input', { value: s.input.keys[i], style: 'width:90px', readOnly: true });
     box.addEventListener('keydown', (e) => {
@@ -215,24 +308,114 @@ function build(): void {
     });
     panel.append(row(`Key ${i + 1}`, box));
   }
-  panel.append(row('Cursor', select([['system', 'System'], ['drawn', 'Drawn']], s.input.cursor, (v) => (s.input.cursor = v as 'system' | 'drawn'))));
-  panel.append(row('Cursor size', number(s.input.cursorScale, 0.5, 2, 0.1, (v) => (s.input.cursorScale = v))));
-  panel.append(row('Cursor trail', check(s.input.cursorTrail, (v) => (s.input.cursorTrail = v))));
+  panel.append(
+    row(
+      'Cursor',
+      select(
+        [
+          ['system', 'System'],
+          ['drawn', 'Drawn'],
+        ],
+        s.input.cursor,
+        (v) => (s.input.cursor = v as 'system' | 'drawn'),
+      ),
+    ),
+  );
+  panel.append(
+    row(
+      'Cursor size',
+      number(s.input.cursorScale, 0.5, 2, 0.1, (v) => (s.input.cursorScale = v)),
+    ),
+  );
+  panel.append(
+    row(
+      'Cursor trail',
+      check(s.input.cursorTrail, (v) => (s.input.cursorTrail = v)),
+    ),
+  );
 
   panel.append(el('h4', { style: 'margin:10px 0 2px' }, 'Audio'));
-  panel.append(row('Master', number(s.audio.master, 0, 1, 0.05, (v) => (s.audio.master = v))));
-  panel.append(row('Hits', number(s.audio.hits, 0, 1, 0.05, (v) => (s.audio.hits = v))));
-  panel.append(row('Effects', number(s.audio.effects, 0, 1, 0.05, (v) => (s.audio.effects = v))));
-  panel.append(row('Ambient', number(s.audio.ambient, 0, 1, 0.05, (v) => (s.audio.ambient = v))));
-  panel.append(row('Muted', check(s.audio.muted, (v) => (s.audio.muted = v))));
-  panel.append(row('Sound set', select(Object.entries(SOUND_SETS).map(([id, x]) => [id, x.label] as [string, string]), s.audio.soundSet, (v) => (s.audio.soundSet = v as SoundSetId))));
-  const tests: [TestSound, string][] = [['hit', 'Hit'], ['miss', 'Miss'], ['combo', 'Combo'], ['tick', 'Tick'], ['metronome', 'Metronome'], ['countdown', 'Countdown']];
   panel.append(
-    el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;margin:4px 0' }, ...tests.map(([id, label]) => el('button', { textContent: label, click: () => playTestSound(form.settings, id) }))),
+    row(
+      'Master',
+      number(s.audio.master, 0, 1, 0.05, (v) => (s.audio.master = v)),
+    ),
   );
-  panel.append(row('Metronome', select([['off', 'Off'], ['beat', 'Every beat'], ['bar', 'Every bar']], s.audio.metronome, (v) => (s.audio.metronome = v as MetronomeMode))));
-  panel.append(row('Metronome volume', number(s.audio.metronomeVolume, 0, 1, 0.05, (v) => (s.audio.metronomeVolume = v))));
-  panel.append(row('Audio offset (ms)', number(s.audio.offsetMs, -100, 300, 1, (v) => (s.audio.offsetMs = v))));
+  panel.append(
+    row(
+      'Hits',
+      number(s.audio.hits, 0, 1, 0.05, (v) => (s.audio.hits = v)),
+    ),
+  );
+  panel.append(
+    row(
+      'Effects',
+      number(s.audio.effects, 0, 1, 0.05, (v) => (s.audio.effects = v)),
+    ),
+  );
+  panel.append(
+    row(
+      'Ambient',
+      number(s.audio.ambient, 0, 1, 0.05, (v) => (s.audio.ambient = v)),
+    ),
+  );
+  panel.append(
+    row(
+      'Muted',
+      check(s.audio.muted, (v) => (s.audio.muted = v)),
+    ),
+  );
+  panel.append(
+    row(
+      'Sound set',
+      select(
+        Object.entries(SOUND_SETS).map(([id, x]) => [id, x.label] as [string, string]),
+        s.audio.soundSet,
+        (v) => (s.audio.soundSet = v as SoundSetId),
+      ),
+    ),
+  );
+  const tests: [TestSound, string][] = [
+    ['hit', 'Hit'],
+    ['miss', 'Miss'],
+    ['combo', 'Combo'],
+    ['tick', 'Tick'],
+    ['metronome', 'Metronome'],
+    ['countdown', 'Countdown'],
+  ];
+  panel.append(
+    el(
+      'div',
+      { style: 'display:flex;gap:6px;flex-wrap:wrap;margin:4px 0' },
+      ...tests.map(([id, label]) => el('button', { textContent: label, click: () => playTestSound(form.settings, id) })),
+    ),
+  );
+  panel.append(
+    row(
+      'Metronome',
+      select(
+        [
+          ['off', 'Off'],
+          ['beat', 'Every beat'],
+          ['bar', 'Every bar'],
+        ],
+        s.audio.metronome,
+        (v) => (s.audio.metronome = v as MetronomeMode),
+      ),
+    ),
+  );
+  panel.append(
+    row(
+      'Metronome volume',
+      number(s.audio.metronomeVolume, 0, 1, 0.05, (v) => (s.audio.metronomeVolume = v)),
+    ),
+  );
+  panel.append(
+    row(
+      'Audio offset (ms)',
+      number(s.audio.offsetMs, -100, 300, 1, (v) => (s.audio.offsetMs = v)),
+    ),
+  );
   panel.append(
     el(
       'div',
@@ -244,22 +427,112 @@ function build(): void {
 
   panel.append(el('h4', { style: 'margin:10px 0 2px' }, 'Display'));
   const d = s.display;
-  panel.append(row('Error bar', check(d.errorBar, (v) => (d.errorBar = v))));
-  panel.append(row('Path hints', check(d.pathHints, (v) => (d.pathHints = v))));
-  panel.append(row('Crisp pop-ups', check(d.crispPopups, (v) => (d.crispPopups = v))));
-  panel.append(row('Early and late', check(d.earlyLate, (v) => (d.earlyLate = v))));
-  panel.append(row('Reduce motion', check(d.reduceMotion, (v) => (d.reduceMotion = v))));
-  panel.append(row('Low latency canvas', check(d.lowLatency, (v) => (d.lowLatency = v))));
-  panel.append(row('Show fps', check(d.showFps, (v) => (d.showFps = v))));
-  panel.append(row('Frame graph', check(d.frameGraph, (v) => (d.frameGraph = v))));
-  panel.append(row('Visual offset (ms)', number(d.visualOffsetMs, -50, 150, 1, (v) => (d.visualOffsetMs = v))));
+  panel.append(
+    row(
+      'Error bar',
+      check(d.errorBar, (v) => (d.errorBar = v)),
+    ),
+  );
+  panel.append(
+    row(
+      'Path hints',
+      check(d.pathHints, (v) => (d.pathHints = v)),
+    ),
+  );
+  panel.append(
+    row(
+      'Crisp pop-ups',
+      check(d.crispPopups, (v) => (d.crispPopups = v)),
+    ),
+  );
+  panel.append(
+    row(
+      'Early and late',
+      check(d.earlyLate, (v) => (d.earlyLate = v)),
+    ),
+  );
+  panel.append(
+    row(
+      'Reduce motion',
+      check(d.reduceMotion, (v) => (d.reduceMotion = v)),
+    ),
+  );
+  panel.append(
+    row(
+      'Low latency canvas',
+      check(d.lowLatency, (v) => (d.lowLatency = v)),
+    ),
+  );
+  panel.append(
+    row(
+      'Show fps',
+      check(d.showFps, (v) => (d.showFps = v)),
+    ),
+  );
+  panel.append(
+    row(
+      'Frame graph',
+      check(d.frameGraph, (v) => (d.frameGraph = v)),
+    ),
+  );
+  panel.append(
+    row(
+      'Visual offset (ms)',
+      number(d.visualOffsetMs, -50, 150, 1, (v) => (d.visualOffsetMs = v)),
+    ),
+  );
 
   panel.append(el('h4', { style: 'margin:10px 0 2px' }, 'Skin'));
-  panel.append(row('Palette', select(Object.entries(PALETTES).map(([id, p]) => [id, p.label] as [string, string]), s.skin.palette, (v) => (s.skin.palette = v as PaletteId))));
-  panel.append(row('Approach', select([['ring', 'Ring'], ['fill', 'Fill'], ['brackets', 'Brackets']], s.skin.approach, (v) => (s.skin.approach = v as ApproachStyle))));
-  panel.append(row('Cursor style', select([['ring', 'Ring'], ['cross', 'Cross'], ['dot', 'Dot']], s.skin.cursorStyle, (v) => (s.skin.cursorStyle = v as CursorStyle))));
-  panel.append(row('Field grid', check(s.skin.fieldGrid, (v) => (s.skin.fieldGrid = v))));
-  panel.append(row('Click ripple', check(s.skin.clickRipple, (v) => (s.skin.clickRipple = v))));
+  panel.append(
+    row(
+      'Palette',
+      select(
+        Object.entries(PALETTES).map(([id, p]) => [id, p.label] as [string, string]),
+        s.skin.palette,
+        (v) => (s.skin.palette = v as PaletteId),
+      ),
+    ),
+  );
+  panel.append(
+    row(
+      'Approach',
+      select(
+        [
+          ['ring', 'Ring'],
+          ['fill', 'Fill'],
+          ['brackets', 'Brackets'],
+        ],
+        s.skin.approach,
+        (v) => (s.skin.approach = v as ApproachStyle),
+      ),
+    ),
+  );
+  panel.append(
+    row(
+      'Cursor style',
+      select(
+        [
+          ['ring', 'Ring'],
+          ['cross', 'Cross'],
+          ['dot', 'Dot'],
+        ],
+        s.skin.cursorStyle,
+        (v) => (s.skin.cursorStyle = v as CursorStyle),
+      ),
+    ),
+  );
+  panel.append(
+    row(
+      'Field grid',
+      check(s.skin.fieldGrid, (v) => (s.skin.fieldGrid = v)),
+    ),
+  );
+  panel.append(
+    row(
+      'Click ripple',
+      check(s.skin.clickRipple, (v) => (s.skin.clickRipple = v)),
+    ),
+  );
 
   panel.append(
     el(
@@ -269,7 +542,12 @@ function build(): void {
       el('button', { textContent: 'Preview map', click: preview }),
       el('button', { textContent: 'Watch last play', click: watch }),
       el('button', { textContent: 'Autoplay demo', click: demo }),
-      el('label', {}, check(demoMisses, (v) => (demoMisses = v)), ' demo player misses'),
+      el(
+        'label',
+        {},
+        check(demoMisses, (v) => (demoMisses = v)),
+        ' demo player misses',
+      ),
     ),
   );
   panel.append(log, json);
@@ -393,7 +671,11 @@ function watch(): void {
   slider.addEventListener('change', () => {
     dragging = false;
   });
-  const speed = select(['0.25', '0.5', '1', '1.5', '2'].map((v) => [v, `${v}x`] as [string, string]), '1', (v) => playback?.setSpeed(Number(v)));
+  const speed = select(
+    ['0.25', '0.5', '1', '1.5', '2'].map((v) => [v, `${v}x`] as [string, string]),
+    '1',
+    (v) => playback?.setSpeed(Number(v)),
+  );
   watchBar.append(
     el('button', { textContent: 'Play', click: () => playback?.play() }),
     el('button', { textContent: 'Pause', click: () => playback?.pause() }),

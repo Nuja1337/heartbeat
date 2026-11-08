@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getRecords, getSummary } from '../../data/plays';
 import type { PlaySummary } from '../../data/schema';
 import type { HitRecord } from '../../shared/types';
+import { t } from '../i18n';
 
 export interface LoadedPlay {
   summary: PlaySummary;
@@ -32,7 +33,7 @@ export function usePlay(id: string | undefined): { play: LoadedPlay | null; miss
         const records = summary.hasDetail ? await getRecords(id) : null;
         if (alive) setState({ id, play: { summary, records }, missing: false, error: null });
       } catch (e) {
-        if (alive) setState({ id, play: null, missing: false, error: e instanceof Error ? e.message : 'Could not read this play.' });
+        if (alive) setState({ id, play: null, missing: false, error: e instanceof Error ? e.message : t('Could not read this play.') });
       }
     })();
     return () => {

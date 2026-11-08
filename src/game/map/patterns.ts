@@ -1,14 +1,6 @@
 // The pattern library as turtle programs (PLAN section 7). A motif is a list of steps; MapBuilder places them.
 
-import {
-  flowShare,
-  halfBeatProb,
-  JUMP_MIN_RADII,
-  jumpDistance,
-  sliderSpanBeatsOptions,
-  streamMaxTurn,
-  streamSpacing,
-} from './difficulty';
+import { flowShare, halfBeatProb, JUMP_MIN_RADII, jumpDistance, sliderSpanBeatsOptions, streamMaxTurn, streamSpacing } from './difficulty';
 import type { GenParams, PatternKind } from './difficulty';
 import type { CurveFamily, Motif, MotifStep, SliderSpec } from './placement';
 import type { Rng } from './rng';
@@ -397,7 +389,12 @@ function kickSlider(ctx: PatternCtx): Motif | null {
     { off: 0, dist: jd, turn: next(), tag: 'jump' },
     { off: 1, dist: jd, turn: next(), tag: 'jump' },
     { off: 2, dist: jd, turn: next(), slider: spec, tag: 'slider' },
-    { off: 2 + spec.passes + 0.5, dist: Math.max(jumpDistance(p, 0.5, intensity), JUMP_MIN_RADII * p.radius * 1.05), turn: next(), tag: 'jump' },
+    {
+      off: 2 + spec.passes + 0.5,
+      dist: Math.max(jumpDistance(p, 0.5, intensity), JUMP_MIN_RADII * p.radius * 1.05),
+      turn: next(),
+      tag: 'jump',
+    },
   ];
   return { tag: 'slider', steps, beats: 4 };
 }

@@ -5,12 +5,12 @@ import { useCallback, useEffect, useState } from 'react';
 // The analytics modules load on first use, so Home's first paint doesn't wait for them.
 import type { Insight, RadarAxis, RatingInfo, StreakInfo, WeeklyChange, WeeklyGoal } from '../../analytics/index';
 import { listDrills, saveDrill } from '../../data/drills';
-import { getInsightSnooze, getTierHistory } from '../../data/meta';
+import { getInsightSnooze, getTierHistory, patchMilestones } from '../../data/meta';
 import { listSummaries, loadPlayData } from '../../data/plays';
 import { levelsFromProgress, loadProgress } from '../../data/progress';
 import type { DailyPlan, Drill, DrillEval, InsightSnooze, PlayData, PlaySummary, ProgressRow, TierHistory } from '../../data/schema';
 import type { ModuleId, SkillId } from '../../shared/types';
-import { recordDrillBetter } from './drills';
+import { t } from '../i18n';
 import { ensurePlan, planStatus } from './plan';
 import type { PlanStatus } from './plan';
 import { getSettings } from './store';
@@ -47,6 +47,27 @@ export interface Analysis {
   plan: (PlanStatus & { plan: DailyPlan }) | null;
 }
 
+/**
+ * Writes the "drill-better" milestone the first time any drill measures better. It does nothing when the
+ * milestone is already stored, and a failed write is tried again on the next analysis. The read and the write are one
+ * transaction, so a play saved at the same time can't lose its milestones. `isCurrent` turns the write off for an
+ * analysis that was started before the data was deleted.
+ */
+export async function recordDrillBetter(
+  evals: readonly DrillEval[],
+  now = Date.now(),
+  isCurrent: () => boolean = () => true,
+): Promise<void> {
+  if (!evals.some((e) => e.outcome === 'better')) return;
+  try {
+    const { recordMilestones } = await import('../../analytics/milestones');
+    if (!isCurrent()) return;
+    await patchMilestones((history) => (history['drill-better'] ? null : recordMilestones(history, ['drill-better'], now, null)));
+  } catch {
+    // Storage problems are shown elsewhere.
+  }
+}
+
 /* ---------------------------------------------------------------- summaries */
 
 let summariesCache: Promise<PlaySummary[]> | null = null;
@@ -76,7 +97,7 @@ export function loadSummaries(): Promise<PlaySummary[]> {
 function useInvalidation(): number {
   const [tick, setTick] = useState(0);
   useEffect(() => {
-    const bump = () => setTick((t) => t + 1);
+    const bump = () => setTick((n) => n + 1);
     listeners.add(bump);
     return () => {
       listeners.delete(bump);
@@ -97,6 +118,8 @@ export function useStreak(): StreakInfo | null {
     return () => {
       alive = false;
     };
+    // The tick is the signal to load again. Nothing in the effect reads it.
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies
   }, [tick]);
   return streak;
 }
@@ -109,7 +132,13 @@ async function compute(): Promise<Analysis> {
   const isCurrent = () => generation === started;
   const A = await import('../../analytics/index');
   const { INSIGHT_WINDOW_DAYS } = await import('../../analytics/insights');
-  const [summaries, progress, drills, tiers, snoozed] = await Promise.all([loadSummaries(), loadProgress(), listDrills(), getTierHistory(), getInsightSnooze()]);
+  const [summaries, progress, drills, tiers, snoozed] = await Promise.all([
+    loadSummaries(),
+    loadProgress(),
+    listDrills(),
+    getTierHistory(),
+    getInsightSnooze(),
+  ]);
 
   // Insights read the newest plays only. Drills load their own data below, outside this cap.
   const windowStart = now - INSIGHT_WINDOW_DAYS * DAY;
@@ -138,7 +167,11 @@ async function compute(): Promise<Analysis> {
     if (r.changed && isCurrent()) await saveDrill(r.drill).catch(() => undefined);
     evaluated.push({ drill: r.drill, eval: r.eval });
   }
-  await recordDrillBetter(evaluated.map((e) => e.eval), now, isCurrent);
+  await recordDrillBetter(
+    evaluated.map((e) => e.eval),
+    now,
+    isCurrent,
+  );
 
   const ratings = A.allRatings(summaries, now);
   const radar = A.radarData(ratings);
@@ -147,7 +180,16 @@ async function compute(): Promise<Analysis> {
   // The plan is built once a day and kept. A failure here leaves the rest of the page working.
   let plan: Analysis['plan'] = null;
   try {
-    const built = await ensurePlan(A, { now, insights, ratings, summaries, drills: evaluated.map((e) => e.drill), levels: levelsFromProgress(progress), dynamicLevel: suggestedLevel, isCurrent });
+    const built = await ensurePlan(A, {
+      now,
+      insights,
+      ratings,
+      summaries,
+      drills: evaluated.map((e) => e.drill),
+      levels: levelsFromProgress(progress),
+      dynamicLevel: suggestedLevel,
+      isCurrent,
+    });
     plan = { plan: built, ...planStatus(built, A.planStepsDone(built, summaries)) };
   } catch {
     plan = null;
@@ -205,12 +247,14 @@ export function useAnalysis(): AnalysisState {
         }
       },
       (e: unknown) => {
-        if (alive) setError(e instanceof Error ? e.message : 'Could not read your data.');
+        if (alive) setError(e instanceof Error ? e.message : t('Could not read your data.'));
       },
     );
     return () => {
       alive = false;
     };
+    // The tick is the signal to load again. Nothing in the effect reads it.
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies
   }, [tick]);
 
   const reload = useCallback(() => invalidateAnalysis(), []);

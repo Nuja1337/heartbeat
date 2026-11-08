@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { ApproachStyle, CircleObject, HitObject, SliderObject } from '../../shared/types';
-import { approachShape, APPROACH, followAlpha, followReveal, followSegment, followWanted, PULSE_FALLBACK_MS, reversePulse } from './approach';
+import {
+  approachShape,
+  APPROACH,
+  followAlpha,
+  followReveal,
+  followSegment,
+  followWanted,
+  PULSE_FALLBACK_MS,
+  reversePulse,
+} from './approach';
 import type { ApproachShape, FollowSegment } from './approach';
 
 const shape = (style: ApproachStyle, u: number, r = 50): ApproachShape => approachShape(style, u, r, { size: 0, rot: 0, alpha: 0 });

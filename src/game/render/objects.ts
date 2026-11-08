@@ -79,7 +79,7 @@ export class SpriteCache {
     g.fill();
     // Body, at 90%.
     const body = g.createRadialGradient(0, -radius * 0.35, radius * 0.05, 0, 0, radius);
-    body.addColorStop(0, '#1b2433');
+    body.addColorStop(0, COLORS.bodyTop);
     body.addColorStop(1, COLORS.body);
     g.globalAlpha = 0.9;
     g.fillStyle = body;
@@ -200,7 +200,7 @@ export function buildFieldBackground(make: CanvasFactory, ppu: number, dpr: numb
   const px = dpr / ppu; // one CSS pixel, in units
   // The panel, a little lighter in the middle.
   const bg = g.createRadialGradient(w / 2, h / 2, h * 0.05, w / 2, h / 2, w * 0.62);
-  bg.addColorStop(0, '#0d141f');
+  bg.addColorStop(0, COLORS.fieldCenter);
   bg.addColorStop(1, COLORS.field);
   g.fillStyle = bg;
   g.fillRect(0, 0, w, h);

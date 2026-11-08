@@ -16,7 +16,8 @@ export function shape(o: HitObject, step = 8): number[] {
 
 function minDist(a: number[], b: number[]): number {
   let best = Infinity;
-  for (let i = 0; i < a.length; i += 2) for (let j = 0; j < b.length; j += 2) best = Math.min(best, Math.hypot(a[i]! - b[j]!, a[i + 1]! - b[j + 1]!));
+  for (let i = 0; i < a.length; i += 2)
+    for (let j = 0; j < b.length; j += 2) best = Math.min(best, Math.hypot(a[i]! - b[j]!, a[i + 1]! - b[j + 1]!));
   return best;
 }
 
@@ -201,7 +202,8 @@ export function violations(map: GeneratedMap, rate = 1): string[] {
       out.push(`jump ${i}`);
     }
     // Rule 9: the object after a stack keeps 2.2 radii from it.
-    if (a.pattern === 'stack' && b.pattern !== 'stack' && Math.hypot(a.pos.x - b.pos.x, a.pos.y - b.pos.y) < 2.2 * r - 0.01) out.push(`after stack ${i}`);
+    if (a.pattern === 'stack' && b.pattern !== 'stack' && Math.hypot(a.pos.x - b.pos.x, a.pos.y - b.pos.y) < 2.2 * r - 0.01)
+      out.push(`after stack ${i}`);
   }
 
   // Visible together.
@@ -320,7 +322,14 @@ export function violations(map: GeneratedMap, rate = 1): string[] {
     const ph = Math.floor((o.time - t0 + 0.2) / phraseMs);
     if (ph === prevPhrase) continue;
     const role = roleAt(o.time);
-    if (prevI !== null && ph === prevPhrase + 1 && role !== 'rest' && prevRole !== 'rest' && role !== 'outro' && Math.abs(o.intensity - prevI) > 0.2 + 0.002) {
+    if (
+      prevI !== null &&
+      ph === prevPhrase + 1 &&
+      role !== 'rest' &&
+      prevRole !== 'rest' &&
+      role !== 'outro' &&
+      Math.abs(o.intensity - prevI) > 0.2 + 0.002
+    ) {
       out.push(`rule 13 at phrase ${ph}: ${prevI} to ${o.intensity}`);
     }
     prevI = o.intensity;

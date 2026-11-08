@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import type { DailyPlan } from '../../data/schema';
 import { duration } from '../format';
+import { t } from '../i18n';
 import { invalidateAnalysis } from '../state/analysis';
-import { planButtonLabel, planIsStale } from '../state/plan';
+import { planButtonLabel, planIsStale, stepTitle } from '../state/plan';
 import type { PlanStatus } from '../state/plan';
 import { startWithCurrentLevels } from '../state/launch';
 import { getAppState } from '../state/store';
@@ -20,19 +21,19 @@ export function PlanCard({ plan, status }: { plan: DailyPlan; status: PlanStatus
     if (!status.next) return;
     // The page may have been open past midnight. Its steps would not count for today, so load today's plan instead.
     if (planIsStale(plan, Date.now())) {
-      setError('A new day has started. Your plan is being updated, then you can start it.');
+      setError(t('A new day has started. Your plan is being updated, then you can start it.'));
       invalidateAnalysis();
       return;
     }
     setError(null);
     startWithCurrentLevels(navigate, status.next.launch, '/', getAppState().prefs.fullscreen, false).catch((e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Could not read your module levels.'),
+      setError(e instanceof Error ? e.message : t('Could not read your module levels.')),
     );
   };
 
   return (
     <Panel marks className="flex h-full flex-col">
-      <SectionTitle aside={`${status.doneCount} of ${plan.steps.length} done`}>Today</SectionTitle>
+      <SectionTitle aside={t('{done} of {total} done', { done: status.doneCount, total: plan.steps.length })}>{t('Today')}</SectionTitle>
       <ol className="flex-1 divide-y divide-line">
         {plan.steps.map((s, i) => {
           const done = status.done[i] === true;
@@ -46,8 +47,8 @@ export function PlanCard({ plan, status }: { plan: DailyPlan; status: PlanStatus
                 {done && <IconCheck size={16} />}
               </span>
               <span className={`min-w-0 flex-1 truncate ${done ? 'text-ink-2' : 'text-ink'}`}>
-                {s.title}
-                <span className="sr-only">{done ? ', done' : current ? ', next' : ''}</span>
+                {stepTitle(s)}
+                <span className="sr-only">{done ? t(', done') : current ? t(', next') : ''}</span>
               </span>
               <span className="shrink-0 text-sm tabular-nums text-ink-3">{duration(s.launch.lengthSec * 1000)}</span>
             </li>
@@ -59,7 +60,7 @@ export function PlanCard({ plan, status }: { plan: DailyPlan; status: PlanStatus
           {label}
         </Button>
       ) : (
-        <p className="mt-4 text-sm text-ink-2">Today's plan is done. Come back tomorrow for a new one.</p>
+        <p className="mt-4 text-sm text-ink-2">{t("Today's plan is done. Come back tomorrow for a new one.")}</p>
       )}
       {error && (
         <div className="mt-3">

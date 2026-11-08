@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { currentLevels } from '../../data/progress';
 import type { ModuleId } from '../../shared/types';
+import { t } from '../i18n';
 
 export type Levels = Partial<Record<ModuleId, number>>;
 
@@ -14,7 +15,7 @@ export function useCurrentLevels(): { levels: Levels | null; error: string | nul
     let alive = true;
     currentLevels().then(
       (levels) => alive && setState({ levels, error: null }),
-      (e: unknown) => alive && setState({ levels: null, error: e instanceof Error ? e.message : 'Could not read your module levels.' }),
+      (e: unknown) => alive && setState({ levels: null, error: e instanceof Error ? e.message : t('Could not read your module levels.') }),
     );
     return () => {
       alive = false;

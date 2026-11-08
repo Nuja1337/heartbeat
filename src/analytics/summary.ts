@@ -201,7 +201,14 @@ export function moveStat(records: readonly HitRecord[]): MoveStat | null {
   }
   if (n === 0) return null;
   const avg = (xs: number[]): number | null => (xs.length ? round3(mean(xs)) : null);
-  return { n, leaveFrac: avg(leave), primaryAlong: avg(primary), correctionPath: avg(path), correctionShare: avg(corr), efficiency: avg(eff) };
+  return {
+    n,
+    leaveFrac: avg(leave),
+    primaryAlong: avg(primary),
+    correctionPath: avg(path),
+    correctionShare: avg(corr),
+    efficiency: avg(eff),
+  };
 }
 
 export interface SummaryContext {

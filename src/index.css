@@ -2,7 +2,9 @@
 @import "@fontsource-variable/space-grotesk";
 
 /* Heartbeat 2.0 visual system (PLAN-2 §9). A dark precision instrument: near-black blue surfaces,
-   one lime signal accent, cyan for data, reticle corner marks, thin rules and no shadows. */
+   one lime signal accent, cyan for data, reticle corner marks, thin rules and no shadows.
+   The light theme keeps the hues and darkens the accents so they read on white. The hex values here mirror
+   src/shared/theme.ts, which the canvas and the charts read, and src/app/theme.test.ts checks the two agree. */
 
 @theme {
   --color-bg: #07090e;
@@ -14,7 +16,7 @@
   --color-line-2: #2b3648;
   --color-ink: #eef1f6;
   --color-ink-2: #a3adbd;
-  --color-ink-3: #6b7689;
+  --color-ink-3: #7c879b;
   --color-accent: #c9f25c;
   --color-accent-ink: #121a05;
   --color-data: #5ee7f2;
@@ -81,6 +83,73 @@
   --dur-small: 180ms;
   --dur-page: 280ms;
   --dur-count: 600ms;
+  /* Page decoration that is not a Tailwind token: the glow behind the top of the page, the dot grid, the top
+     highlight on panels and the arrow on a select. */
+  --page-glow: #10192a;
+  --page-dot: rgb(255 255 255 / 0.03);
+  --panel-highlight: rgb(255 255 255 / 0.04);
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23a3adbd' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  color-scheme: dark;
+}
+
+/* The light theme. The boot script in index.html sets data-theme before the first paint, from the saved choice or
+   the operating system, and src/app/state/appearance.ts keeps it up to date. */
+:root[data-theme="light"] {
+  --color-bg: #f5f6fa;
+  --color-bg-2: #eceef4;
+  --color-surface: #ffffff;
+  --color-surface-2: #f3f4f8;
+  --color-surface-3: #e6e9f0;
+  --color-line: #dfe3ec;
+  --color-line-2: #c6cdda;
+  --color-ink: #141925;
+  --color-ink-2: #48526a;
+  --color-ink-3: #5f6a81;
+  --color-accent: #4a7a00;
+  --color-accent-ink: #ffffff;
+  --color-data: #0b7a85;
+  --color-warn: #9a5a00;
+  --color-danger: #c91f3f;
+  --page-glow: #e3e8f3;
+  --page-dot: rgb(20 25 37 / 0.06);
+  --panel-highlight: rgb(255 255 255 / 0.6);
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2348526a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  color-scheme: light;
+}
+
+/* Text size. Everything on the pages is set in rem, so the root size scales it all. The playfield draws in pixels
+   and does not change. */
+:root[data-text="large"] {
+  font-size: 112.5%;
+}
+:root[data-text="larger"] {
+  font-size: 125%;
+}
+
+/* High contrast. The script sets data-contrast="high" when the setting is on or the operating system asks for more
+   contrast. Text goes to full white or black, secondary text and lines get stronger, and focus rings get thicker. */
+:root[data-contrast="high"] {
+  --color-ink: #ffffff;
+  --color-ink-2: #d5dbe6;
+  --color-ink-3: #b3bccb;
+  --color-line: #3a4659;
+  --color-line-2: #56637a;
+  --color-accent: #d9ff6b;
+  --color-data: #7df2fc;
+}
+:root[data-contrast="high"][data-theme="light"] {
+  --color-ink: #000000;
+  --color-ink-2: #262c3a;
+  --color-ink-3: #3a4357;
+  --color-line: #9aa3b5;
+  --color-line-2: #6f7a90;
+  --color-accent: #3a6000;
+  --color-data: #065f6a;
+  --color-warn: #7a4700;
+  --color-danger: #a8142f;
+}
+:root[data-contrast="high"] :focus-visible {
+  outline-width: 3px;
 }
 
 /* Reduce motion, from the setting or from the OS, sets every duration to 0. */
@@ -118,7 +187,6 @@
 /* Base rules sit in a layer so Tailwind utilities, such as button colors, can override them. */
 @layer base {
   html {
-    color-scheme: dark;
     background: var(--color-bg);
   }
 
@@ -127,7 +195,7 @@
     margin: 0;
     min-height: 100vh;
     background:
-      radial-gradient(1200px 600px at 20% -10%, #10192a, transparent 60%) no-repeat,
+      radial-gradient(1200px 600px at 20% -10%, var(--page-glow), transparent 60%) no-repeat,
       var(--color-bg);
     color: var(--color-ink);
     font-family: var(--font-sans);
@@ -138,14 +206,14 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* A 32 px dot grid at 3% white, fading out over the top 600 px. */
+  /* A 32 px dot grid, fading out over the top 600 px. */
   body::before {
     content: "";
     position: absolute;
     inset: 0 0 auto 0;
     height: 600px;
     pointer-events: none;
-    background-image: radial-gradient(rgb(255 255 255 / 0.03) 1px, transparent 1.5px);
+    background-image: radial-gradient(var(--page-dot) 1px, transparent 1.5px);
     background-size: 32px 32px;
     mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
@@ -246,6 +314,19 @@
   select:hover {
     border-color: var(--color-ink-3);
   }
+  select {
+    -webkit-appearance: none;
+    appearance: none;
+    padding-right: 2rem;
+    background-image: var(--select-arrow);
+    background-repeat: no-repeat;
+    background-position: right 0.6rem center;
+    cursor: pointer;
+  }
+  select option {
+    background: var(--color-surface);
+    color: var(--color-ink);
+  }
 }
 
 @layer components {
@@ -256,7 +337,7 @@
     background: var(--color-surface);
     border: 1px solid var(--color-line);
     border-radius: var(--radius-lg);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+    box-shadow: inset 0 1px 0 var(--panel-highlight);
   }
 
   /* Reticle corner marks, the signature. Ten pixels long, drawn inside the panel corners. */

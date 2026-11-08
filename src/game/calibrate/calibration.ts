@@ -14,6 +14,7 @@ import type { ApproachShape } from '../render/approach';
 import { drawApproachIndicator } from '../render/indicator';
 import { buildFieldBackground, defaultCanvasFactory, FIELD_PAD, SpriteCache } from '../render/objects';
 import { resolveSkin } from '../render/skin';
+import { applyCanvasTheme, canvasThemeFor } from '../render/theme';
 import type { Skin } from '../render/skin';
 import { COLORS, FONT } from '../render/theme';
 import { BEAT_MS, CalibrationRun, FIRST_BEAT_MS, LEAD_IN_BEATS } from './run';
@@ -59,13 +60,20 @@ class Calibration implements CalibrationHandle, InputSink {
     private ctx: CanvasRenderingContext2D,
   ) {
     this.run = new CalibrationRun(kind);
-    this.skin = resolveSkin(settings);
+    this.skin = resolveSkin(settings, canvasThemeFor(settings));
+    applyCanvasTheme(canvasThemeFor(settings));
     // Any mouse button counts as a tap here, whatever the game setting says.
     const forInput: Settings = { ...settings, input: { ...settings.input, mouseButtons: true } };
     if (kind === 'audio') {
       // Clicks at the metronome volume (at least half), with the offset at 0 so the result is the whole offset.
       const a = settings.audio;
-      this.audio = new AudioEngine({ ...a, muted: false, metronome: 'beat', metronomeVolume: Math.max(0.5, a.metronomeVolume), offsetMs: 0 });
+      this.audio = new AudioEngine({
+        ...a,
+        muted: false,
+        metronome: 'beat',
+        metronomeVolume: Math.max(0.5, a.metronomeVolume),
+        offsetMs: 0,
+      });
     }
     this.pf = new Playfield(canvas);
     this.pf.onResize = () => {
@@ -220,7 +228,7 @@ class Calibration implements CalibrationHandle, InputSink {
     ctx.textAlign = 'left';
     ctx.font = F_TITLE;
     ctx.fillStyle = COLORS.ink;
-    ctx.fillText(S.title[this.kind], ox, 28);
+    ctx.fillText(S.title(this.kind), ox, 28);
     if (run.state !== 'ready') {
       ctx.textAlign = 'right';
       ctx.font = F_COUNT;
@@ -231,10 +239,10 @@ class Calibration implements CalibrationHandle, InputSink {
     ctx.font = F_SUB;
     ctx.fillStyle = COLORS.ink2;
     let line: string;
-    if (run.state === 'ready') line = this.interrupted ? S.paused : S.ready[this.kind];
+    if (run.state === 'ready') line = this.interrupted ? S.paused : S.ready(this.kind);
     else if (run.state === 'done') line = S.doneSub(run.result().offsetMs);
-    else if (run.leadInBeat(now) > 0) line = S.leadIn[this.kind];
-    else line = run.lastError !== null && !run.lastKept && now - run.lastPressAt < 1500 ? S.tooFar : S.tapping[this.kind];
+    else if (run.leadInBeat(now) > 0) line = S.leadIn(this.kind);
+    else line = run.lastError !== null && !run.lastKept && now - run.lastPressAt < 1500 ? S.tooFar : S.tapping(this.kind);
     ctx.fillText(line, ox + w / 2, cssH - 24);
 
     const cx = ox + w / 2;

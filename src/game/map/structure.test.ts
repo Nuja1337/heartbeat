@@ -43,8 +43,18 @@ describe('layoutRoles', () => {
   it('uses one build and one peak per block below 10 phrases and two from 10', () => {
     expect(runs(layoutRoles(9)).filter((r) => r.role === 'build' && r.n > 2)).toHaveLength(0);
     const r = runs(layoutRoles(40));
-    expect(r.filter((x) => x.role === 'build').slice(0, -1).every((x) => x.n === 2)).toBe(true);
-    expect(r.filter((x) => x.role === 'peak').slice(0, -1).every((x) => x.n === 2)).toBe(true);
+    expect(
+      r
+        .filter((x) => x.role === 'build')
+        .slice(0, -1)
+        .every((x) => x.n === 2),
+    ).toBe(true);
+    expect(
+      r
+        .filter((x) => x.role === 'peak')
+        .slice(0, -1)
+        .every((x) => x.n === 2),
+    ).toBe(true);
   });
 
   it('makes the last peak the longest', () => {
@@ -152,7 +162,8 @@ describe('planStructure', () => {
 
   it('plans no spinners when the setting is 0', () => {
     const p = { ...deriveParams(LEVEL_PRESETS[5]!.difficulty, []), spinners: 0 };
-    for (let seed = 1; seed <= 20; seed++) expect(planStructure({ p, t0: 2000, endMs: 119000, rate: 1 }, createRng(seed)).spinners).toHaveLength(0);
+    for (let seed = 1; seed <= 20; seed++)
+      expect(planStructure({ p, t0: 2000, endMs: 119000, rate: 1 }, createRng(seed)).spinners).toHaveLength(0);
   });
 });
 

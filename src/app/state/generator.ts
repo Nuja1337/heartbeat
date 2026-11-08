@@ -2,9 +2,10 @@
 // so screens that need it for a note ask for it here and show the note once the game is in.
 
 import { useEffect, useState } from 'react';
+import { msg } from '../i18n';
 import { loadGame } from './engine';
 
-export const OLD_GENERATOR_NOTE = 'This play used an older map generator, so this seed now makes a different map.';
+export const OLD_GENERATOR_NOTE = msg('This play used an older map generator, so this seed now makes a different map.');
 
 /** The current generator version, or null until the game has loaded. */
 export function useGeneratorVersion(): number | null {

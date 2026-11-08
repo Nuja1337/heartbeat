@@ -53,14 +53,30 @@ function aimStats(records: HitRecord[]) {
 }
 
 describe('perfect player in training modes', () => {
-  const modes: ModeId[] = ['jumps', 'angles', 'streams', 'tracking', 'spinning', 'precision', 'reading', 'timing', 'stamina', 'warmup', 'mix'];
+  const modes: ModeId[] = [
+    'jumps',
+    'angles',
+    'streams',
+    'tracking',
+    'spinning',
+    'precision',
+    'reading',
+    'timing',
+    'stamina',
+    'warmup',
+    'mix',
+  ];
 
   it('clears every set, and the level climbs', () => {
     const cases = modes.flatMap((modeId, i) => [0, 1].map((round) => ({ modeId, i: i + round * 11 })));
     expect(cases.length + launches().length).toBeGreaterThanOrEqual(30);
     cases.forEach(({ modeId, i }) => {
       const mods: ModId[] = i % 3 === 1 ? ['mirror'] : i % 3 === 2 ? ['fade'] : [];
-      const launch = { ...launchFor(DEFAULT_DIFFICULTY, 500 + i, 60, mods, modeId), options: MODES[modeId].defaultOptions, levels: { jumps: 3, streams: 3, tracking: 3 } };
+      const launch = {
+        ...launchFor(DEFAULT_DIFFICULTY, 500 + i, 60, mods, modeId),
+        options: MODES[modeId].defaultOptions,
+        levels: { jumps: 3, streams: 3, tracking: 3 },
+      };
       const { result } = runHeadless({ launch, model: PERFECT_PLAYER });
       expectPerfect(result, modeId);
       if (MODES[modeId].adaptive) {
@@ -142,11 +158,15 @@ describe('weak player', () => {
   it('undershoots far targets, so along is negative there', () => {
     const d = { ...DEFAULT_DIFFICULTY, spacing: 10, bpm: 120, density: 1, streams: 0, sliders: 0, spinners: 0 };
     const { result } = runHeadless({ launch: launchFor(d, 21, 90), model: WEAK_PLAYER });
-    const far = result.records.filter((r) => r.kind === 'circle' && r.features.spacing !== null && r.features.spacing >= 4.5 && r.aimAlong !== null);
+    const far = result.records.filter(
+      (r) => r.kind === 'circle' && r.features.spacing !== null && r.features.spacing >= 4.5 && r.aimAlong !== null,
+    );
     expect(far.length).toBeGreaterThan(20);
     const mean = far.reduce((a, r) => a + r.aimAlong! / r.radius, 0) / far.length;
     expect(mean).toBeLessThan(-0.25);
-    const near = result.records.filter((r) => r.kind === 'circle' && r.features.spacing !== null && r.features.spacing < 4.5 && r.aimAlong !== null);
+    const near = result.records.filter(
+      (r) => r.kind === 'circle' && r.features.spacing !== null && r.features.spacing < 4.5 && r.aimAlong !== null,
+    );
     if (near.length > 10) {
       const m2 = near.reduce((a, r) => a + r.aimAlong! / r.radius, 0) / near.length;
       expect(Math.abs(m2)).toBeLessThan(0.15);
@@ -189,7 +209,12 @@ describe('planted movement habits', () => {
   function stats(model: typeof PERFECT_PLAYER) {
     const { result } = runHeadless({ launch, model });
     const jumps = result.records.filter(
-      (r) => r.kind === 'circle' && r.movement.primaryAlong != null && r.features.distance !== null && r.features.gapMs !== null && r.features.spacing! >= 2.5,
+      (r) =>
+        r.kind === 'circle' &&
+        r.movement.primaryAlong != null &&
+        r.features.distance !== null &&
+        r.features.gapMs !== null &&
+        r.features.spacing! >= 2.5,
     );
     const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
     return {

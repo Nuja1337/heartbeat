@@ -2,15 +2,18 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import { savePlay, shouldSave } from '../../data/plays';
 import type { GameHandle, LaunchRequest, PlayResult } from '../../shared/types';
-import { Button } from '../components/ui';
+import { Button, usePageTitle } from '../components/ui';
+import { t } from '../i18n';
 import { pickCreateGame } from '../play/mode';
 import { invalidateAnalysis } from '../state/analysis';
 import type { SessionState } from '../state/launch';
 import { getSettings } from '../state/store';
+import { keyLabel } from '../../shared/keys';
 
 export function PlayScreen() {
   const state = useLocation().state as Partial<SessionState> | null;
   const [run, setRun] = useState(0);
+  usePageTitle(t('Playing'));
   if (!state?.launch) return <Navigate to="/" replace />;
   return <Session key={run} launch={state.launch} from={state.from ?? '/'} onRestart={() => setRun((r) => r + 1)} />;
 }
@@ -24,6 +27,9 @@ function Session({ launch, from, onRestart }: { launch: LaunchRequest; from: str
   const canvas = useRef<HTMLCanvasElement>(null);
   const handle = useRef<GameHandle | null>(null);
   const [paused, setPaused] = useState(false);
+  // Set once when the engine has taken the canvas, so the live region can say the play is running.
+  const [ready, setReady] = useState(false);
+  const [started, setStarted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const resumeButton = useRef<HTMLButtonElement>(null);
@@ -55,7 +61,7 @@ function Session({ launch, from, onRestart }: { launch: LaunchRequest; from: str
         (e: unknown) => {
           if (!mounted.current) return;
           setSaving(false);
-          setError(`The play finished, but it could not be saved. ${e instanceof Error ? e.message : ''}`.trim());
+          setError(t('The play finished, but it could not be saved. {reason}', { reason: e instanceof Error ? e.message : '' }).trim());
         },
       );
     },
@@ -81,7 +87,7 @@ function Session({ launch, from, onRestart }: { launch: LaunchRequest; from: str
       (e: unknown) => {
         if (!mounted.current) return;
         setSaving(false);
-        setError(`The play finished, but it could not be saved. ${e instanceof Error ? e.message : ''}`.trim());
+        setError(t('The play finished, but it could not be saved. {reason}', { reason: e instanceof Error ? e.message : '' }).trim());
       },
     );
   }, []);
@@ -116,12 +122,14 @@ function Session({ launch, from, onRestart }: { launch: LaunchRequest; from: str
             onFinish: finish,
             onRetry: (result) => alive && saveAndRestart(result),
             onError: (message) => alive && setError(message),
+            onStart: () => alive && setStarted(true),
           });
+          setReady(true);
         } catch (e) {
-          setError(e instanceof Error ? e.message : 'The game could not start.');
+          setError(e instanceof Error ? e.message : t('The game could not start.'));
         }
       })
-      .catch(() => alive && setError('The game could not start.'));
+      .catch(() => alive && setError(t('The game could not start.')));
 
     return () => {
       alive = false;
@@ -143,19 +151,38 @@ function Session({ launch, from, onRestart }: { launch: LaunchRequest; from: str
 
   return (
     <div className="fixed inset-0 bg-bg">
-      <canvas ref={canvas} className="block h-full w-full select-none" style={{ touchAction: 'none' }} onContextMenu={(e) => e.preventDefault()} />
+      <canvas
+        ref={canvas}
+        role="img"
+        aria-label={t('Playfield')}
+        className="block h-full w-full select-none"
+        style={{ touchAction: 'none' }}
+        onContextMenu={(e) => e.preventDefault()}
+      />
+      <p role="status" aria-live="polite" className="sr-only">
+        {!ready || paused || saving || error
+          ? ''
+          : started
+            ? t('Playing. Press Esc to pause.')
+            : t('Ready. Click or press {key} to start. Esc pauses.', { key: keyLabel(getSettings().input.keys[0]) })}
+      </p>
 
       {paused && !error && !saving && (
-        <div role="dialog" aria-modal="true" aria-label="Paused" className="hb-enter-small absolute inset-0 flex items-center justify-center bg-bg/80 backdrop-blur-sm">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('Paused')}
+          className="hb-enter-small absolute inset-0 flex items-center justify-center bg-bg/80 backdrop-blur-sm"
+        >
           <div className="hb-panel hb-marks w-72 p-6">
-            <h2 className="hb-kicker mb-5">Paused</h2>
+            <h2 className="hb-kicker mb-5">{t('Paused')}</h2>
             <div className="flex flex-col gap-2">
               <Button ref={resumeButton} variant="primary" onClick={resume}>
-                Resume
+                {t('Resume')}
               </Button>
-              <Button onClick={onRestart}>Restart</Button>
+              <Button onClick={onRestart}>{t('Restart')}</Button>
               <Button variant="danger" onClick={() => handle.current?.quit()}>
-                Quit
+                {t('Quit', undefined, 'verb')}
               </Button>
             </div>
           </div>
@@ -164,26 +191,30 @@ function Session({ launch, from, onRestart }: { launch: LaunchRequest; from: str
 
       {saving && (
         <div role="status" className="absolute inset-0 flex items-center justify-center bg-bg/80 backdrop-blur-sm">
-          <span className="hb-kicker">Saving your play.</span>
+          <span className="hb-kicker">{t('Saving your play.')}</span>
         </div>
       )}
 
       {error && (
-        <div role="alertdialog" aria-label="Error" className="hb-enter-small absolute inset-0 flex items-center justify-center bg-bg/90">
+        <div
+          role="alertdialog"
+          aria-label={t('Error')}
+          className="hb-enter-small absolute inset-0 flex items-center justify-center bg-bg/90"
+        >
           <div className="hb-panel hb-marks w-96 max-w-[90vw] border-danger/40 p-6">
-            <h2 className="mb-2 text-lg">Something went wrong</h2>
+            <h2 className="mb-2 text-lg">{t('Something went wrong')}</h2>
             <p className="mb-6 text-ink-2">{error}</p>
             <div className="flex flex-wrap gap-2">
               {pending.current && (
                 <Button variant="primary" onClick={() => save(pending.current!)}>
-                  Try saving again
+                  {t('Try saving again')}
                 </Button>
               )}
               <Button variant={pending.current ? 'secondary' : 'primary'} onClick={onRestart}>
-                Play again
+                {t('Play again')}
               </Button>
               <Button variant="ghost" onClick={leave}>
-                Back
+                {t('Back')}
               </Button>
             </div>
           </div>

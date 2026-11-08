@@ -48,7 +48,14 @@ const NOW = 1_800_000_000_000;
 
 /** What a 1.0 summary reads as after the lift. */
 const lifted = (s: Record<string, unknown>) => ({
-  ...s, v: 2, hasReplay: false, sections: null, movement: null, throughput: null, scoringVersion: 1, milestones: [],
+  ...s,
+  v: 2,
+  hasReplay: false,
+  sections: null,
+  movement: null,
+  throughput: null,
+  scoringVersion: 1,
+  milestones: [],
 });
 
 const fixtureTables = (p: FixtureFile['plays'][number]) => ({

@@ -4,7 +4,8 @@ import { Link } from 'react-router';
 import { DEFAULT_MODULE_LEVEL, MODES, PLACEMENT, SKILLS } from '../../shared/catalog';
 import type { ModeId } from '../../shared/types';
 import { PLACEMENT_TIME } from '../copy';
-import { ago, andList, level as levelText } from '../format';
+import { ago, andList, level as levelText, lowerLabel } from '../format';
+import { t } from '../i18n';
 import { Motif } from './Motif';
 import { Badge, Button, Panel } from './ui';
 
@@ -20,16 +21,14 @@ export interface ModeLevel {
 
 export function modeLevel(modeId: ModeId, row: { level: number } | undefined, isModule: boolean): ModeLevel {
   if (isModule) {
-    return row
-      ? { value: row.level, caption: 'Your level' }
-      : { value: DEFAULT_MODULE_LEVEL, caption: 'Starting level' };
+    return row ? { value: row.level, caption: t('Your level') } : { value: DEFAULT_MODULE_LEVEL, caption: t('Starting level') };
   }
   const mode = MODES[modeId];
-  return { value: null, caption: 'Level', text: mode.adaptive ? 'Adaptive' : 'Fixed' };
+  return { value: null, caption: t('Level'), text: mode.adaptive ? t('Adaptive') : t('Fixed') };
 }
 
 export function lastPlayedText(at: number | null, now = Date.now()): string {
-  return at === null ? 'Not played yet' : `Last played ${ago(at, now)}`;
+  return at === null ? t('Not played yet') : t('Last played {when}', { when: ago(at, now) });
 }
 
 export function ModeCard({
@@ -74,10 +73,14 @@ export function PlacementCard({ disabled, error, onStart }: { disabled: boolean;
   return (
     <Panel marks className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
-        <span className="text-micro uppercase text-ink-3">Start here</span>
+        <span className="text-micro uppercase text-ink-3">{t('Start here')}</span>
         <h2 className="font-display text-xl font-semibold">{mode.label}</h2>
         <p className="mt-1 max-w-2xl text-ink-2">
-          {mode.description} It takes {PLACEMENT_TIME} and covers {andList(PLACEMENT.modules.map((m) => MODES[m].label.toLowerCase()))}.
+          {mode.description}{' '}
+          {t('It takes {time} and covers {modules}.', {
+            time: t(PLACEMENT_TIME),
+            modules: andList(PLACEMENT.modules.map((m) => lowerLabel(MODES[m].label))),
+          })}
         </p>
         {error && (
           <p role="alert" className="mt-2 text-sm text-danger">
@@ -86,7 +89,7 @@ export function PlacementCard({ disabled, error, onStart }: { disabled: boolean;
         )}
       </div>
       <Button variant="primary" size="lg" className="shrink-0" disabled={disabled} onClick={onStart}>
-        Start placement
+        {t('Start placement')}
       </Button>
     </Panel>
   );

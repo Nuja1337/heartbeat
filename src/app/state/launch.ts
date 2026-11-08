@@ -4,7 +4,16 @@ import type { NavigateFunction } from 'react-router';
 import { currentLevels } from '../../data/progress';
 import { DEFAULT_DIFFICULTY, LEVEL_PRESETS, MODES, MODS } from '../../shared/catalog';
 import { ShareCodeError, decodeShare, localDateKey } from '../../shared/codes';
-import type { DifficultySettings, LaunchRequest, ModId, ModeId, ModuleId, ModuleOptions, ObjectFeatures, PlayableMap } from '../../shared/types';
+import type {
+  DifficultySettings,
+  LaunchRequest,
+  ModId,
+  ModeId,
+  ModuleId,
+  ModuleOptions,
+  ObjectFeatures,
+  PlayableMap,
+} from '../../shared/types';
 
 export function randomSeed(): number {
   const a = new Uint32Array(1);
@@ -126,8 +135,7 @@ export interface SharedState {
 }
 
 export type ShareLink =
-  | { ok: true; launch: LaunchRequest; generatorVersion: number; path: string }
-  | { ok: false; kind: 'invalid' | 'newer'; message: string };
+  { ok: true; launch: LaunchRequest; generatorVersion: number; path: string } | { ok: false; kind: 'invalid' | 'newer'; message: string };
 
 /**
  * Reads the code of a /s/:code link. The launch has no levels and no drill, because a code never carries them.

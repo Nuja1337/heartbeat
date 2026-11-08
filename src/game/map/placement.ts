@@ -1,16 +1,7 @@
 // The placement engine (PLAN section 7). Every motif goes through MapBuilder, so each rule lives here.
 
 import { PLAYFIELD, PLAYFIELD_CENTER } from '../../shared/catalog';
-import type {
-  CircleObject,
-  HitObject,
-  HitWindows,
-  PathSegment,
-  PatternTag,
-  SliderObject,
-  SpinnerObject,
-  Vec2,
-} from '../../shared/types';
+import type { CircleObject, HitObject, HitWindows, PathSegment, PatternTag, SliderObject, SpinnerObject, Vec2 } from '../../shared/types';
 import { flattenPath, maxTangentDeviation, minCurvatureRadius, samplePath, selfIntersects, sliderEndPoint, tangentAt } from './path';
 import type { FlatPath } from './path';
 import type { Rng } from './rng';
@@ -199,7 +190,9 @@ export class Layout {
 
   private inBounds(x: number, y: number): boolean {
     const r = this.cfg.radius;
-    return x >= r + EDGE_MARGIN && x <= PLAYFIELD.width - r - EDGE_MARGIN && y >= r + EDGE_MARGIN && y <= PLAYFIELD.height - r - EDGE_MARGIN;
+    return (
+      x >= r + EDGE_MARGIN && x <= PLAYFIELD.width - r - EDGE_MARGIN && y >= r + EDGE_MARGIN && y <= PLAYFIELD.height - r - EDGE_MARGIN
+    );
   }
 
   private distTo(it: Item, x: number, y: number): number {
@@ -456,10 +449,13 @@ export function buildSliderPath(head: Vec2, heading: number, length: number, spe
     );
   let segs = world(scale);
   let flat = flattenPath(head, segs);
-  for (let i = 0; i < 4 && (scalable || spec.shape === 'arc') && Math.abs(flat.length - length) / length > 0.0015; i++) {
-    scale *= length / flat.length;
-    segs = world(scale);
-    flat = flattenPath(head, segs);
+  // Scalable shapes, and every arc, are rescaled until the flattened length is within 0.15% of the asked length.
+  if (scalable || spec.shape === 'arc') {
+    for (let i = 0; i < 4 && Math.abs(flat.length - length) / length > 0.0015; i++) {
+      scale *= length / flat.length;
+      segs = world(scale);
+      flat = flattenPath(head, segs);
+    }
   }
   if (Math.abs(flat.length - length) / length > 0.003) return null;
   return { segments: segs, flat, shape: shapeOf(segs) };
@@ -475,7 +471,14 @@ export const MAX_TANGENT_DEVIATION = 100;
  * doesn't double back (the tangent stays within 100 degrees of the line from head to tail, and parts of the body
  * that are far apart along the path keep 2 radii between them).
  */
-export function sliderBodyIsClear(segs: readonly PathSegment[], flat: FlatPath, pts: Float64Array, head: Vec2, radius: number, follow: number): boolean {
+export function sliderBodyIsClear(
+  segs: readonly PathSegment[],
+  flat: FlatPath,
+  pts: Float64Array,
+  head: Vec2,
+  radius: number,
+  follow: number,
+): boolean {
   if (selfIntersects(flat)) return false;
   if (minCurvatureRadius(head, segs) < follow * 0.995) return false;
   if (maxTangentDeviation(flat) > MAX_TANGENT_DEVIATION) return false;
@@ -485,7 +488,8 @@ export function sliderBodyIsClear(segs: readonly PathSegment[], flat: FlatPath, 
   const need = FOLD_RADII * radius;
   for (let i = 0; i < n; i++) {
     for (let j = i + gap; j < n; j++) {
-      if (Math.hypot((pts[2 * i] as number) - (pts[2 * j] as number), (pts[2 * i + 1] as number) - (pts[2 * j + 1] as number)) < need) return false;
+      if (Math.hypot((pts[2 * i] as number) - (pts[2 * j] as number), (pts[2 * i + 1] as number) - (pts[2 * j + 1] as number)) < need)
+        return false;
     }
   }
   return true;
@@ -583,7 +587,15 @@ export class MapBuilder {
     return 1.55 * m.dist;
   }
 
-  private ctxFor(group: number, seq: number, m: Motif, constraint: PlaceCtx['constraint'], scale: number, stack: boolean, jump: boolean): PlaceCtx {
+  private ctxFor(
+    group: number,
+    seq: number,
+    m: Motif,
+    constraint: PlaceCtx['constraint'],
+    scale: number,
+    stack: boolean,
+    jump: boolean,
+  ): PlaceCtx {
     return {
       group,
       seq,

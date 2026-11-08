@@ -4,22 +4,32 @@ import { aggOf, median } from '../../../analytics/stats';
 import { listSummariesSince, loadPlayData } from '../../../data/plays';
 import type { PlayData } from '../../../data/schema';
 import { Histogram, histCounts } from '../../charts/Histogram';
-import { CHART } from '../../charts/scale';
+import { useChartColors } from '../../charts/scale';
 import { Card, PageHeader, Stat } from '../../components/ui';
 import { INTRO } from '../../copy';
 import { offsetText, pct0 } from '../../format';
+import { THEMES, darkenToContrast } from '../../../shared/theme';
 import { useAnalysis } from '../../state/analysis';
+import { useTheme } from '../../state/appearance';
+import { msg, t } from '../../i18n';
 
 const DAY = 86_400_000;
 const MAX_PLAYS = 40;
 
 const SERIES = [
-  { id: 'circle', label: 'Circles', color: '#ffb340' },
-  { id: 'head', label: 'Slider heads', color: '#b49bff' },
-  { id: 'stream', label: 'Stream notes', color: '#ff7ab8' },
+  { id: 'circle', label: msg('Circles'), color: '#ffb340' },
+  { id: 'head', label: msg('Slider heads'), color: '#b49bff' },
+  { id: 'stream', label: msg('Stream notes'), color: '#ff7ab8' },
 ] as const;
 
 export function Timing() {
+  const C = useChartColors();
+  const theme = useTheme();
+  // The series colors suit the dark surface. On white they are darkened until they reach 4.5 to 1.
+  const series = SERIES.map((s) => ({
+    ...s,
+    color: theme === 'light' ? darkenToContrast(s.color, THEMES.light.surface, 4.5) : s.color,
+  }));
   const { data } = useAnalysis();
   const [plays, setPlays] = useState<PlayData[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +41,7 @@ export function Timing() {
     listSummariesSince(data.now - 30 * DAY)
       .then((list) => loadPlayData(list.filter((s) => s.hasDetail).slice(0, MAX_PLAYS)))
       .then((p) => alive && setPlays(p))
-      .catch((e: unknown) => alive && setError(e instanceof Error ? e.message : 'Could not read your plays.'));
+      .catch((e: unknown) => alive && setError(e instanceof Error ? e.message : t('Could not read your plays.')));
     return () => {
       alive = false;
     };
@@ -57,7 +67,7 @@ export function Timing() {
   }, [plays]);
 
   if (error) return <p className="text-danger">{error}</p>;
-  if (!plays) return <p className="text-ink-2">Loading.</p>;
+  if (!plays) return <p className="text-ink-2">{t('Loading.')}</p>;
 
   const a = aggOf(groups.all);
   const within = groups.all.filter((v) => Math.abs(v) <= groups.crispMs).length;
@@ -65,40 +75,68 @@ export function Timing() {
 
   return (
     <>
-      <PageHeader title="Timing" intro={INTRO.timing} />
+      <PageHeader title={t('Timing')} intro={INTRO.timing} />
       {groups.all.length === 0 ? (
         <Card>
-          <p className="text-ink-2">No clicks with stored detail from the last 30 days. Play a few maps, or check the detail retention in Settings.</p>
+          <p className="text-ink-2">
+            {t('No clicks with stored detail from the last 30 days. Play a few maps, or check the detail retention in Settings.')}
+          </p>
         </Card>
       ) : (
         <div className="space-y-6">
           <Card>
             <div className="flex flex-wrap gap-x-12 gap-y-4">
-              <Stat label="Average" value={offsetText(a.mean)} sub={`${groups.all.length} clicks from ${plays.length} plays`} />
-              <Stat label="Spread" value={`${Math.round(a.sd)} ms`} sub="one standard deviation" />
-              <Stat label="Inside the Crisp window" value={pct0(within / groups.all.length)} sub={`${Math.round(groups.crispMs)} ms either side`} />
-              <Stat label="Early" value={pct0(early / groups.all.length)} sub={`${pct0(1 - early / groups.all.length)} late or on time`} />
+              <Stat
+                label={t('Average')}
+                value={offsetText(a.mean)}
+                sub={t('{clicks, plural, one {# click} other {# clicks}} from {plays, plural, one {# play} other {# plays}}', {
+                  clicks: groups.all.length,
+                  plays: plays.length,
+                })}
+              />
+              <Stat label={t('Spread')} value={`${Math.round(a.sd)} ms`} sub={t('one standard deviation')} />
+              <Stat
+                label={t('Inside the Crisp window')}
+                value={pct0(within / groups.all.length)}
+                sub={t('{ms} ms either side', { ms: Math.round(groups.crispMs) })}
+              />
+              <Stat
+                label={t('Early')}
+                value={pct0(early / groups.all.length)}
+                sub={t('{pct} late or on time', { pct: pct0(1 - early / groups.all.length) })}
+              />
             </div>
           </Card>
           <Card>
             <div className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
               <span className="flex items-center gap-2">
-                <span aria-hidden className="h-2.5 w-2.5 rounded-sm" style={{ background: CHART.accent }} />
-                All clicks (bars)
+                <span aria-hidden className="h-2.5 w-2.5 rounded-sm" style={{ background: C.accent }} />
+                {t('All clicks (bars)')}
               </span>
-              {SERIES.map((s) => (
+              {series.map((s) => (
                 <label key={s.id} className="flex cursor-pointer items-center gap-2">
-                  <input type="checkbox" className="accent-[var(--color-accent)]" checked={shown[s.id] ?? false} onChange={(e) => setShown((cur) => ({ ...cur, [s.id]: e.target.checked }))} />
+                  <input
+                    type="checkbox"
+                    className="accent-[var(--color-accent)]"
+                    checked={shown[s.id] ?? false}
+                    onChange={(e) => setShown((cur) => ({ ...cur, [s.id]: e.target.checked }))}
+                  />
                   <span aria-hidden className="h-0.5 w-4" style={{ background: s.color }} />
-                  {s.label} ({groups[s.id].length})
+                  {t('{label} ({n})', { label: t(s.label), n: groups[s.id].length })}
                 </label>
               ))}
             </div>
             <Histogram
-              label="Timing errors in 5 ms bins from minus 150 to plus 150 milliseconds"
+              label={t('Timing errors in 5 ms bins from minus 150 to plus 150 milliseconds')}
               series={[
-                { label: 'All clicks', color: CHART.accent, counts: histCounts(groups.all) },
-                ...SERIES.filter((s) => shown[s.id] && groups[s.id].length > 0).map((s) => ({ label: s.label, color: s.color, counts: histCounts(groups[s.id]) })),
+                { label: t('All clicks'), color: C.accent, counts: histCounts(groups.all) },
+                ...series
+                  .filter((s) => shown[s.id] && groups[s.id].length > 0)
+                  .map((s) => ({
+                    label: t(s.label),
+                    color: s.color,
+                    counts: histCounts(groups[s.id]),
+                  })),
               ]}
               mean={a.mean}
               sd={a.sd}
@@ -106,7 +144,9 @@ export function Timing() {
               height={280}
             />
             <p className="mt-2 text-sm text-ink-2">
-              Left of zero is early and right of zero is late. Each series is a share of its own clicks. The white line is the average and the bracket is one spread either side. Shaded bands are the Crisp, Solid and Rough windows.
+              {t(
+                'Left of zero is early and right of zero is late. Each series is a share of its own clicks. The white line is the average and the bracket is one spread either side. Shaded bands are the Crisp, Solid and Rough windows.',
+              )}
             </p>
           </Card>
         </div>

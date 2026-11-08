@@ -25,7 +25,17 @@ const presets = LEVEL_PRESETS;
 
 function launchFor(level: number, seed: number): LaunchRequest {
   const p = presets[level - 1]!;
-  return { modeId: 'dynamic', difficulty: p.difficulty, presetLevel: level, options: {}, mods: [], seed, lengthSec: p.lengthSec, levels: {}, drillId: null };
+  return {
+    modeId: 'dynamic',
+    difficulty: p.difficulty,
+    presetLevel: level,
+    options: {},
+    mods: [],
+    seed,
+    lengthSec: p.lengthSec,
+    levels: {},
+    drillId: null,
+  };
 }
 
 function measure(): Record<SkillId, number[]> {

@@ -233,7 +233,8 @@ export class Effects {
       case 'tick':
       case 'repeat':
         this.tickPulseT = now;
-        if (!flags.reduceMotion) this.spawn(Kind.Diamond, e.x, e.y, r * 0.18, 0, 0, 0, now, FX.tickPop, obj ? groupColorIndex(obj.group) : 7);
+        if (!flags.reduceMotion)
+          this.spawn(Kind.Diamond, e.x, e.y, r * 0.18, 0, 0, 0, now, FX.tickPop, obj ? groupColorIndex(obj.group) : 7);
         this.ring(e.x, e.y, r * 0.14, r * 0.5, now, FX.tickPop, obj ? groupColorIndex(obj.group) : 7, 0.8, 2);
         break;
       case 'tickMiss':

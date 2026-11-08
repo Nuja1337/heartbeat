@@ -58,9 +58,7 @@ export function applyMods(map: GeneratedMap, mods: readonly ModId[]): PlayableMa
     beatMs: map.beatMs / rate,
     ...(map.beatOffsetMs !== undefined ? { beatOffsetMs: map.beatOffsetMs / rate } : {}),
     durationMs: (map.durationMs - 1000) / rate + 1000,
-    health: map.health
-      ? { ...map.health, canFail: !mods.includes('nofail'), failOnFirstMiss: mods.includes('onelife') }
-      : null,
+    health: map.health ? { ...map.health, canFail: !mods.includes('nofail'), failOnFirstMiss: mods.includes('onelife') } : null,
     objects,
     sections: map.sections.map((s) => ({ ...s, start: s.start / rate, end: s.end / rate })),
     mods: [...mods],

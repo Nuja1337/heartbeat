@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import type { PathSegment, Vec2 } from '../../shared/types';
-import { arcThrough, cubicPoint, flattenPath, maxTangentDeviation, minCurvatureRadius, pathLength, pointAt, samplePath, selfIntersects, tangentAt } from './path';
+import {
+  arcThrough,
+  cubicPoint,
+  flattenPath,
+  maxTangentDeviation,
+  minCurvatureRadius,
+  pathLength,
+  pointAt,
+  samplePath,
+  selfIntersects,
+  tangentAt,
+} from './path';
 
 describe('path', () => {
   it('measures a line', () => {

@@ -2,13 +2,25 @@
 // Import merges by id: plays and drills that already exist are skipped, tombstones are applied.
 
 import { MODES } from '../shared/catalog';
+import { t } from '../shared/i18n';
 import type { SkillId } from '../shared/types';
 import { OBJECT_COLUMNS, SLIDER_COLUMNS, SPINNER_COLUMNS, tableFromJson, tableToJson } from './columns';
 import { getAll, req, withTx } from './db';
 import { base64ToBytes, bytesToBase64, gunzipBytes, gzipBytes, hasGzipHeader } from './gzip';
 import { cleanMilestones, cleanOnboarding, getDeviceId, mergeMilestones, setLastExport } from './meta';
 import type {
-  Drill, MetaRow, Milestones, Onboarding, PlayDetail, PlaySummary, ProgressRow, ReplayBytesRow, ReplayRow, TierHistory, TierHistoryEntry, Tombstone,
+  Drill,
+  MetaRow,
+  Milestones,
+  Onboarding,
+  PlayDetail,
+  PlaySummary,
+  ProgressRow,
+  ReplayBytesRow,
+  ReplayRow,
+  TierHistory,
+  TierHistoryEntry,
+  Tombstone,
 } from './schema';
 import { upgradeDetail, upgradeSummary } from './plays';
 import { loadSettings, sanitizeSettings } from './settings';
@@ -58,15 +70,33 @@ const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFin
 export function isValidSummary(s: unknown): s is PlaySummary {
   if (!isObject(s)) return false;
   return (
-    typeof s.id === 'string' && s.id.length > 0 &&
-    typeof s.modeId === 'string' && s.modeId in MODES &&
-    isNum(s.startedAt) && isNum(s.endedAt) && isNum(s.playedMs) &&
-    isNum(s.accuracy) && isNum(s.score) && isNum(s.maxCombo) && isNum(s.objectCount) &&
+    typeof s.id === 'string' &&
+    s.id.length > 0 &&
+    typeof s.modeId === 'string' &&
+    s.modeId in MODES &&
+    isNum(s.startedAt) &&
+    isNum(s.endedAt) &&
+    isNum(s.playedMs) &&
+    isNum(s.accuracy) &&
+    isNum(s.score) &&
+    isNum(s.maxCombo) &&
+    isNum(s.objectCount) &&
     (s.status === 'completed' || s.status === 'failed' || s.status === 'quit') &&
-    isObject(s.launch) && isObject(s.launch.difficulty) &&
-    isObject(s.counts) && isObject(s.timing) && isObject(s.aim) && isObject(s.kinds) &&
-    isObject(s.buckets) && isObject(s.skills) && isObject(s.finalLevels) && isObject(s.input) && isObject(s.pb) &&
-    Array.isArray(s.mods) && Array.isArray(s.levels) && Array.isArray(s.quarters) && Array.isArray(s.tiers) &&
+    isObject(s.launch) &&
+    isObject(s.launch.difficulty) &&
+    isObject(s.counts) &&
+    isObject(s.timing) &&
+    isObject(s.aim) &&
+    isObject(s.kinds) &&
+    isObject(s.buckets) &&
+    isObject(s.skills) &&
+    isObject(s.finalLevels) &&
+    isObject(s.input) &&
+    isObject(s.pb) &&
+    Array.isArray(s.mods) &&
+    Array.isArray(s.levels) &&
+    Array.isArray(s.quarters) &&
+    Array.isArray(s.tiers) &&
     isObject(s.halves)
   );
 }
@@ -99,18 +129,22 @@ export async function buildExport(
   const includeReplays = options.includeReplays ?? true;
   const deviceId = await getDeviceId();
   const settings = await loadSettings();
-  const data = await withTx(['plays', 'playDetails', 'progress', 'drills', 'tombstones', 'meta', 'replays', 'replayBytes'], 'readonly', async (tx) => ({
-    summaries: await getAll<PlaySummary>(tx, 'plays', undefined, 'startedAt'),
-    details: await getAll<PlayDetail>(tx, 'playDetails'),
-    progress: await getAll<ProgressRow>(tx, 'progress'),
-    drills: await getAll<Drill>(tx, 'drills'),
-    tombstones: await getAll<Tombstone>(tx, 'tombstones'),
-    tiers: await req<MetaRow | undefined>(tx.objectStore('meta').get('tiers')),
-    milestones: await req<MetaRow | undefined>(tx.objectStore('meta').get('milestones')),
-    onboarding: await req<MetaRow | undefined>(tx.objectStore('meta').get('onboarding')),
-    replayRows: includeReplays ? await getAll<ReplayRow>(tx, 'replays') : [],
-    replayBytes: includeReplays ? await getAll<ReplayBytesRow>(tx, 'replayBytes') : [],
-  }));
+  const data = await withTx(
+    ['plays', 'playDetails', 'progress', 'drills', 'tombstones', 'meta', 'replays', 'replayBytes'],
+    'readonly',
+    async (tx) => ({
+      summaries: await getAll<PlaySummary>(tx, 'plays', undefined, 'startedAt'),
+      details: await getAll<PlayDetail>(tx, 'playDetails'),
+      progress: await getAll<ProgressRow>(tx, 'progress'),
+      drills: await getAll<Drill>(tx, 'drills'),
+      tombstones: await getAll<Tombstone>(tx, 'tombstones'),
+      tiers: await req<MetaRow | undefined>(tx.objectStore('meta').get('tiers')),
+      milestones: await req<MetaRow | undefined>(tx.objectStore('meta').get('milestones')),
+      onboarding: await req<MetaRow | undefined>(tx.objectStore('meta').get('onboarding')),
+      replayRows: includeReplays ? await getAll<ReplayRow>(tx, 'replays') : [],
+      replayBytes: includeReplays ? await getAll<ReplayBytesRow>(tx, 'replayBytes') : [],
+    }),
+  );
   const detailById = new Map(data.details.map((d) => [d.playId, d]));
   const rowById = new Map(data.replayRows.map((r) => [r.playId, r]));
   const bytesById = new Map(data.replayBytes.map((r) => [r.playId, r.bytes]));
@@ -118,7 +152,14 @@ export async function buildExport(
     const row = rowById.get(id);
     const bytes = bytesById.get(id);
     if (!row || !bytes) return null;
-    return { v: 1, keep: row.keep === 1, events: row.events, rawBytes: row.rawBytes, engineVersion: row.engineVersion, data: bytesToBase64(bytes) };
+    return {
+      v: 1,
+      keep: row.keep === 1,
+      events: row.events,
+      rawBytes: row.rawBytes,
+      engineVersion: row.engineVersion,
+      data: bytesToBase64(bytes),
+    };
   };
   const milestones = cleanMilestones(data.milestones?.value);
   const onboarding = cleanOnboarding(data.onboarding?.value);
@@ -167,18 +208,19 @@ export async function parseExportBytes(bytes: Uint8Array): Promise<unknown> {
   try {
     return JSON.parse(text);
   } catch {
-    throw new ImportError('This file is not valid JSON.');
+    throw new ImportError(t('This file is not valid JSON.'));
   }
 }
 
 export function validateExport(raw: unknown): ExportFile {
   const f = raw as Partial<ExportFile> | null;
-  if (!f || typeof f !== 'object' || (f.format !== EXPORT_FORMAT && f.format !== LEGACY_EXPORT_FORMAT)) throw new ImportError('This is not a Heartbeat export file.');
-  if (typeof f.formatVersion !== 'number') throw new ImportError('The export file has no version.');
+  if (!f || typeof f !== 'object' || (f.format !== EXPORT_FORMAT && f.format !== LEGACY_EXPORT_FORMAT))
+    throw new ImportError(t('This is not a Heartbeat export file.'));
+  if (typeof f.formatVersion !== 'number') throw new ImportError(t('The export file has no version.'));
   if (f.formatVersion > EXPORT_VERSION) {
-    throw new ImportError('This file was made by a newer version of Heartbeat. Update the app and try again.');
+    throw new ImportError(t('This file was made by a newer version of Heartbeat. Update the app and try again.'));
   }
-  if (!Array.isArray(f.plays)) throw new ImportError('The export file has no plays list.');
+  if (!Array.isArray(f.plays)) throw new ImportError(t('The export file has no plays list.'));
   return f as ExportFile;
 }
 
@@ -223,8 +265,16 @@ function readJsonReplay(raw: unknown): ImportedReplay | null {
 export async function importExport(raw: unknown): Promise<ImportReport> {
   const file = validateExport(raw);
   const report: ImportReport = {
-    playsAdded: 0, playsSkipped: 0, playsInvalid: 0, detailsAdded: 0, replaysAdded: 0, replaysInvalid: 0, drillsAdded: 0, progressUpdated: 0,
-    tombstonesApplied: 0, settingsApplied: false,
+    playsAdded: 0,
+    playsSkipped: 0,
+    playsInvalid: 0,
+    detailsAdded: 0,
+    replaysAdded: 0,
+    replaysInvalid: 0,
+    drillsAdded: 0,
+    progressUpdated: 0,
+    tombstonesApplied: 0,
+    settingsApplied: false,
   };
   const summaries: { summary: PlaySummary; detail: PlayDetail | null; replay: ImportedReplay | null }[] = [];
   for (const p of file.plays) {
@@ -253,100 +303,109 @@ export async function importExport(raw: unknown): Promise<ImportReport> {
       report.playsInvalid++;
     }
   }
-  await withTx(['plays', 'playDetails', 'progress', 'drills', 'tombstones', 'meta', 'settings', 'replays', 'replayBytes'], 'readwrite', async (tx) => {
-    const plays = tx.objectStore('plays');
-    const details = tx.objectStore('playDetails');
-    const tombstones = tx.objectStore('tombstones');
-    const replays = tx.objectStore('replays');
-    const replayBytes = tx.objectStore('replayBytes');
+  await withTx(
+    ['plays', 'playDetails', 'progress', 'drills', 'tombstones', 'meta', 'settings', 'replays', 'replayBytes'],
+    'readwrite',
+    async (tx) => {
+      const plays = tx.objectStore('plays');
+      const details = tx.objectStore('playDetails');
+      const tombstones = tx.objectStore('tombstones');
+      const replays = tx.objectStore('replays');
+      const replayBytes = tx.objectStore('replayBytes');
 
-    const localTombs = new Set((await getAll<Tombstone>(tx, 'tombstones')).map((t) => t.id));
-    for (const t of file.tombstones ?? []) {
-      if (!t || typeof t.id !== 'string') continue;
-      if (!localTombs.has(t.id)) {
-        tombstones.put({ id: t.id, deletedAt: t.deletedAt });
-        localTombs.add(t.id);
+      const localTombs = new Set((await getAll<Tombstone>(tx, 'tombstones')).map((tomb) => tomb.id));
+      for (const tomb of file.tombstones ?? []) {
+        if (!tomb || typeof tomb.id !== 'string') continue;
+        if (!localTombs.has(tomb.id)) {
+          tombstones.put({ id: tomb.id, deletedAt: tomb.deletedAt });
+          localTombs.add(tomb.id);
+        }
+        if (await req(plays.getKey(tomb.id))) {
+          plays.delete(tomb.id);
+          details.delete(tomb.id);
+          replays.delete(tomb.id);
+          replayBytes.delete(tomb.id);
+          report.tombstonesApplied++;
+        }
       }
-      if (await req(plays.getKey(t.id))) {
-        plays.delete(t.id);
-        details.delete(t.id);
-        replays.delete(t.id);
-        replayBytes.delete(t.id);
-        report.tombstonesApplied++;
-      }
-    }
 
-    for (const { summary, detail, replay } of summaries) {
-      if (localTombs.has(summary.id) || (await req(plays.getKey(summary.id)))) {
-        report.playsSkipped++;
-        continue;
+      for (const { summary, detail, replay } of summaries) {
+        if (localTombs.has(summary.id) || (await req(plays.getKey(summary.id)))) {
+          report.playsSkipped++;
+          continue;
+        }
+        if (detail) {
+          details.put(detail);
+          report.detailsAdded++;
+        }
+        // Existing replay rows win. hasReplay says whether a row is there, whatever the file's summary says.
+        let hasReplay = (await req(replays.getKey(summary.id))) !== undefined;
+        if (replay && !hasReplay) {
+          replays.put({
+            playId: summary.id,
+            v: 1,
+            startedAt: summary.startedAt,
+            keep: replay.keep ? 1 : 0,
+            size: replay.bytes.byteLength,
+            rawBytes: replay.rawBytes,
+            events: replay.events,
+            engineVersion: replay.engineVersion,
+          } satisfies ReplayRow);
+          replayBytes.put({ playId: summary.id, bytes: replay.bytes } satisfies ReplayBytesRow);
+          hasReplay = true;
+          report.replaysAdded++;
+        }
+        plays.put({ ...summary, hasDetail: detail !== null, hasReplay });
+        report.playsAdded++;
       }
-      if (detail) {
-        details.put(detail);
-        report.detailsAdded++;
+
+      const progress = tx.objectStore('progress');
+      for (const row of file.progress ?? []) {
+        const prev = await req<ProgressRow | undefined>(progress.get(row.moduleId));
+        if (!prev) {
+          progress.put(row);
+          report.progressUpdated++;
+        } else if (row.updatedAt > prev.updatedAt) {
+          progress.put({ ...row, bestLevel: Math.max(row.bestLevel, prev.bestLevel), sessions: Math.max(row.sessions, prev.sessions) });
+          report.progressUpdated++;
+        } else if (row.bestLevel > prev.bestLevel) {
+          progress.put({ ...prev, bestLevel: row.bestLevel });
+        }
       }
-      // Existing replay rows win. hasReplay says whether a row is there, whatever the file's summary says.
-      let hasReplay = (await req(replays.getKey(summary.id))) !== undefined;
-      if (replay && !hasReplay) {
-        replays.put({
-          playId: summary.id, v: 1, startedAt: summary.startedAt, keep: replay.keep ? 1 : 0, size: replay.bytes.byteLength,
-          rawBytes: replay.rawBytes, events: replay.events, engineVersion: replay.engineVersion,
-        } satisfies ReplayRow);
-        replayBytes.put({ playId: summary.id, bytes: replay.bytes } satisfies ReplayBytesRow);
-        hasReplay = true;
-        report.replaysAdded++;
+
+      const drills = tx.objectStore('drills');
+      for (const d of file.drills ?? []) {
+        if (!(await req(drills.getKey(d.id)))) {
+          drills.put(d);
+          report.drillsAdded++;
+        }
       }
-      plays.put({ ...summary, hasDetail: detail !== null, hasReplay });
-      report.playsAdded++;
-    }
 
-    const progress = tx.objectStore('progress');
-    for (const row of file.progress ?? []) {
-      const prev = await req<ProgressRow | undefined>(progress.get(row.moduleId));
-      if (!prev) {
-        progress.put(row);
-        report.progressUpdated++;
-      } else if (row.updatedAt > prev.updatedAt) {
-        progress.put({ ...row, bestLevel: Math.max(row.bestLevel, prev.bestLevel), sessions: Math.max(row.sessions, prev.sessions) });
-        report.progressUpdated++;
-      } else if (row.bestLevel > prev.bestLevel) {
-        progress.put({ ...prev, bestLevel: row.bestLevel });
+      const meta = tx.objectStore('meta');
+      const tierRow = await req<MetaRow | undefined>(meta.get('tiers'));
+      const merged = mergeTiers((tierRow?.value as TierHistory | undefined) ?? {}, file.meta?.tiers ?? {});
+      meta.put({ key: 'tiers', value: merged } satisfies MetaRow);
+
+      const fileMilestones = cleanMilestones(file.meta?.milestones);
+      if (Object.keys(fileMilestones).length > 0) {
+        const localRow = await req<MetaRow | undefined>(meta.get('milestones'));
+        meta.put({ key: 'milestones', value: mergeMilestones(cleanMilestones(localRow?.value), fileMilestones) } satisfies MetaRow);
       }
-    }
-
-    const drills = tx.objectStore('drills');
-    for (const d of file.drills ?? []) {
-      if (!(await req(drills.getKey(d.id)))) {
-        drills.put(d);
-        report.drillsAdded++;
+      const fileOnboarding = cleanOnboarding(file.meta?.onboarding);
+      if (fileOnboarding && !(await req<MetaRow | undefined>(meta.get('onboarding')))) {
+        meta.put({ key: 'onboarding', value: fileOnboarding } satisfies MetaRow);
       }
-    }
 
-    const meta = tx.objectStore('meta');
-    const tierRow = await req<MetaRow | undefined>(meta.get('tiers'));
-    const merged = mergeTiers((tierRow?.value as TierHistory | undefined) ?? {}, file.meta?.tiers ?? {});
-    meta.put({ key: 'tiers', value: merged } satisfies MetaRow);
-
-    const fileMilestones = cleanMilestones(file.meta?.milestones);
-    if (Object.keys(fileMilestones).length > 0) {
-      const localRow = await req<MetaRow | undefined>(meta.get('milestones'));
-      meta.put({ key: 'milestones', value: mergeMilestones(cleanMilestones(localRow?.value), fileMilestones) } satisfies MetaRow);
-    }
-    const fileOnboarding = cleanOnboarding(file.meta?.onboarding);
-    if (fileOnboarding && !(await req<MetaRow | undefined>(meta.get('onboarding')))) {
-      meta.put({ key: 'onboarding', value: fileOnboarding } satisfies MetaRow);
-    }
-
-    const settingsRow = await req(tx.objectStore('settings').get('settings'));
-    if (!settingsRow && file.settings) {
-      tx.objectStore('settings').put({ key: 'settings', value: sanitizeSettings(file.settings) });
-      report.settingsApplied = true;
-    }
-  });
+      const settingsRow = await req(tx.objectStore('settings').get('settings'));
+      if (!settingsRow && file.settings) {
+        tx.objectStore('settings').put({ key: 'settings', value: sanitizeSettings(file.settings) });
+        report.settingsApplied = true;
+      }
+    },
+  );
   return report;
 }
 
 export async function importBytes(bytes: Uint8Array): Promise<ImportReport> {
   return importExport(await parseExportBytes(bytes));
 }
-

@@ -3,11 +3,14 @@
 // Kill switch: public/sw-kill.js. Serve it as /sw.js and stop calling `register` below (see the README).
 
 import { useSyncExternalStore } from 'react';
+import { msg } from './i18n';
 
 export const CACHE_PREFIX = 'hb-';
 export const SW_URL = '/sw.js';
 export const MANIFEST_URL = '/asset-manifest.json';
-export const UPDATE_READY_MESSAGE = 'A new version of Heartbeat is ready.';
+/** Manifest keys of the translation dictionaries, which the precache skips. */
+export const LOCALE_PREFIX = 'src/i18n/locales/';
+export const UPDATE_READY_MESSAGE = msg('A new version of Heartbeat is ready.');
 
 /** The URLs to precache from Vite's manifest: every entry's file, css and assets, plus the shell. */
 export function assetsFromManifest(json: unknown): string[] {
@@ -16,7 +19,9 @@ export function assetsFromManifest(json: unknown): string[] {
   const add = (v: unknown) => {
     if (typeof v === 'string' && v.length > 0) out.add(v.startsWith('/') ? v : `/${v}`);
   };
-  for (const entry of Object.values(json as Record<string, unknown>)) {
+  for (const [key, entry] of Object.entries(json as Record<string, unknown>)) {
+    // A dictionary is only ever needed in one language, so none is precached. The one in use is cached on first fetch.
+    if (key.startsWith(LOCALE_PREFIX)) continue;
     if (!entry || typeof entry !== 'object') continue;
     const e = entry as { file?: unknown; css?: unknown; assets?: unknown };
     add(e.file);
@@ -65,7 +70,8 @@ export const updateAction = (worker: { state: string } | null): 'reload' | 'acti
   !worker || worker.state === 'activated' || worker.state === 'redundant' ? 'reload' : 'activate';
 
 /** A new controller while an update is pending means the update was applied, here or in another tab. */
-export const reloadOnControllerChange = (pending: { updateReady: boolean; reloadRequested: boolean }): boolean => pending.reloadRequested || pending.updateReady;
+export const reloadOnControllerChange = (pending: { updateReady: boolean; reloadRequested: boolean }): boolean =>
+  pending.reloadRequested || pending.updateReady;
 
 /* ------------------------------------------------------------ page side */
 
@@ -91,7 +97,12 @@ const subscribe = (l: () => void) => {
   listeners.add(l);
   return () => listeners.delete(l);
 };
-export const usePwa = (): PwaState => useSyncExternalStore(subscribe, () => state, () => state);
+export const usePwa = (): PwaState =>
+  useSyncExternalStore(
+    subscribe,
+    () => state,
+    () => state,
+  );
 
 let waiting: ServiceWorker | null = null;
 const watched = new WeakSet<ServiceWorkerRegistration>();

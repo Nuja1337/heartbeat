@@ -16,7 +16,8 @@ export const CLEAR_ACCURACY = 0.9;
  * A play counts toward the streak and the plan when it completed or ran 60 s. A 60 s map ends just before 60 s of
  * played time, so completing it has to count on its own.
  */
-export const countsAsPlayed = (p: Pick<PlaySummary, 'status' | 'playedMs'>): boolean => p.status === 'completed' || p.playedMs >= STREAK_MIN_MS;
+export const countsAsPlayed = (p: Pick<PlaySummary, 'status' | 'playedMs'>): boolean =>
+  p.status === 'completed' || p.playedMs >= STREAK_MIN_MS;
 
 /** The calendar days that hold a saved play that counts (see countsAsPlayed), by local start time. */
 export function streakDays(plays: readonly PlaySummary[]): Set<number> {
@@ -52,7 +53,12 @@ export interface MilestoneOptions {
  * The milestones this play reaches for the first time. `all` is every saved play including this one
  * (it is added when missing), and `history` is the stored record, so a milestone is never reported twice.
  */
-export function newMilestones(history: Milestones, summary: PlaySummary, all: readonly PlaySummary[], options: MilestoneOptions = {}): MilestoneId[] {
+export function newMilestones(
+  history: Milestones,
+  summary: PlaySummary,
+  all: readonly PlaySummary[],
+  options: MilestoneOptions = {},
+): MilestoneId[] {
   const plays = all.some((p) => p.id === summary.id) ? all : [...all, summary];
   const reached: MilestoneId[] = [];
   const add = (id: MilestoneId, ok: boolean): void => {
@@ -84,7 +90,13 @@ export function newMilestones(history: Milestones, summary: PlaySummary, all: re
   add('placement', done && summary.modeId === 'placement');
 
   const level = summary.presetLevel;
-  if (done && summary.modeId === 'dynamic' && level !== null && (CLEAR_LEVELS as readonly number[]).includes(level) && summary.accuracy >= CLEAR_ACCURACY) {
+  if (
+    done &&
+    summary.modeId === 'dynamic' &&
+    level !== null &&
+    (CLEAR_LEVELS as readonly number[]).includes(level) &&
+    summary.accuracy >= CLEAR_ACCURACY
+  ) {
     add(`clear-${level}` as MilestoneId, true);
   }
   return reached;
@@ -96,4 +108,3 @@ export function recordMilestones(history: Milestones, ids: readonly MilestoneId[
   for (const id of ids) if (!next[id]) next[id] = { at, playId };
   return next;
 }
-

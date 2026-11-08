@@ -28,9 +28,13 @@ describe('Layout.okSlider', () => {
     layout.add({ x: 300, y: 300, time: 1000, end: 1400, group: 0, seq: 0, stream: false, pts: line(300, 700, 300) });
     // Ten seconds later, a slider that runs through the old one.
     const crossing = line(400, 600, 310);
-    expect(layout.okSlider(crossing, 11000, { n: 0, xs: new Float64Array(0), ys: new Float64Array(0), cum: new Float64Array(0), length: 0 })).toBe(false);
+    expect(
+      layout.okSlider(crossing, 11000, { n: 0, xs: new Float64Array(0), ys: new Float64Array(0), cum: new Float64Array(0), length: 0 }),
+    ).toBe(false);
     const clear = line(400, 600, 500);
-    expect(layout.okSlider(clear, 11000, { n: 0, xs: new Float64Array(0), ys: new Float64Array(0), cum: new Float64Array(0), length: 0 })).toBe(true);
+    expect(
+      layout.okSlider(clear, 11000, { n: 0, xs: new Float64Array(0), ys: new Float64Array(0), cum: new Float64Array(0), length: 0 }),
+    ).toBe(true);
   });
 
   it('still lets an older object go once it is out of sight', () => {
@@ -69,7 +73,10 @@ describe('MapBuilder stacks, mirrors and snapshots', () => {
 
   it('replays a motif mirrored, all or nothing', () => {
     const b = builder();
-    const first = b.addMotif({ tag: 'jump', steps: [0, 1, 2, 3].map((k) => ({ off: k, dist: 200, turn: k === 0 ? 0 : 50 })), beats: 4 }, 1000);
+    const first = b.addMotif(
+      { tag: 'jump', steps: [0, 1, 2, 3].map((k) => ({ off: k, dist: 200, turn: k === 0 ? 0 : 50 })), beats: 4 },
+      1000,
+    );
     expect(first.ok).toBe(true);
     const copy = b.addMotif(first.info!.motif, 1000 + 8 * 500, { mirror: { source: first.info!, axis: 'v' } });
     expect(copy.ok).toBe(true);
@@ -89,7 +96,17 @@ describe('MapBuilder stacks, mirrors and snapshots', () => {
     const b = builder();
     b.addMotif({ tag: 'jump', steps: [{ off: 0, dist: 0, turn: 0 }], beats: 1 }, 1000);
     const snap = b.snapshot();
-    b.addMotif({ tag: 'jump', steps: [{ off: 0, dist: 200, turn: 0 }, { off: 1, dist: 200, turn: 90 }], beats: 2 }, 3000);
+    b.addMotif(
+      {
+        tag: 'jump',
+        steps: [
+          { off: 0, dist: 200, turn: 0 },
+          { off: 1, dist: 200, turn: 90 },
+        ],
+        beats: 2,
+      },
+      3000,
+    );
     expect(b.objects).toHaveLength(3);
     b.restore(snap);
     expect(b.objects).toHaveLength(1);
@@ -99,7 +116,17 @@ describe('MapBuilder stacks, mirrors and snapshots', () => {
 
   it('caps a jump at 1.6 times the one before at the same gap, except on a downbeat', () => {
     const b = builder();
-    b.addMotif({ tag: 'jump', steps: [{ off: 0, dist: 0, turn: 0 }, { off: 1, dist: 200, turn: 0 }], beats: 2 }, 500 * 1);
+    b.addMotif(
+      {
+        tag: 'jump',
+        steps: [
+          { off: 0, dist: 0, turn: 0 },
+          { off: 1, dist: 200, turn: 0 },
+        ],
+        beats: 2,
+      },
+      500 * 1,
+    );
     // Beat 2 off the downbeat: asked for 600, held to 1.55 x 200.
     const r = b.addMotif({ tag: 'jump', steps: [{ off: 2, dist: 600, turn: 20 }], beats: 1 }, 500);
     expect(r.ok).toBe(true);

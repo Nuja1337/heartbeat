@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import type { FatiguePoint } from '../../analytics/index';
 import { duration, pct0 } from '../format';
-import { CHART, linear, niceTicks } from './scale';
+import { t, tx } from '../i18n';
+import { linear, niceTicks, useChartColors } from './scale';
 
 /** Accuracy over the last 20 objects against time. `compact` is a small sparkline with no axes. */
 export function Fatigue({ points, compact = false }: { points: readonly FatiguePoint[]; compact?: boolean }) {
+  const C = useChartColors();
   const [active, setActive] = useState<number | null>(null);
-  if (points.length < 2) return <p className="text-sm text-ink-2">The play was too short to show how your accuracy changed.</p>;
+  if (points.length < 2) return <p className="text-sm text-ink-2">{t('The play was too short to show how your accuracy changed.')}</p>;
 
   const W = compact ? 240 : 720;
   const H = compact ? 64 : 240;
@@ -37,7 +39,10 @@ export function Fatigue({ points, compact = false }: { points: readonly FatigueP
         viewBox={`0 0 ${W} ${H}`}
         className="w-full"
         role="img"
-        aria-label={`Accuracy over the play, from ${pct0(first.accuracy)} near the start to ${pct0(last.accuracy)} at the end`}
+        aria-label={t('Accuracy over the play, from {start} near the start to {end} at the end', {
+          start: pct0(first.accuracy),
+          end: pct0(last.accuracy),
+        })}
         onMouseLeave={() => setActive(null)}
         onMouseMove={
           compact
@@ -56,36 +61,52 @@ export function Fatigue({ points, compact = false }: { points: readonly FatigueP
         {!compact &&
           niceTicks(lo, hi, 4).map((v) => (
             <g key={v}>
-              <line x1={M.l} x2={W - M.r} y1={y(v)} y2={y(v)} stroke={CHART.grid} />
-              <text x={M.l - 6} y={y(v)} dy="0.32em" textAnchor="end" fontSize={11} fill={CHART.ink2}>
+              <line x1={M.l} x2={W - M.r} y1={y(v)} y2={y(v)} stroke={C.grid} />
+              <text x={M.l - 6} y={y(v)} dy="0.32em" textAnchor="end" fontSize={11} fill={C.ink2}>
                 {Math.round(v * 100)}%
               </text>
             </g>
           ))}
         {!compact && (
           <>
-            <text x={M.l} y={H - 8} fontSize={11} fill={CHART.ink2}>0:00</text>
-            <text x={W - M.r} y={H - 8} fontSize={11} fill={CHART.ink2} textAnchor="end">{duration(t1)}</text>
+            <text x={M.l} y={H - 8} fontSize={11} fill={C.ink2}>
+              0:00
+            </text>
+            <text x={W - M.r} y={H - 8} fontSize={11} fill={C.ink2} textAnchor="end">
+              {duration(t1)}
+            </text>
           </>
         )}
-        <path d={area} fill={CHART.accent} fillOpacity={0.1} />
-        <path d={line} pathLength={1} className="hb-draw" fill="none" stroke={CHART.accent} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        <path d={area} fill={C.accent} fillOpacity={0.1} />
+        <path
+          d={line}
+          pathLength={1}
+          className="hb-draw"
+          fill="none"
+          stroke={C.accent}
+          strokeWidth={2}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
         {a && (
           <g>
-            <line x1={x(a.t)} x2={x(a.t)} y1={M.t} y2={H - M.b} stroke={CHART.axis} />
-            <circle cx={x(a.t)} cy={y(a.accuracy)} r={4.5} fill={CHART.accent} stroke={CHART.empty} strokeWidth={1.5} />
+            <line x1={x(a.t)} x2={x(a.t)} y1={M.t} y2={H - M.b} stroke={C.axis} />
+            <circle cx={x(a.t)} cy={y(a.accuracy)} r={4.5} fill={C.accent} stroke={C.empty} strokeWidth={1.5} />
           </g>
         )}
       </svg>
       <figcaption className="min-h-6 text-sm text-ink-2" aria-live="polite">
         {a ? (
           <>
-            <span className="text-ink">{duration(a.t)}</span>: {pct0(a.accuracy)} over the 20 objects before
+            {tx('{time}: {accuracy} over the 20 objects before', {
+              time: <span className="text-ink">{duration(a.t)}</span>,
+              accuracy: pct0(a.accuracy),
+            })}
           </>
         ) : compact ? (
-          `${pct0(first.accuracy)} near the start, ${pct0(last.accuracy)} at the end.`
+          t('{start} near the start, {end} at the end.', { start: pct0(first.accuracy), end: pct0(last.accuracy) })
         ) : (
-          'Each point is your accuracy over the last 20 objects.'
+          t('Each point is your accuracy over the last 20 objects.')
         )}
       </figcaption>
     </figure>

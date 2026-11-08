@@ -114,14 +114,31 @@ function clockedBus(stamp?: () => OutputStamp): Harness {
   };
   const c = ctx as unknown as AudioContext;
   const gain = () => c.createGain();
-  const bus: Bus = { ctx: c, hits: gain(), effects: gain(), ambient: gain(), metronome: gain(), noise: c.createBuffer(1, 48000, 48000), live: { n: 0, max: 24 } };
+  const bus: Bus = {
+    ctx: c,
+    hits: gain(),
+    effects: gain(),
+    ambient: gain(),
+    metronome: gain(),
+    noise: c.createBuffer(1, 48000, 48000),
+    live: { n: 0, max: 24 },
+  };
   return { bus, clicks, setNow: (v: number) => (now = v) };
 }
 
 type Grid = { beatMs: number; beatOffsetMs: number | undefined };
 
 /** Run frames of 16 ms play time. perf = playT + base, and the context clock reads perf / 1000. */
-function frames(m: Metronome, h: Harness, grid: Grid, mode: 'off' | 'beat' | 'bar', offsetMs: number, from: number, to: number, base = 10000): void {
+function frames(
+  m: Metronome,
+  h: Harness,
+  grid: Grid,
+  mode: 'off' | 'beat' | 'bar',
+  offsetMs: number,
+  from: number,
+  to: number,
+  base = 10000,
+): void {
   for (let playT = from; playT < to; playT += 16) {
     h.setNow((playT + base) / 1000);
     m.update(h.bus, grid, mode, offsetMs, playT, playT + base);
@@ -223,7 +240,10 @@ describe('Metronome scheduler', () => {
   });
 
   it('stays on the beat through Fast and Slow', () => {
-    for (const [mod, rate] of [['fast', 1.25], ['slow', 0.8]] as const) {
+    for (const [mod, rate] of [
+      ['fast', 1.25],
+      ['slow', 0.8],
+    ] as const) {
       const map = applyMods(makeMap([makeCircle(0, 2000, 100, 100)], { beatMs: 500, beatOffsetMs: 2000 }), [mod]);
       const g: Grid = { beatMs: map.beatMs, beatOffsetMs: map.beatOffsetMs };
       expect(g.beatMs).toBeCloseTo(500 / rate, 9);

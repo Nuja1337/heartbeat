@@ -4,7 +4,16 @@ import { DEMAND_ANCHORS, LEVEL_PRESETS, levelForDemand, rawDemandAt, windowsForT
 import type { HitRecord } from '../shared/types';
 import { pbFlags, computeBests } from './bests';
 import {
-  bucketKeys, computeBuckets, distanceBin, gapBin, isJump, isStreamNote, mergeBuckets, octantOf, turnBin, velocityBin,
+  bucketKeys,
+  computeBuckets,
+  distanceBin,
+  gapBin,
+  isJump,
+  isStreamNote,
+  mergeBuckets,
+  octantOf,
+  turnBin,
+  velocityBin,
 } from './buckets';
 import { itemsFromRecords, mapDemand } from './demand';
 import { makeFixture, makeHistory } from './fixtures';
@@ -38,7 +47,11 @@ describe('stats', () => {
   });
 
   it('smooths with weights that grow with the gap between days', () => {
-    const e = ewma([{ day: 0, value: 10 }, { day: 1, value: 20 }, { day: 31, value: 20 }]);
+    const e = ewma([
+      { day: 0, value: 10 },
+      { day: 1, value: 20 },
+      { day: 31, value: 20 },
+    ]);
     expect(e[0]).toBe(10);
     expect(e[1]!).toBeGreaterThan(10);
     expect(e[1]!).toBeLessThan(12);
@@ -229,8 +242,8 @@ describe('ratings', () => {
   });
 
   it('uses the best 20 plays from the last 60 days only', () => {
-    const scores = [...Array(25).fill(5) as number[], 9];
-    const days = [...Array(25).fill(1) as number[], 90];
+    const scores = [...(Array(25).fill(5) as number[]), 9];
+    const days = [...(Array(25).fill(1) as number[]), 90];
     const r = skillRating('aim', plays(scores, days), NOW)!;
     expect(r.rating).toBeCloseTo(5, 9);
     expect(r.plays).toBe(25);
@@ -254,9 +267,11 @@ describe('ratings', () => {
 
 describe('trends', () => {
   const history = () =>
-    makeHistory(20, { objects: 60, jumpsOnly: true }, { endAt: NOW, spacingMs: DAY, vary: (i) => ({ baseMiss: i < 10 ? 0.25 : 0.02 }) }).map((f) =>
-      summarizePlay(f.result),
-    );
+    makeHistory(
+      20,
+      { objects: 60, jumpsOnly: true },
+      { endAt: NOW, spacingMs: DAY, vary: (i) => ({ baseMiss: i < 10 ? 0.25 : 0.02 }) },
+    ).map((f) => summarizePlay(f.result));
 
   it('builds a daily series with a smoothed line', () => {
     const list = history();
@@ -287,13 +302,17 @@ describe('trends', () => {
 describe('sessions and bests', () => {
   it('groups plays less than 30 minutes apart', () => {
     const base = NOW - DAY;
-    const mk = (offsetMin: number, seed: number) => summarizePlay(makeFixture({ seed, objects: 30, startedAt: base + offsetMin * 60_000 }).result);
+    const mk = (offsetMin: number, seed: number) =>
+      summarizePlay(makeFixture({ seed, objects: 30, startedAt: base + offsetMin * 60_000 }).result);
     const list = [mk(0, 1), mk(10, 2), mk(20, 3), mk(300, 4)];
     const sessions = groupSessions(list);
     expect(sessions).toHaveLength(2);
     expect(sessions[0]!.plays).toHaveLength(1);
     expect(sessions[1]!.plays).toHaveLength(3);
-    const w = weekCompare([mk(0, 5)].map((s) => ({ ...s, startedAt: NOW - DAY })), NOW);
+    const w = weekCompare(
+      [mk(0, 5)].map((s) => ({ ...s, startedAt: NOW - DAY })),
+      NOW,
+    );
     expect(w.thisWeek.plays).toBe(1);
     expect(w.lastWeek.plays).toBe(0);
   });
@@ -329,7 +348,10 @@ describe('sessions and bests', () => {
     const first = mk(1, 3);
     expect(pbFlags(mk(2, 4), [first]).level).toBe(true);
     expect(pbFlags(mk(3, 2), [first]).level).toBeUndefined();
-    const faded = summarizePlay({ ...makeFixture({ seed: 4, objects: 40, modeId: 'jumps', mods: ['fade'] }).result, finalLevels: { jumps: 9 } });
+    const faded = summarizePlay({
+      ...makeFixture({ seed: 4, objects: 40, modeId: 'jumps', mods: ['fade'] }).result,
+      finalLevels: { jumps: 9 },
+    });
     expect(pbFlags(faded, [first]).level).toBeUndefined();
     expect(computeBests([first, mk(2, 4)]).modules[0]!.level).toBe(4);
   });

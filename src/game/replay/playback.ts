@@ -6,14 +6,8 @@
 // Seeks are applied at most once per animation frame.
 
 import { MODES } from '../../shared/catalog';
-import type {
-  CreatePlayback,
-  PlaybackCallbacks,
-  PlaybackHandle,
-  PlaybackSource,
-  ReplayData,
-  Settings,
-} from '../../shared/types';
+import { msg, t } from '../../shared/i18n';
+import type { CreatePlayback, PlaybackCallbacks, PlaybackHandle, PlaybackSource, ReplayData, Settings } from '../../shared/types';
 import { AudioEngine } from '../audio/audio';
 import { Loop } from '../engine/loop';
 import { Playfield } from '../engine/playfield';
@@ -35,9 +29,9 @@ const TIME_CALLBACK_MS = 100;
 /** A frame that took longer than this counts as this long. */
 const MAX_FRAME_MS = 100;
 
-export const NEWER_ENGINE_MESSAGE = 'This replay was made by a newer version of Heartbeat.';
-const COULD_NOT_PLAY = 'This replay could not be played.';
-const NO_CANVAS = 'This browser could not start the game canvas.';
+export const NEWER_ENGINE_MESSAGE = msg('This replay was made by a newer version of Heartbeat.');
+const COULD_NOT_PLAY = msg('This replay could not be played.');
+const NO_CANVAS = msg('This browser could not start the game canvas.');
 
 class Playback implements PlaybackHandle {
   private pf: Playfield;
@@ -93,7 +87,7 @@ class Playback implements PlaybackHandle {
     try {
       const replay: ReplayData = this.source.kind === 'replay' ? this.source.replay : autoplayReplay(this.source.launch);
       if (replay.engineVersion > ENGINE_VERSION) {
-        this.cb.onError(NEWER_ENGINE_MESSAGE);
+        this.cb.onError(t(NEWER_ENGINE_MESSAGE));
         return;
       }
       // One silent run over the whole trace. An older engine can judge differently, and the page says so.
@@ -114,7 +108,7 @@ class Playback implements PlaybackHandle {
       this.cb.onReady({ durationMs: this.durationMs, mismatches });
       if (this.wantPlay && !this.destroyed) this.play();
     } catch {
-      this.cb.onError(COULD_NOT_PLAY);
+      this.cb.onError(t(COULD_NOT_PLAY));
     }
   }
 
@@ -163,9 +157,9 @@ class Playback implements PlaybackHandle {
     this.stopSound();
   }
 
-  seek(t: number): void {
-    if (!this.ready || !Number.isFinite(t)) return;
-    this.pendingSeek = Math.max(0, Math.min(this.durationMs, t));
+  seek(ms: number): void {
+    if (!this.ready || !Number.isFinite(ms)) return;
+    this.pendingSeek = Math.max(0, Math.min(this.durationMs, ms));
   }
 
   setSpeed(speed: number): void {
@@ -216,24 +210,24 @@ class Playback implements PlaybackHandle {
   };
 
   /** A press in the trace makes a click ripple, unless the skin or reduced motion says no. */
-  private onPress = (t: number, x: number, y: number): void => {
-    if (t < this.fxFrom || !this.settings.skin.clickRipple || this.settings.display.reduceMotion) return;
-    this.fx.ripple(x, y, t);
+  private onPress = (ms: number, x: number, y: number): void => {
+    if (ms < this.fxFrom || !this.settings.skin.clickRipple || this.settings.display.reduceMotion) return;
+    this.fx.ripple(x, y, ms);
   };
 
   /** Show time t after a jump. Rebuilds the session when it has to go back. */
-  private applySeek(t: number): void {
+  private applySeek(ms: number): void {
     const runner = this.runner as ReplayRunner;
-    this.fxFrom = t - SEEK_EFFECT_MS;
+    this.fxFrom = ms - SEEK_EFFECT_MS;
     this.sound = false;
-    if (runner.seekTo(t)) this.fx.reset();
+    if (runner.seekTo(ms)) this.fx.reset();
     this.fx.spinHintShown = true;
     this.renderer.reset();
     // The HUD eases toward the score and combo. After a jump it starts from the right numbers.
     const s = runner.session;
     this.fx.scoreShown = s.scoring.total(s.map.mods);
     this.fx.comboShown = s.scoring.combo;
-    this.time = t;
+    this.time = ms;
     this.stopSound();
   }
 
@@ -247,22 +241,22 @@ class Playback implements PlaybackHandle {
     let jumped = false;
 
     if (this.pendingSeek !== null) {
-      const t = this.pendingSeek;
+      const at = this.pendingSeek;
       this.pendingSeek = null;
-      this.applySeek(t);
+      this.applySeek(at);
       jumped = true;
     } else if (this.playing) {
-      let t = this.time + dt * this.speed;
+      let at = this.time + dt * this.speed;
       let ended = false;
-      if (t >= this.durationMs) {
-        t = this.durationMs;
+      if (at >= this.durationMs) {
+        at = this.durationMs;
         ended = true;
       }
-      this.fxFrom = t - SEEK_EFFECT_MS;
+      this.fxFrom = at - SEEK_EFFECT_MS;
       this.sound = this.speed === 1;
-      runner.feedTo(t);
+      runner.feedTo(at);
       this.sound = false;
-      this.time = t;
+      this.time = at;
       if (ended) {
         if (this.source.kind === 'autoplay' && this.source.loop) {
           this.applySeek(0);
@@ -322,13 +316,13 @@ class Playback implements PlaybackHandle {
 export const createPlayback: CreatePlayback = (canvas, source, settings, callbacks) => {
   const ctx = canvas.getContext('2d', { alpha: false });
   if (!ctx) {
-    callbacks.onError(NO_CANVAS);
+    callbacks.onError(t(NO_CANVAS));
     return inertHandle();
   }
   try {
     return new Playback(canvas, source, settings, callbacks, ctx);
   } catch (err) {
-    callbacks.onError(err instanceof Error && err.message ? err.message : COULD_NOT_PLAY);
+    callbacks.onError(err instanceof Error && err.message ? err.message : t(COULD_NOT_PLAY));
     return inertHandle();
   }
 };

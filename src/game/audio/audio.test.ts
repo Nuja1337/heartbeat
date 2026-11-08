@@ -46,7 +46,22 @@ describe('AudioEngine', () => {
   it('plays every kind of event', () => {
     const { a, log } = engine();
     a.resume();
-    const types: FeedbackType[] = ['miss', 'tick', 'tickMiss', 'repeat', 'repeatMiss', 'endHit', 'endMiss', 'comboBreak', 'milestone', 'spinComplete', 'spinBonus', 'fail', 'stray', 'trackOn'];
+    const types: FeedbackType[] = [
+      'miss',
+      'tick',
+      'tickMiss',
+      'repeat',
+      'repeatMiss',
+      'endHit',
+      'endMiss',
+      'comboBreak',
+      'milestone',
+      'spinComplete',
+      'spinBonus',
+      'fail',
+      'stray',
+      'trackOn',
+    ];
     for (const t of types) a.onEvent(event(t));
     for (const j of ['crisp', 'solid', 'rough'] as const) a.onEvent(event('hit', { judgment: j }));
     a.onEvent(event('setEnd', { setEnd: { set: 0, module: 'jumps', from: 3, to: 3.5, success: 0.9, direction: 'up' } }));

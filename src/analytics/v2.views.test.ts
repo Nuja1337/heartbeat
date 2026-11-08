@@ -31,7 +31,16 @@ function jump(o: Partial<HitRecord> & { distance?: number; gapMs?: number; along
     aimRadial: Math.abs(along),
     timingError: 0,
     afterPause: false,
-    features: { ...base.features, distance, gapMs, spacing: distance / 100, direction: 0, velocity: distance / gapMs, runIndex: 0, runLength: 0 },
+    features: {
+      ...base.features,
+      distance,
+      gapMs,
+      spacing: distance / 100,
+      direction: 0,
+      velocity: distance / gapMs,
+      runIndex: 0,
+      runLength: 0,
+    },
     ...rest,
   };
 }
@@ -61,7 +70,11 @@ describe('summary v2 fields', () => {
     expect(stats[0]!.accuracy).toBeCloseTo(mean(first.map((r) => JUDGMENTS[r.judgment].weight)), 3);
     expect(stats[0]!.misses).toBe(first.filter((r) => r.judgment === 'miss').length);
     // A section with no objects has no accuracy.
-    expect(sectionStats([{ start: 5e8, end: 6e8, intensity: 0, focus: 'break' }], fx.records)![0]).toMatchObject({ n: 0, accuracy: null, misses: 0 });
+    expect(sectionStats([{ start: 5e8, end: 6e8, intensity: 0, focus: 'break' }], fx.records)![0]).toMatchObject({
+      n: 0,
+      accuracy: null,
+      misses: 0,
+    });
     expect(sectionStats(undefined, fx.records)).toBeNull();
     expect(sectionStats([], fx.records)).toBeNull();
   });
@@ -69,7 +82,11 @@ describe('summary v2 fields', () => {
   it('puts the sections in the summary and skips records after a pause', () => {
     const fx = makeFixture({ seed: 3, objects: 60 });
     const paused = fx.records.map((r, i) => (i < 10 ? { ...r, afterPause: true } : r));
-    const result = { ...fx.result, records: paused, map: { ...fx.result.map, sections: [{ start: 0, end: 1e9, intensity: 0.5, focus: 'mixed' as const }] } };
+    const result = {
+      ...fx.result,
+      records: paused,
+      map: { ...fx.result.map, sections: [{ start: 0, end: 1e9, intensity: 0.5, focus: 'mixed' as const }] },
+    };
     expect(summarizePlay(result).sections![0]!.n).toBe(50);
   });
 
@@ -79,18 +96,33 @@ describe('summary v2 fields', () => {
       jump({ movement: { ...base.movement, leaveMs: 80, primaryAlong: -25, correctionPath: 25, corrections: 1, efficiency: 0.8 } }),
       jump({ movement: { ...base.movement, leaveMs: 120, primaryAlong: 0, correctionPath: 50, corrections: 2, efficiency: 0.7 } }),
     ];
-    expect(moveStat(records)).toEqual({ n: 3, leaveFrac: 0.2, primaryAlong: -0.5, correctionPath: 0.667, correctionShare: 0.667, efficiency: 0.8 });
+    expect(moveStat(records)).toEqual({
+      n: 3,
+      leaveFrac: 0.2,
+      primaryAlong: -0.5,
+      correctionPath: 0.667,
+      correctionShare: 0.667,
+      efficiency: 0.8,
+    });
   });
 
   it('gives null movement for 1.0 records and ignores records that are not jumps', () => {
     expect(moveStat([jump({ movement: { arriveMs: -50, efficiency: 0.9, corrections: 1, peakSpeed: 1 } })])).toBeNull();
     expect(moveStat([])).toBeNull();
-    const stream = jump({ features: { ...base.features, distance: 40, gapMs: 100, spacing: 0.4, direction: 0, runIndex: 2, runLength: 8, velocity: 0.4 }, movement: { ...base.movement, leaveMs: 50 } });
+    const stream = jump({
+      features: { ...base.features, distance: 40, gapMs: 100, spacing: 0.4, direction: 0, runIndex: 2, runLength: 8, velocity: 0.4 },
+      movement: { ...base.movement, leaveMs: 50 },
+    });
     expect(moveStat([stream])).toBeNull();
   });
 
   it('fills movement from planted fixture records', () => {
-    const fx = makeFixture({ seed: 8, objects: 300, jumpsOnly: true, movement: { leaveFrac: 0.4, correctionShare: 0.5, correctionPath: 0.8, firstMotion: -0.6 } });
+    const fx = makeFixture({
+      seed: 8,
+      objects: 300,
+      jumpsOnly: true,
+      movement: { leaveFrac: 0.4, correctionShare: 0.5, correctionPath: 0.8, firstMotion: -0.6 },
+    });
     const m = summarizePlay(fx.result).movement!;
     expect(m.n).toBeGreaterThan(250);
     expect(m.leaveFrac).toBeGreaterThan(0.36);
@@ -216,7 +248,7 @@ describe('ratings over time and the radar', () => {
 
 describe('weekly changes', () => {
   const noon = (daysAgo: number) => NOW - daysAgo * DAY;
-  const timing = (n: number, mean: number, sdv: number) => ({ n, mean, median: mean, sd: sdv });
+  const timing = (n: number, avg: number, sdv: number) => ({ n, mean: avg, median: avg, sd: sdv });
 
   function week(before: number, after: number, extra: (i: number, recent: boolean) => Partial<PlaySummary> = () => ({})): PlaySummary[] {
     const out: PlaySummary[] = [];
@@ -252,8 +284,18 @@ describe('weekly changes', () => {
   it('needs 3 plays on each side and |t| of 2 or more', () => {
     const all = week(21, 17);
     const recent = all.filter((s) => s.startedAt >= NOW - 7 * DAY);
-    expect(weeklyChanges(all.filter((s) => !recent.includes(s) || s === recent[0] || s === recent[1]), NOW)).toEqual([]);
-    expect(weeklyChanges(all.filter((s) => s.startedAt >= NOW - 7 * DAY), NOW)).toEqual([]);
+    expect(
+      weeklyChanges(
+        all.filter((s) => !recent.includes(s) || s === recent[0] || s === recent[1]),
+        NOW,
+      ),
+    ).toEqual([]);
+    expect(
+      weeklyChanges(
+        all.filter((s) => s.startedAt >= NOW - 7 * DAY),
+        NOW,
+      ),
+    ).toEqual([]);
     expect(weeklyChanges(week(21, 21), NOW).find((x) => x.id === 'timingSd')).toBeUndefined();
     // Noisy plays with a small gap give |t| under 2.
     const noisy = week(21, 17).map((s, i) => ({ ...s, timing: { ...s.timing, sd: s.timing.sd + (i % 2 === 0 ? 14 : -14) } }));
@@ -288,7 +330,12 @@ describe('weekly changes', () => {
   });
 
   it('shows no two equal numbers in any sentence', () => {
-    for (const [b, a] of [[21, 17], [30, 12], [18, 14], [40, 25]] as const) {
+    for (const [b, a] of [
+      [21, 17],
+      [30, 12],
+      [18, 14],
+      [40, 25],
+    ] as const) {
       for (const c of weeklyChanges(week(b, a), NOW)) {
         const nums = c.text.match(/\d+(\.\d+)?/g)!.map(Number);
         expect(nums[0], c.text).not.toBe(nums[1]);
@@ -299,7 +346,14 @@ describe('weekly changes', () => {
 
 describe('play against the average', () => {
   const peer = (i: number, daysAgo: number, over: Partial<PlaySummary> = {}) =>
-    summary(i, NOW - daysAgo * DAY, { presetLevel: 4, status: 'completed', accuracy: 0.8, score: 1000, timing: { n: 100, mean: 0, median: 0, sd: 25 }, ...over });
+    summary(i, NOW - daysAgo * DAY, {
+      presetLevel: 4,
+      status: 'completed',
+      accuracy: 0.8,
+      score: 1000,
+      timing: { n: 100, mean: 0, median: 0, sd: 25 },
+      ...over,
+    });
   const now = peer(99, 0, { accuracy: 0.9, score: 1500, timing: { n: 100, mean: 0, median: 0, sd: 18 } });
 
   it('compares with the same mode and level over the last 30 days', () => {

@@ -1,5 +1,6 @@
 // The Web Audio graph: voices into category gains, then master, a compressor and the output.
 
+import { t } from '../../shared/i18n';
 import type { Settings, TestSound } from '../../shared/types';
 import type { FeedbackEvent } from '../engine/session';
 import { Metronome } from './metronome';
@@ -18,7 +19,7 @@ type CtxFactory = () => AudioContext;
 const defaultFactory: CtxFactory = () => {
   const w = window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
   const Ctor = w.AudioContext ?? w.webkitAudioContext;
-  if (!Ctor) throw new Error('No Web Audio');
+  if (!Ctor) throw new Error(t('No Web Audio'));
   return new Ctor({ latencyHint: 'interactive' });
 };
 
@@ -97,10 +98,10 @@ export class AudioEngine {
   private apply(immediate: boolean): void {
     const b = this.bus;
     if (!b || !this.master) return;
-    const t = b.ctx.currentTime;
+    const at = b.ctx.currentTime;
     const set = (g: GainNode, v: number) => {
       if (immediate) g.gain.value = v;
-      else g.gain.setTargetAtTime(v, t, 0.01);
+      else g.gain.setTargetAtTime(v, at, 0.01);
     };
     set(this.master, this.settings.muted ? 0 : curve(this.settings.master));
     set(b.hits, curve(this.settings.hits));
@@ -195,12 +196,12 @@ export class AudioEngine {
       src.start();
       this.hum = { src, filter, gain };
     }
-    const t = b.ctx.currentTime;
+    const at = b.ctx.currentTime;
     if (on !== this.humOn) {
-      this.hum.gain.gain.setTargetAtTime(on ? 0.05 : 0, t, on ? 0.05 : 0.02);
+      this.hum.gain.gain.setTargetAtTime(on ? 0.05 : 0, at, on ? 0.05 : 0.02);
       this.humOn = on;
     }
-    if (on) this.hum.filter.frequency.setTargetAtTime(600 + 400 * Math.max(0, Math.min(1, speed)), t, 0.05);
+    if (on) this.hum.filter.frequency.setTargetAtTime(600 + 400 * Math.max(0, Math.min(1, speed)), at, 0.05);
   }
 
   /** Spinner hum that follows the player's rotation speed. */
@@ -236,11 +237,11 @@ export class AudioEngine {
       osc.start();
       this.spin = { osc, filter, gain, set: this.settings.soundSet };
     }
-    const t = b.ctx.currentTime;
-    this.spin.osc.frequency.setTargetAtTime(90 + 0.8 * rpm, t, 0.05);
-    this.spin.filter.frequency.setTargetAtTime(400 + 6 * rpm, t, 0.05);
+    const at = b.ctx.currentTime;
+    this.spin.osc.frequency.setTargetAtTime(90 + 0.8 * rpm, at, 0.05);
+    this.spin.filter.frequency.setTargetAtTime(400 + 6 * rpm, at, 0.05);
     const level = (SPIN_HUMS[this.settings.soundSet] ?? SPIN_HUMS.glass).gain;
-    this.spin.gain.gain.setTargetAtTime(rpm > 20 ? level : 0, t, rpm > 20 ? 0.05 : 0.08);
+    this.spin.gain.gain.setTargetAtTime(rpm > 20 ? level : 0, at, rpm > 20 ? 0.05 : 0.08);
   }
 
   /**

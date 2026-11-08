@@ -1,5 +1,9 @@
 // Scales, ticks and colors shared by the charts.
 
+import { THEMES } from '../../shared/theme';
+import type { ThemeId } from '../../shared/theme';
+import { useTheme } from '../state/appearance';
+
 export function linear(d0: number, d1: number, r0: number, r1: number): (v: number) => number {
   const span = d1 - d0 || 1;
   return (v) => r0 + ((v - d0) / span) * (r1 - r0);
@@ -37,30 +41,63 @@ export function mix(a: string, b: string, t: number): string {
   const [r1, g1, b1] = hex(a);
   const [r2, g2, b2] = hex(b);
   const k = Math.min(1, Math.max(0, t));
-  const to = (x: number, y: number) => Math.round(x + (y - x) * k).toString(16).padStart(2, '0');
+  const to = (x: number, y: number) =>
+    Math.round(x + (y - x) * k)
+      .toString(16)
+      .padStart(2, '0');
   return `#${to(r1, r2)}${to(g1, g2)}${to(b1, b2)}`;
 }
 
-/** Chart colors, matching the tokens in index.css. SVG attributes can't read Tailwind classes, and mix() needs hex. */
-export const CHART = {
-  ink: '#eef1f6',
-  ink2: '#a3adbd',
-  grid: '#1e2735',
-  axis: '#2b3648',
+/** Chart colors for one theme, as hex. SVG attributes can't read Tailwind classes, and mix() needs hex. */
+export interface ChartColors {
+  ink: string;
+  ink2: string;
+  grid: string;
+  axis: string;
   /** Data lines and marks (--color-data). */
-  accent: '#5ee7f2',
+  accent: string;
   /** Neutral midpoint of the diverging scale (--color-ink-3). */
-  neutral: '#6b7689',
+  neutral: string;
   /** Negative pole (short, left, early) and positive pole (past, right, late). */
-  negative: '#ffb340',
-  positive: '#5ee7f2',
+  negative: string;
+  positive: string;
   /** The low end of rate scales (--color-surface-2) and the high end (--color-danger). */
-  low: '#151c28',
-  high: '#ff4f6a',
+  low: string;
+  high: string;
   /** Surface for empty cells and the plot background. */
-  empty: '#0f141d',
-  bg: '#07090e',
-} as const;
+  empty: string;
+  bg: string;
+  /** Text on a cell whose fill is dark (the high end of a rate scale) or light. */
+  onDark: string;
+  onLight: string;
+}
+
+function fromTokens(theme: ThemeId): ChartColors {
+  const t = THEMES[theme];
+  return {
+    ink: t.ink,
+    ink2: t.ink2,
+    grid: t.line,
+    axis: t.line2,
+    accent: t.data,
+    neutral: t.ink3,
+    negative: t.warn,
+    positive: t.data,
+    low: theme === 'dark' ? t.surface2 : t.surface3,
+    high: t.danger,
+    empty: t.surface,
+    bg: t.bg,
+    onDark: THEMES.dark.ink,
+    onLight: THEMES.light.ink,
+  };
+}
+
+export const CHART_THEMES: Record<ThemeId, ChartColors> = { dark: fromTokens('dark'), light: fromTokens('light') };
+
+export const chartColors = (theme: ThemeId): ChartColors => CHART_THEMES[theme];
+
+/** The chart colors for the theme on screen. The component re-renders when the theme changes. */
+export const useChartColors = (): ChartColors => CHART_THEMES[useTheme()];
 
 /** Judgment colors follow the chosen palette through the variables the app sets on :root. */
 export const JCOLOR = {
@@ -71,7 +108,7 @@ export const JCOLOR = {
 } as const;
 
 /** Rates run from the surface to danger: 0 is near the surface and 1 is danger. */
-export const sequentialColor = (t: number): string => mix(CHART.low, CHART.high, t);
+export const sequentialColor = (t: number, c: ChartColors): string => mix(c.low, c.high, t);
 
 /** WCAG contrast ratio between two hex colors. */
 export function contrast(a: string, b: string): number {
@@ -87,7 +124,7 @@ export function contrast(a: string, b: string): number {
 }
 
 /** Two hues around a gray midpoint. t runs from -1 to 1. */
-export const divergingColor = (t: number): string =>
-  t < 0 ? mix(CHART.neutral, CHART.negative, -t) : mix(CHART.neutral, CHART.positive, t);
+export const divergingColor = (t: number, c: ChartColors): string =>
+  t < 0 ? mix(c.neutral, c.negative, -t) : mix(c.neutral, c.positive, t);
 
 export const fixed = (v: number, digits: number): string => (Math.abs(v) < 0.5 * 10 ** -digits ? 0 : v).toFixed(digits);

@@ -1,0 +1,3985 @@
+{
+  ", done": [
+    "app/components/PlanCard.tsx"
+  ],
+  ", next": [
+    "app/components/PlanCard.tsx"
+  ],
+  "{change} points": [
+    "app/pages/Results.tsx"
+  ],
+  "{clicks, plural, one {# click} other {# clicks}} from {plays, plural, one {# play} other {# plays}}": [
+    "app/pages/stats/Timing.tsx"
+  ],
+  "{date}: {rating}, tier {tier}": [
+    "app/charts/RatingHistory.tsx"
+  ],
+  "{date}: {rating}, tier {tier}, provisional": [
+    "app/charts/RatingHistory.tsx"
+  ],
+  "{date}: {value}": [
+    "app/charts/LineChart.tsx"
+  ],
+  "{date}: {value}, trend line {trend}": [
+    "app/charts/LineChart.tsx"
+  ],
+  "{date}. {mods}.": [
+    "app/pages/Replay.tsx",
+    "app/pages/Results.tsx"
+  ],
+  "{date}. {mods}. Seed {seed}.": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "{description}.": [
+    "app/components/Ratings.tsx"
+  ],
+  "{done} of {total} done": [
+    "app/components/PlanCard.tsx"
+  ],
+  "{dynamic} builds a full map from a seed. Each map is planned as an intro, a build, a peak, rests and an outro, so its difficulty rises and falls. Pick a level from 1 to 8, or set each part of the difficulty yourself. The same seed gives the same map in the same browser.": [
+    "app/pages/Guide.tsx"
+  ],
+  "{error} Reload the page to try again.": [
+    "app/pages/ModuleSetup.tsx",
+    "app/pages/PlaySetup.tsx"
+  ],
+  "{judgment} {n}": [
+    "app/components/PlayReport.tsx"
+  ],
+  "{jumps}, {distance} bits by distance, {clicks} bits by clicks, {rate} bits per second": [
+    "app/charts/ThroughputScatter.tsx"
+  ],
+  "{jumps}: {distance} bits by distance, {clicks} bits by your clicks, {rate} bits per second": [
+    "app/charts/ThroughputScatter.tsx"
+  ],
+  "{kind, select, miss {Miss at {time}, watch} other {Slider break at {time}, watch}}": [
+    "app/pages/Replay.tsx"
+  ],
+  "{kind, select, miss {Miss at {time}} other {Slider break at {time}}}": [
+    "app/pages/Replay.tsx"
+  ],
+  "{kind, select, visual {Apply sets your visual offset to {value} ms.} other {Apply sets your audio offset to {value} ms.}}": [
+    "app/pages/Calibrate.tsx"
+  ],
+  "{kind, select, visual {Visual calibration canvas} other {Audio calibration canvas}}": [
+    "app/pages/Calibrate.tsx"
+  ],
+  "{kind, select, visual {Visual median} other {Audio median}}": [
+    "app/pages/Welcome.tsx"
+  ],
+  "{kind, select, visual {Visual offset set to {value} ms.} other {Audio offset set to {value} ms.}}": [
+    "app/pages/Calibrate.tsx"
+  ],
+  "{label} ({n})": [
+    "app/pages/stats/Timing.tsx"
+  ],
+  "{label} averaged {after} over the last 14 days, {direction, select, up {up} other {down}} from {before} in the 14 days before.": [
+    "app/copy.ts"
+  ],
+  "{label} by day": [
+    "app/pages/stats/Aim.tsx",
+    "app/pages/stats/Trends.tsx"
+  ],
+  "{label}, {accuracy} accuracy, {misses, plural, one {# miss} other {# misses}}": [
+    "app/components/SectionStrip.tsx"
+  ],
+  "{label}, {role}, {accuracy} accuracy, {misses, plural, one {# miss} other {# misses}}": [
+    "app/components/SectionStrip.tsx"
+  ],
+  "{label}, {role}, no objects": [
+    "app/components/SectionStrip.tsx"
+  ],
+  "{label}, currently {key}. Press to change.": [
+    "app/components/KeyCapture.tsx"
+  ],
+  "{label}, in milliseconds": [
+    "app/components/OffsetField.tsx"
+  ],
+  "{label}, no objects": [
+    "app/components/SectionStrip.tsx"
+  ],
+  "{level}, {length} s": [
+    "app/pages/PlaySetup.tsx"
+  ],
+  "{level}, {length} s, {n, plural, one {# mod} other {# mods}}": [
+    "app/pages/PlaySetup.tsx"
+  ],
+  "{level}, not played yet": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "{mean} rpm on average, {peak} at the peak": [
+    "app/components/PlayReport.tsx"
+  ],
+  "{metric} by direction of movement": [
+    "app/charts/Rose.tsx"
+  ],
+  "{metric} is a little worse than before this drill.": [
+    "analytics/insightCopy.ts"
+  ],
+  "{metric} is worse than before this drill ({before} then, {after} now).": [
+    "analytics/insightCopy.ts"
+  ],
+  "{minutes} minutes this week, no goal set": [
+    "app/components/StreakCard.tsx"
+  ],
+  "{minutes} of {goal} minutes this week": [
+    "app/components/StreakCard.tsx"
+  ],
+  "{misses, plural, one {# miss} other {# misses}} and {breaks, plural, one {# slider break} other {# slider breaks}}. Watch starts 1.5 seconds before each one.": [
+    "app/pages/Replay.tsx"
+  ],
+  "{misses, plural, one {# miss} other {# misses}}. Watch starts 1.5 seconds before each one.": [
+    "app/pages/Replay.tsx"
+  ],
+  "{misses} missed, timing {timing} with a spread of {sd} ms": [
+    "app/components/PlayReport.tsx"
+  ],
+  "{mode}, {length}": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "{mode}, custom": [
+    "app/format.ts"
+  ],
+  "{mode}, Level {level}": [
+    "app/format.ts"
+  ],
+  "{module} level": [
+    "app/components/PlayReport.tsx"
+  ],
+  "{modules} play short sets and change their difficulty after every set, so that about 70% to 86% of targets count as a success. Every module starts at level {level} until the placement test or your plays move it.": [
+    "app/pages/Guide.tsx"
+  ],
+  "{ms} ms": [
+    "analytics/insightCopy.ts",
+    "app/format.ts"
+  ],
+  "{ms} ms {side, select, early {early} other {late}}": [
+    "analytics/insightCopy.ts",
+    "app/format.ts",
+    "app/state/onboarding.ts"
+  ],
+  "{ms} ms either side": [
+    "app/pages/PlaySetup.tsx",
+    "app/pages/stats/Timing.tsx"
+  ],
+  "{n, plural, one {# click} other {# clicks}}": [
+    "analytics/insightCopy.ts"
+  ],
+  "{n, plural, one {# day} other {# days}}": [
+    "app/components/StreakCard.tsx",
+    "app/pages/Settings.tsx"
+  ],
+  "{n, plural, one {# day} other {# days}} in a row": [
+    "app/layout/StreakChip.tsx"
+  ],
+  "{n, plural, one {# day} other {# days}} in a row. Play today to keep it.": [
+    "app/layout/StreakChip.tsx"
+  ],
+  "{n, plural, one {# day} other {# days}} left": [
+    "app/components/StreakCard.tsx"
+  ],
+  "{n, plural, one {# jump} other {# jumps}}": [
+    "analytics/insightCopy.ts",
+    "app/charts/ThroughputScatter.tsx"
+  ],
+  "{n, plural, one {# jump} other {# jumps}} counted": [
+    "app/pages/stats/Aim.tsx"
+  ],
+  "{n, plural, one {# play} other {# plays}}": [
+    "analytics/insightCopy.ts",
+    "app/components/ErrorBoundary.tsx"
+  ],
+  "{n, plural, one {# play} other {# plays}} in the last 60 days, provisional.": [
+    "app/components/Ratings.tsx"
+  ],
+  "{n, plural, one {# play} other {# plays}} in the last 60 days.": [
+    "app/components/Ratings.tsx"
+  ],
+  "{n, plural, one {# play} other {# plays}}, {duration} played": [
+    "app/pages/stats/History.tsx"
+  ],
+  "{n, plural, one {# second} other {# seconds}} by design.": [
+    "app/pages/Guide.tsx"
+  ],
+  "{n, plural, one {# slider} other {# sliders}}": [
+    "analytics/insightCopy.ts"
+  ],
+  "{n, plural, one {# spinner} other {# spinners}}": [
+    "analytics/insightCopy.ts"
+  ],
+  "{n, plural, one {# stream note} other {# stream notes}}": [
+    "analytics/insightCopy.ts"
+  ],
+  "{n, plural, one {# tap} other {# taps}}": [
+    "analytics/insightCopy.ts",
+    "app/components/MapPreview.tsx"
+  ],
+  "{n, plural, one {day in a row} other {days in a row}}": [
+    "app/components/StreakCard.tsx"
+  ],
+  "{n, plural, one {day} other {days}}": [
+    "app/components/DailyCard.tsx"
+  ],
+  "{n} days ago": [
+    "app/format.ts"
+  ],
+  "{n} fps": [
+    "game/render/strings.ts"
+  ],
+  "{n} h ago": [
+    "app/format.ts"
+  ],
+  "{n} languages. Automatic follows your browser, and Settings lets you pick one. English is the source text and the others are translations, so a sentence that reads oddly is worth a report.": [
+    "app/pages/Guide.tsx"
+  ],
+  "{n} last week": [
+    "app/pages/stats/Overview.tsx"
+  ],
+  "{n} min": [
+    "app/format.ts",
+    "app/pages/ModuleSetup.tsx",
+    "app/pages/Settings.tsx"
+  ],
+  "{n} min ago": [
+    "app/format.ts"
+  ],
+  "{n} min to your weekly goal.": [
+    "app/components/StreakCard.tsx"
+  ],
+  "{n} ms {side, select, early {early} other {late}}": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "{n} plays": [
+    "app/format.ts"
+  ],
+  "{n} units": [
+    "app/pages/PlaySetup.tsx"
+  ],
+  "{n}% {side, select, short {short of} other {past}} the center": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "{n}% missed": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "{n}% of a width": [
+    "app/format.ts"
+  ],
+  "{pct} accuracy or more, with no misses.": [
+    "app/pages/Guide.tsx"
+  ],
+  "{pct} accuracy or more.": [
+    "app/pages/Guide.tsx"
+  ],
+  "{pct} late or on time": [
+    "app/pages/stats/Timing.tsx"
+  ],
+  "{pct}% {side, select, behind {behind} other {ahead}}": [
+    "analytics/insightCopy.ts",
+    "app/components/PlayReport.tsx"
+  ],
+  "{pct}% {side, select, left {left} other {right}}": [
+    "app/format.ts"
+  ],
+  "{pct}% {side, select, short {short} other {past}}": [
+    "analytics/insightCopy.ts",
+    "app/format.ts"
+  ],
+  "{pct}% {side}": [
+    "analytics/insightCopy.ts"
+  ],
+  "{pct}% of a width": [
+    "analytics/insightCopy.ts"
+  ],
+  "{pct}% of the gap": [
+    "analytics/insightCopy.ts"
+  ],
+  "{points} points": [
+    "analytics/insightCopy.ts"
+  ],
+  "{r} retries, {n} plays a new map, {w} watches the replay and {esc} goes back.": [
+    "app/pages/Guide.tsx"
+  ],
+  "{role}, {start} to {end}": [
+    "app/components/DifficultyGraph.tsx"
+  ],
+  "{row} widths, {gap} ms: {description}, {n, plural, one {# tap} other {# taps}}": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "{row} widths, {gap} ms: no taps": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "{row} widths, {gap} ms: only {n, plural, one {# tap} other {# taps}}": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "{rowTitle} by {colTitle}": [
+    "app/charts/HeatGrid.tsx"
+  ],
+  "{sets} short sets of each of {modules}. It takes {time} and sets the level each module starts at.": [
+    "app/pages/Guide.tsx"
+  ],
+  "{side, select, early {early} other {late}} {ms} ms": [
+    "game/render/strings.ts"
+  ],
+  "{skill} {rating}": [
+    "app/components/Radar.tsx"
+  ],
+  "{skill} {rating} provisional": [
+    "app/components/Radar.tsx"
+  ],
+  "{skill} demand, level {level}": [
+    "app/components/DemandBars.tsx"
+  ],
+  "{skill} no rating": [
+    "app/components/Radar.tsx"
+  ],
+  "{skill} rating {rating} of 8": [
+    "app/components/Ratings.tsx"
+  ],
+  "{skill} rating over the last 90 days, from {from} to {to}. Use the arrow keys to read single days.": [
+    "app/charts/RatingHistory.tsx"
+  ],
+  "{skill} reached tier {tier}": [
+    "app/pages/Results.tsx"
+  ],
+  "{skill} score": [
+    "analytics/trends.ts"
+  ],
+  "{skill}, {rating}": [
+    "app/components/Radar.tsx"
+  ],
+  "{skill}, {rating}, provisional": [
+    "app/components/Radar.tsx"
+  ],
+  "{skill}, no rating yet": [
+    "app/components/Radar.tsx"
+  ],
+  "{skill}: not in this map": [
+    "app/components/DemandBars.tsx"
+  ],
+  "{start} near the start, {end} at the end.": [
+    "app/charts/Fatigue.tsx"
+  ],
+  "{taps} of {needed}": [
+    "app/pages/Calibrate.tsx",
+    "game/calibrate/strings.ts"
+  ],
+  "{time} of {total}": [
+    "app/components/MapPreview.tsx",
+    "app/pages/Replay.tsx"
+  ],
+  "{time}, {reason}": [
+    "app/pages/Replay.tsx"
+  ],
+  "{time}, slider break": [
+    "app/pages/Replay.tsx"
+  ],
+  "{time}: {accuracy} over the 20 objects before": [
+    "app/charts/Fatigue.tsx"
+  ],
+  "{title}, {outcome}.": [
+    "app/pages/Results.tsx"
+  ],
+  "{tracked} tracked, {lag}, end held on {end}": [
+    "app/components/PlayReport.tsx"
+  ],
+  "{turns} turns, {needed} needed, {average} rpm on average, {peak} at the peak": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "{used} of {total}": [
+    "app/pages/Settings.tsx"
+  ],
+  "% of a width": [
+    "app/pages/stats/Aim.tsx"
+  ],
+  "% of the gap": [
+    "app/pages/stats/Aim.tsx"
+  ],
+  "0.4 to 0.9": [
+    "analytics/buckets.ts"
+  ],
+  "0.9 to 1.5": [
+    "analytics/buckets.ts"
+  ],
+  "1 to 2": [
+    "analytics/buckets.ts"
+  ],
+  "1.5 and up": [
+    "analytics/buckets.ts"
+  ],
+  "100 to 150": [
+    "analytics/buckets.ts"
+  ],
+  "110 to 160": [
+    "analytics/buckets.ts"
+  ],
+  "150 and up": [
+    "analytics/buckets.ts"
+  ],
+  "160 to 250": [
+    "analytics/buckets.ts"
+  ],
+  "2 to 3": [
+    "analytics/buckets.ts"
+  ],
+  "25 hours of practice": [
+    "shared/catalog.ts"
+  ],
+  "250 plays": [
+    "shared/catalog.ts"
+  ],
+  "250 to 400": [
+    "analytics/buckets.ts"
+  ],
+  "3 to 4.5": [
+    "analytics/buckets.ts"
+  ],
+  "30 days": [
+    "analytics/trends.ts",
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "4.5 and up": [
+    "analytics/buckets.ts"
+  ],
+  "400 to 700": [
+    "analytics/buckets.ts"
+  ],
+  "45 to 100": [
+    "analytics/buckets.ts"
+  ],
+  "7 days": [
+    "analytics/trends.ts"
+  ],
+  "700 and up": [
+    "analytics/buckets.ts"
+  ],
+  "90 days": [
+    "analytics/trends.ts",
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "A {what} in the data is not an object.": [
+    "data/plays.ts"
+  ],
+  "A click on the beat, or on the first beat of every bar.": [
+    "app/pages/Settings.tsx"
+  ],
+  "A drill that worked": [
+    "shared/catalog.ts"
+  ],
+  "A faint grid on the playfield.": [
+    "app/pages/Settings.tsx"
+  ],
+  "A finished play gets a grade from its accuracy and its misses.": [
+    "app/pages/Guide.tsx"
+  ],
+  "A hit outside the inner half of a target counts as Rough at best.": [
+    "shared/catalog.ts"
+  ],
+  "A kept replay is never removed to make room for newer ones.": [
+    "app/pages/Replay.tsx"
+  ],
+  "A module's level changes only after plays with no mods, or with {mirror} alone. {fade} and {spotlight} sets are still saved and counted in your stats.": [
+    "app/pages/Train.tsx"
+  ],
+  "a moment ago": [
+    "app/format.ts"
+  ],
+  "A month in a row": [
+    "shared/catalog.ts"
+  ],
+  "A new day has started. Your plan is being updated, then you can start it.": [
+    "app/components/PlanCard.tsx"
+  ],
+  "A new version of Heartbeat is ready.": [
+    "app/pwa.ts"
+  ],
+  "A preview of the map with your look settings": [
+    "app/components/SkinPreview.tsx"
+  ],
+  "A ring that spreads from every click.": [
+    "app/pages/Settings.tsx"
+  ],
+  "A streak counts days in a row with at least one saved play that you finished or played for at least a minute. The weekly goal counts minutes from Monday to Sunday against the target in Settings, which is {n} by default.": [
+    "app/pages/Guide.tsx"
+  ],
+  "A tablet is an absolute device, so it reports where the pen is and not how far it moved. Raw input needs movement, so it is turned off and Heartbeat reads the pen position directly.": [
+    "app/pages/Welcome.tsx"
+  ],
+  "A tier is the whole-number part of a rating. Ratings marked provisional are based on fewer than 5 plays.": [
+    "app/copy.ts"
+  ],
+  "A week in a row": [
+    "shared/catalog.ts"
+  ],
+  "about a minute": [
+    "app/copy.ts"
+  ],
+  "About Heartbeat": [
+    "app/layout/Shell.tsx"
+  ],
+  "above the line": [
+    "analytics/insightCopy.ts"
+  ],
+  "Above zero is late and below zero is early.": [
+    "app/charts/Timeline.tsx"
+  ],
+  "Above zero is late and below zero is early. Select a tap to watch it in the replay.": [
+    "app/charts/Timeline.tsx"
+  ],
+  "Accessibility": [
+    "app/copy.ts",
+    "app/pages/Guide.tsx",
+    "app/pages/Settings.tsx"
+  ],
+  "Accuracy": [
+    "analytics/trends.ts",
+    "analytics/views.ts",
+    "app/components/PlayReport.tsx",
+    "app/pages/Daily.tsx",
+    "app/pages/stats/Overview.tsx"
+  ],
+  "Accuracy by quarter": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "Accuracy in each part of the map": [
+    "app/pages/Results.tsx",
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "Accuracy in each quarter of the play": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "Accuracy in the second half": [
+    "analytics/insightCopy.ts"
+  ],
+  "Accuracy over the play, from {start} near the start to {end} at the end": [
+    "app/charts/Fatigue.tsx"
+  ],
+  "Accuracy through the play": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "Across the move": [
+    "app/components/PlayReport.tsx"
+  ],
+  "Active drills": [
+    "app/pages/stats/Overview.tsx"
+  ],
+  "Adaptive": [
+    "app/components/ModeCard.tsx"
+  ],
+  "Added {added, plural, one {# play} other {# plays}} and skipped {skipped} that {skipped, plural, one {was} other {were}} already here.": [
+    "app/pages/Settings.tsx"
+  ],
+  "After the first visit, Heartbeat loads without a connection. When a new version is ready, a banner offers a reload. Browsers that support it offer Install in Settings, under App, so Heartbeat opens from your desktop or home screen.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Against your average": [
+    "app/pages/Results.tsx"
+  ],
+  "Aim": [
+    "app/components/PlayReport.tsx",
+    "app/pages/stats/Aim.tsx",
+    "app/pages/stats/Layout.tsx",
+    "shared/catalog.ts"
+  ],
+  "Aim errors": [
+    "app/pages/Guide.tsx"
+  ],
+  "Aim when moving {direction}": [
+    "analytics/insightCopy.ts"
+  ],
+  "Aim, speed, tracking, precision, timing, reading and spinning. For each play, the demand of the map is converted to the level 1 to 8 scale, then multiplied by your performance squared. A rating is a weighted mean of your best 20 scores from the last 60 days. It is marked provisional below 5 plays, and the tier is its whole-number part.": [
+    "app/pages/Guide.tsx"
+  ],
+  "All": [
+    "analytics/trends.ts",
+    "app/pages/Settings.tsx"
+  ],
+  "All clicks": [
+    "app/pages/stats/Timing.tsx"
+  ],
+  "All clicks (bars)": [
+    "app/pages/stats/Timing.tsx"
+  ],
+  "All modes": [
+    "app/pages/stats/History.tsx"
+  ],
+  "All modules": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "All plays": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "All plays, progress and drills were deleted. Your settings stay.": [
+    "app/pages/Settings.tsx"
+  ],
+  "All stats": [
+    "app/components/WeeklyChanges.tsx"
+  ],
+  "All taps": [
+    "app/components/PlayReport.tsx"
+  ],
+  "Along the move": [
+    "app/components/PlayReport.tsx"
+  ],
+  "Ambient": [
+    "app/pages/Settings.tsx"
+  ],
+  "Angles": [
+    "shared/catalog.ts"
+  ],
+  "Any direction": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "App": [
+    "app/pages/Settings.tsx"
+  ],
+  "Applied": [
+    "app/pages/Calibrate.tsx"
+  ],
+  "Applies from the next play. Turn it off if you see flicker.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Apply": [
+    "app/pages/Calibrate.tsx"
+  ],
+  "Apply saves the rounded median as the visual offset or the audio offset. The visual offset draws targets earlier, and the audio offset plays the metronome earlier. Hit sounds always play at once.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Approach": [
+    "app/pages/PlaySetup.tsx"
+  ],
+  "Approach style": [
+    "app/pages/Settings.tsx"
+  ],
+  "Approach time": [
+    "shared/catalog.ts"
+  ],
+  "Ask again": [
+    "app/pages/Settings.tsx"
+  ],
+  "Audio calibration": [
+    "app/pages/Calibrate.tsx",
+    "game/calibrate/strings.ts"
+  ],
+  "Audio offset": [
+    "app/pages/Settings.tsx"
+  ],
+  "Audio timing": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Automatic": [
+    "app/pages/Settings.tsx"
+  ],
+  "Automatic follows your browser's language. English is the source text, and the others are translations.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Average": [
+    "app/components/PlayReport.tsx",
+    "app/pages/stats/Timing.tsx"
+  ],
+  "average {value}": [
+    "app/pages/Results.tsx"
+  ],
+  "Back": [
+    "app/pages/PlayScreen.tsx",
+    "app/pages/Results.tsx"
+  ],
+  "Back to settings": [
+    "app/pages/Calibrate.tsx"
+  ],
+  "Back to setup": [
+    "app/pages/Calibrate.tsx"
+  ],
+  "Based on {what} from the last 30 days.": [
+    "analytics/insightCopy.ts"
+  ],
+  "Based on {what} in this play.": [
+    "analytics/insightCopy.ts"
+  ],
+  "Based on {what} in this session.": [
+    "analytics/insightCopy.ts"
+  ],
+  "Beat {n} of {total}": [
+    "game/calibrate/strings.ts"
+  ],
+  "Beats per minute. Jumps fall on full or half beats and streams on quarter beats.": [
+    "shared/catalog.ts"
+  ],
+  "below the line": [
+    "analytics/insightCopy.ts"
+  ],
+  "Below the others.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Best accuracy": [
+    "app/pages/stats/Bests.tsx"
+  ],
+  "Best combo": [
+    "app/pages/stats/Bests.tsx"
+  ],
+  "Best level": [
+    "app/pages/stats/Bests.tsx"
+  ],
+  "Best score": [
+    "app/pages/stats/Bests.tsx"
+  ],
+  "Best today": [
+    "app/components/DailyCard.tsx"
+  ],
+  "Bests": [
+    "app/pages/stats/Bests.tsx",
+    "app/pages/stats/Layout.tsx"
+  ],
+  "Better": [
+    "analytics/insightCopy.ts",
+    "app/components/WeeklyChanges.tsx"
+  ],
+  "between taps": [
+    "app/pages/Calibrate.tsx",
+    "app/pages/Welcome.tsx"
+  ],
+  "Both hit keys can't be the same.": [
+    "app/components/KeyCapture.tsx"
+  ],
+  "Brackets": [
+    "app/pages/Settings.tsx"
+  ],
+  "Break": [
+    "app/pages/Replay.tsx"
+  ],
+  "Bright colors on a dark field.": [
+    "shared/catalog.ts"
+  ],
+  "Bright, short tones, as in version 1.0.": [
+    "shared/catalog.ts"
+  ],
+  "Brighter cells have higher values.": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Browser notes": [
+    "app/pages/Guide.tsx"
+  ],
+  "Build": [
+    "app/components/DifficultyGraph.tsx",
+    "app/components/SectionStrip.tsx"
+  ],
+  "Building the map.": [
+    "app/components/MapPreview.tsx"
+  ],
+  "Bullseye": [
+    "shared/catalog.ts"
+  ],
+  "Busy screens": [
+    "analytics/insightCopy.ts"
+  ],
+  "By kind of object": [
+    "app/components/PlayReport.tsx"
+  ],
+  "Calibrate": [
+    "app/components/OffsetField.tsx",
+    "app/pages/Welcome.tsx"
+  ],
+  "Calibrate now": [
+    "app/pages/Guide.tsx"
+  ],
+  "Calibration": [
+    "app/pages/Guide.tsx"
+  ],
+  "Can't be combined with {mods}.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Can't be used with {mods}.": [
+    "app/pages/PlaySetup.tsx"
+  ],
+  "Cancel": [
+    "app/pages/Settings.tsx"
+  ],
+  "Cells with fewer than {min} taps are grayed out.": [
+    "app/charts/HeatGrid.tsx"
+  ],
+  "Change the speed.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Changed": [
+    "app/components/WeeklyChanges.tsx"
+  ],
+  "Check that the whole link was copied.": [
+    "app/pages/Share.tsx"
+  ],
+  "Choose how hard the map is. Each map is generated from a seed.": [
+    "app/copy.ts"
+  ],
+  "Choose the device you aim with and the keys that hit targets.": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Chrome and Firefox": [
+    "app/pages/Guide.tsx"
+  ],
+  "circle": [
+    "app/pages/Replay.tsx"
+  ],
+  "Circles": [
+    "app/components/PlayReport.tsx",
+    "app/pages/Guide.tsx",
+    "app/pages/stats/Timing.tsx"
+  ],
+  "Classic": [
+    "shared/catalog.ts"
+  ],
+  "Clean": [
+    "shared/catalog.ts"
+  ],
+  "Clear view": [
+    "shared/catalog.ts"
+  ],
+  "Click a key box and press the key you want. Mouse buttons hit targets too.": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Click or press {key} to start": [
+    "game/render/strings.ts"
+  ],
+  "Click positions around the target. Average {along} percent along and {across} percent across.": [
+    "app/charts/AimScatter.tsx"
+  ],
+  "Click ripple": [
+    "app/pages/Settings.tsx"
+  ],
+  "Click them as the approach ring closes.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Click timing": [
+    "analytics/insightCopy.ts"
+  ],
+  "Click to continue": [
+    "game/render/strings.ts"
+  ],
+  "Click, or press {first} or {second}. Both keys can be changed in Settings.": [
+    "app/pages/Guide.tsx"
+  ],
+  "clicks scatter {n}% of a width across the line": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Close": [
+    "app/components/MapPreview.tsx"
+  ],
+  "Close other Heartbeat tabs to finish the update.": [
+    "data/db.ts"
+  ],
+  "Collecting data": [
+    "analytics/insightCopy.ts"
+  ],
+  "Colors": [
+    "app/pages/Guide.tsx"
+  ],
+  "Combo": [
+    "app/pages/Settings.tsx"
+  ],
+  "Combo of 100": [
+    "shared/catalog.ts"
+  ],
+  "Combo of 500": [
+    "shared/catalog.ts"
+  ],
+  "Compared with {n} earlier {mode} plays": [
+    "analytics/views.ts"
+  ],
+  "Compared with {n} earlier custom Dynamic plays": [
+    "analytics/views.ts"
+  ],
+  "Compared with {n} earlier plays at {level}": [
+    "analytics/views.ts"
+  ],
+  "Compares the last 7 days with the 4 weeks before them, and reports only the changes that are clear.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Continue": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Continue setup": [
+    "app/pages/Calibrate.tsx"
+  ],
+  "Controls": [
+    "app/copy.ts",
+    "app/pages/Guide.tsx"
+  ],
+  "Could not change this.": [
+    "app/pages/Replay.tsx"
+  ],
+  "Could not copy. The link is {url}": [
+    "app/components/ShareButton.tsx"
+  ],
+  "Could not delete this play.": [
+    "app/pages/stats/History.tsx"
+  ],
+  "Could not hide this insight.": [
+    "app/components/InsightCard.tsx"
+  ],
+  "Could not make a link for this map.": [
+    "app/components/ShareButton.tsx"
+  ],
+  "Could not open the database.": [
+    "app/state/store.ts",
+    "data/db.ts"
+  ],
+  "Could not read this play.": [
+    "app/state/usePlay.ts"
+  ],
+  "Could not read this replay.": [
+    "app/pages/Replay.tsx"
+  ],
+  "Could not read your data.": [
+    "app/state/analysis.ts"
+  ],
+  "Could not read your module levels.": [
+    "app/components/DailyCard.tsx",
+    "app/components/PlanCard.tsx",
+    "app/pages/Results.tsx",
+    "app/pages/stats/PlayDetail.tsx",
+    "app/state/levels.ts"
+  ],
+  "Could not read your plays.": [
+    "app/pages/stats/Timing.tsx"
+  ],
+  "Could not read your setup progress.": [
+    "app/state/onboarding.ts"
+  ],
+  "Could not save settings.": [
+    "app/state/store.ts"
+  ],
+  "Could not save your setup progress.": [
+    "app/state/onboarding.ts"
+  ],
+  "Could not start the drill.": [
+    "app/components/InsightCard.tsx"
+  ],
+  "Count": [
+    "app/components/PlayReport.tsx"
+  ],
+  "Countdown": [
+    "app/pages/Settings.tsx"
+  ],
+  "Crisp": [
+    "shared/catalog.ts"
+  ],
+  "Crisp pop-ups": [
+    "app/pages/Settings.tsx"
+  ],
+  "Cross": [
+    "app/pages/Settings.tsx"
+  ],
+  "Current level": [
+    "app/pages/stats/Bests.tsx"
+  ],
+  "Cursor": [
+    "app/pages/Settings.tsx"
+  ],
+  "Cursor size": [
+    "app/pages/Settings.tsx"
+  ],
+  "Cursor style": [
+    "app/pages/Settings.tsx"
+  ],
+  "Cursor trail": [
+    "app/pages/Settings.tsx"
+  ],
+  "curved sliders": [
+    "analytics/insightCopy.ts"
+  ],
+  "Curves": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "Custom": [
+    "app/pages/Daily.tsx",
+    "app/pages/PlaySetup.tsx"
+  ],
+  "Custom difficulty": [
+    "app/pages/PlaySetup.tsx"
+  ],
+  "custom Dynamic": [
+    "analytics/views.ts"
+  ],
+  "Daily": [
+    "app/copy.ts",
+    "app/pages/Daily.tsx"
+  ],
+  "Daily map": [
+    "app/components/DailyCard.tsx",
+    "app/pages/Guide.tsx"
+  ],
+  "Daily map level": [
+    "app/components/DailyCard.tsx"
+  ],
+  "Daily plan": [
+    "app/pages/Guide.tsx"
+  ],
+  "Daily streak": [
+    "app/components/DailyCard.tsx"
+  ],
+  "Dark": [
+    "app/pages/Settings.tsx"
+  ],
+  "Dark, light, or whatever your operating system uses. The playfield follows, and on the light theme the target colors are darkened so they stay visible on white.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Data": [
+    "app/pages/Settings.tsx"
+  ],
+  "Date": [
+    "app/pages/Daily.tsx"
+  ],
+  "Default": [
+    "app/pages/Settings.tsx"
+  ],
+  "Delete": [
+    "app/pages/Guide.tsx",
+    "app/pages/stats/History.tsx"
+  ],
+  "Delete all data": [
+    "app/pages/Settings.tsx"
+  ],
+  "Delete the play from {date}": [
+    "app/pages/stats/History.tsx"
+  ],
+  "Deleting failed.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Demand": [
+    "app/pages/PlaySetup.tsx"
+  ],
+  "Demand, on the level scale": [
+    "app/components/DifficultyGraph.tsx"
+  ],
+  "Density": [
+    "shared/catalog.ts"
+  ],
+  "Detail retention": [
+    "app/pages/Settings.tsx"
+  ],
+  "Details": [
+    "app/components/PlayReport.tsx"
+  ],
+  "Detected on your last play": [
+    "app/pages/Settings.tsx"
+  ],
+  "Device": [
+    "app/pages/Welcome.tsx"
+  ],
+  "did not finish the spinner": [
+    "app/pages/Replay.tsx"
+  ],
+  "Difficulty by distance and target size, in bits": [
+    "app/charts/ThroughputScatter.tsx"
+  ],
+  "Difficulty by your clicks, in bits": [
+    "app/charts/ThroughputScatter.tsx"
+  ],
+  "Difficulty of the jump by distance and target size against difficulty by where you clicked, one dot per group of jumps": [
+    "app/charts/ThroughputScatter.tsx"
+  ],
+  "Difficulty over {length}, from level {low} at the lowest to level {high} at the highest.": [
+    "app/components/DifficultyGraph.tsx"
+  ],
+  "Direction": [
+    "app/pages/ModuleSetup.tsx",
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Direction of movement into the target.": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Display": [
+    "app/pages/Settings.tsx"
+  ],
+  "Display rate": [
+    "app/pages/Settings.tsx"
+  ],
+  "Displays and speakers add delay. Calibration measures yours so targets and clicks line up with what you see and hear.": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Displays and speakers delay what you see and hear. The calibration page measures that delay. Visual calibration shows a target whose ring closes every 600 ms, and audio calibration plays a metronome click at the same interval.": [
+    "app/pages/Guide.tsx"
+  ],
+  "distance": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Distance": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Distance and gap": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Distance from center": [
+    "analytics/trends.ts"
+  ],
+  "Distance from the center": [
+    "analytics/views.ts"
+  ],
+  "Do {n, plural, one {# more drill session} other {# more drill sessions}} to start the comparison.": [
+    "analytics/insightCopy.ts"
+  ],
+  "Done": [
+    "app/pages/Calibrate.tsx",
+    "app/pages/Welcome.tsx",
+    "game/calibrate/strings.ts"
+  ],
+  "Dot": [
+    "app/pages/Settings.tsx"
+  ],
+  "Dots are single days. The line is the trend.": [
+    "app/charts/LineChart.tsx"
+  ],
+  "Dots below the dashed line are jumps where your clicks landed more spread out than the target is wide. Bigger dots hold more jumps.": [
+    "app/charts/ThroughputScatter.tsx"
+  ],
+  "down": [
+    "analytics/insightCopy.ts"
+  ],
+  "Down": [
+    "app/charts/Rose.tsx"
+  ],
+  "down and left": [
+    "analytics/insightCopy.ts"
+  ],
+  "down and right": [
+    "analytics/insightCopy.ts"
+  ],
+  "down and to the left of the line": [
+    "analytics/insightCopy.ts"
+  ],
+  "down and to the right of the line": [
+    "analytics/insightCopy.ts"
+  ],
+  "Down from {level}": [
+    "game/render/strings.ts"
+  ],
+  "Drawn": [
+    "app/pages/Settings.tsx"
+  ],
+  "Draws the time of recent frames in a play. Use it to find stutter.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Drills": [
+    "app/pages/Guide.tsx"
+  ],
+  "Dynamic": [
+    "shared/catalog.ts"
+  ],
+  "Dynamic, {seconds} seconds, no mods.": [
+    "app/components/DailyCard.tsx"
+  ],
+  "Each click is judged {crisp}, {solid}, {rough} or {miss}. The windows depend on the timing setting of the map. At timing strictness 5 they are {crispMs}, {solidMs} and {roughMs} ms either side of the beat. The Dynamic levels use strictness 1 to 8, so a higher level also means tighter windows.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Each day has a plan of four steps, which are a warm-up, two drills chosen from your insights and ratings, and a Dynamic play at a suggested level. A step is ticked off when you finish it or play it for at least a minute.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Each day has its own map, which stays the same until midnight at the level you pick. Your daily plays are listed here.": [
+    "app/copy.ts"
+  ],
+  "Each link opens the replay 1.5 seconds before the miss": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "Each point is your accuracy over the last 20 objects.": [
+    "app/charts/Fatigue.tsx"
+  ],
+  "Each saved play keeps a summary and, for a while, a record of every object. A summary holds the score, accuracy, timing, aim errors, movement metrics and grouped statistics that show up on the Patterns and Aim tabs.": [
+    "app/pages/Guide.tsx"
+  ],
+  "early": [
+    "game/render/strings.ts"
+  ],
+  "Early": [
+    "app/pages/stats/Timing.tsx"
+  ],
+  "Early (left) and late (right), in ms": [
+    "app/charts/Histogram.tsx"
+  ],
+  "Early and late marks": [
+    "app/pages/Settings.tsx"
+  ],
+  "Easier to tell apart with red-green color blindness.": [
+    "shared/catalog.ts"
+  ],
+  "Effects": [
+    "app/pages/Settings.tsx"
+  ],
+  "End": [
+    "app/charts/Timeline.tsx"
+  ],
+  "Error": [
+    "app/components/ErrorBoundary.tsx",
+    "app/pages/PlayScreen.tsx"
+  ],
+  "Error bar": [
+    "app/pages/Settings.tsx"
+  ],
+  "Esc is used to pause, so it can't be a hit key.": [
+    "app/components/KeyCapture.tsx"
+  ],
+  "Esc is used to pause, so it can't be the retry key.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Esc pauses.": [
+    "game/render/strings.ts"
+  ],
+  "Every bar": [
+    "app/pages/Settings.tsx"
+  ],
+  "Every beat": [
+    "app/pages/Settings.tsx"
+  ],
+  "Every control can be reached with Tab, and groups of choices move with the arrow keys. A skip link at the top of each page goes straight to the content. In a play, two keys of your choice count as hits, Esc pauses, and the retry key restarts.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Every play, newest first.": [
+    "app/copy.ts"
+  ],
+  "Every target is a slider. Keep the cursor on the moving ball until it ends.": [
+    "shared/catalog.ts"
+  ],
+  "Everything is stored in this browser only. Export a file to keep a copy or move to another browser.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Everything is stored in this browser. There is no account, there are no cookies, and nothing is sent anywhere. Heartbeat has no analytics of its own and asks for nothing about you.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Export ({format})": [
+    "app/pages/Settings.tsx"
+  ],
+  "Export and import": [
+    "app/pages/Guide.tsx"
+  ],
+  "Export your data": [
+    "app/components/ErrorBoundary.tsx"
+  ],
+  "Exported {n, plural, one {# play} other {# plays}}.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Exported {plays}.": [
+    "app/components/ErrorBoundary.tsx"
+  ],
+  "Fade": [
+    "shared/catalog.ts"
+  ],
+  "Failed": [
+    "app/pages/Home.tsx",
+    "app/pages/Results.tsx",
+    "app/pages/stats/History.tsx"
+  ],
+  "Faint lines between targets.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Fake game mode is on. Plays return made-up results after 3 seconds.": [
+    "app/copy.ts"
+  ],
+  "Fast": [
+    "shared/catalog.ts"
+  ],
+  "Fast taps in streams": [
+    "shared/catalog.ts"
+  ],
+  "Faster jumps and streams of up to nine taps.": [
+    "shared/catalog.ts"
+  ],
+  "Field grid": [
+    "app/pages/Settings.tsx"
+  ],
+  "Fifty plays": [
+    "shared/catalog.ts"
+  ],
+  "Fill": [
+    "app/pages/Settings.tsx"
+  ],
+  "Finished drills": [
+    "app/pages/stats/Overview.tsx"
+  ],
+  "First play": [
+    "shared/catalog.ts"
+  ],
+  "Five hours of practice": [
+    "shared/catalog.ts"
+  ],
+  "Fixed": [
+    "app/components/ModeCard.tsx"
+  ],
+  "Forever": [
+    "app/pages/Settings.tsx"
+  ],
+  "Frame graph": [
+    "app/pages/Settings.tsx"
+  ],
+  "From center": [
+    "app/components/PlayReport.tsx"
+  ],
+  "Full details for this play": [
+    "app/pages/Results.tsx"
+  ],
+  "Full screen": [
+    "app/pages/ModuleSetup.tsx",
+    "app/pages/PlaySetup.tsx"
+  ],
+  "Game engine": [
+    "app/pages/Settings.tsx"
+  ],
+  "gap": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Generated maps that mix every skill. Pick a level, or set each part of the difficulty yourself.": [
+    "shared/catalog.ts"
+  ],
+  "Glass": [
+    "shared/catalog.ts"
+  ],
+  "Go home": [
+    "app/App.tsx",
+    "app/components/ErrorBoundary.tsx",
+    "app/pages/Share.tsx",
+    "app/pages/Welcome.tsx"
+  ],
+  "Go to Train": [
+    "app/pages/Results.tsx"
+  ],
+  "Goals": [
+    "app/pages/Settings.tsx"
+  ],
+  "Grade": [
+    "app/pages/Daily.tsx"
+  ],
+  "Groups of jumps, {n} in all. Use the arrow keys to move between them.": [
+    "app/charts/ThroughputScatter.tsx"
+  ],
+  "guide": [
+    "app/pages/Settings.tsx"
+  ],
+  "Guide": [
+    "app/copy.ts",
+    "app/pages/Guide.tsx"
+  ],
+  "Guide sections": [
+    "app/pages/Guide.tsx"
+  ],
+  "Heartbeat": [
+    "shared/catalog.ts"
+  ],
+  "Heartbeat {version}. Your plays stay in this browser.": [
+    "app/layout/Shell.tsx"
+  ],
+  "Heartbeat can be used with a keyboard, with a screen reader, in another language and on a light or a dark screen. The choices are under Accessibility and Look in Settings.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Heartbeat is an aim trainer that shows where you miss and what to practice.": [
+    "app/copy.ts"
+  ],
+  "Heartbeat is an aim trainer. You click targets in time with a beat, and every click is saved with where it landed and when.": [
+    "app/pages/Home.tsx"
+  ],
+  "Heartbeat map: {parts}. {url}": [
+    "app/components/ShareButton.tsx"
+  ],
+  "Heartbeat was updated in another tab. Reload to continue.": [
+    "app/copy.ts"
+  ],
+  "Heartbeat, home": [
+    "app/layout/Shell.tsx"
+  ],
+  "High contrast": [
+    "app/pages/Guide.tsx",
+    "app/pages/Settings.tsx",
+    "shared/catalog.ts"
+  ],
+  "Higher values add sharper angles, shapes and mixed rhythms.": [
+    "shared/catalog.ts"
+  ],
+  "Higher values shorten every hit window. 5 gives 40, 80 and 120 ms.": [
+    "shared/catalog.ts"
+  ],
+  "History": [
+    "app/pages/Daily.tsx",
+    "app/pages/Home.tsx",
+    "app/pages/stats/History.tsx",
+    "app/pages/stats/Layout.tsx",
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "Hit": [
+    "app/pages/Settings.tsx"
+  ],
+  "Hit key {n}": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Hit key 1": [
+    "app/pages/Settings.tsx"
+  ],
+  "Hit key 2": [
+    "app/pages/Settings.tsx"
+  ],
+  "Hit sounds": [
+    "app/pages/Settings.tsx"
+  ],
+  "Hit##action": [
+    "app/pages/Guide.tsx"
+  ],
+  "Hitting on time": [
+    "shared/catalog.ts"
+  ],
+  "Hitting the center": [
+    "analytics/insightCopy.ts"
+  ],
+  "Hold a key or button and circle the center": [
+    "game/render/strings.ts"
+  ],
+  "Hold a key or button and follow the moving ball to the end.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Hold and move the cursor in circles around the center until the spinner is done.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Hold it for {n, plural, one {# second} other {# seconds}} during a play to start the map again.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Hold the {key} key for {n, plural, one {# second} other {# seconds}} during a play to end it and start the same map again.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Holding at {level}": [
+    "game/render/strings.ts"
+  ],
+  "Holding sliders to the end": [
+    "analytics/insightCopy.ts"
+  ],
+  "Home": [
+    "app/copy.ts",
+    "app/pages/Results.tsx"
+  ],
+  "How a target shows the time you have left.": [
+    "app/pages/Settings.tsx"
+  ],
+  "How far apart targets are for the time between them.": [
+    "shared/catalog.ts"
+  ],
+  "how far you trail slider balls": [
+    "analytics/insightCopy.ts"
+  ],
+  "how far your clicks drift off the line": [
+    "analytics/insightCopy.ts"
+  ],
+  "how far your clicks land from the center": [
+    "analytics/insightCopy.ts"
+  ],
+  "How Heartbeat works, from the hit windows to what happens to your data.": [
+    "app/copy.ts"
+  ],
+  "how late you leave the last target": [
+    "analytics/insightCopy.ts"
+  ],
+  "How long each target shows before you hit it, in milliseconds.": [
+    "shared/catalog.ts"
+  ],
+  "how many spinners you finish in time": [
+    "analytics/insightCopy.ts"
+  ],
+  "how much of curved sliders you keep": [
+    "analytics/insightCopy.ts"
+  ],
+  "How often jumps come on half beats instead of full beats.": [
+    "shared/catalog.ts"
+  ],
+  "How often sliders appear. 0 turns them off.": [
+    "shared/catalog.ts"
+  ],
+  "How often spinners appear between sections. 0 turns them off.": [
+    "shared/catalog.ts"
+  ],
+  "How often streams and bursts appear. 0 turns them off.": [
+    "shared/catalog.ts"
+  ],
+  "how often you hold sliders to the end": [
+    "analytics/insightCopy.ts"
+  ],
+  "how often you make a second motion": [
+    "analytics/insightCopy.ts"
+  ],
+  "How well your clicks keep up with the distance and the time you have.": [
+    "app/copy.ts"
+  ],
+  "how widely your clicks scatter across the line": [
+    "analytics/insightCopy.ts"
+  ],
+  "How your numbers change from day to day.": [
+    "app/copy.ts"
+  ],
+  "Import": [
+    "app/pages/Settings.tsx"
+  ],
+  "Import file": [
+    "app/pages/Settings.tsx"
+  ],
+  "improved a little": [
+    "analytics/insightCopy.ts"
+  ],
+  "In bits per second. Your jumps are grouped by distance and time, the spread of your clicks around the target is measured for each group, and distance and spread are combined into one number. It needs at least 15 jumps in a play.": [
+    "app/pages/Guide.tsx"
+  ],
+  "In progress": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Include replays": [
+    "app/pages/Settings.tsx"
+  ],
+  "Include replays (about {size})": [
+    "app/pages/Settings.tsx"
+  ],
+  "Include replays (none stored)": [
+    "app/pages/Settings.tsx"
+  ],
+  "Input": [
+    "app/pages/Settings.tsx",
+    "app/pages/Welcome.tsx",
+    "app/state/onboarding.ts"
+  ],
+  "Input, sound, display and your saved data.": [
+    "app/copy.ts"
+  ],
+  "Inside the Crisp window": [
+    "app/pages/stats/Timing.tsx"
+  ],
+  "Insights": [
+    "app/pages/Guide.tsx"
+  ],
+  "Insights need at least 3 plays in the last 30 days and enough clicks to see a pattern. Keep playing and the first one will show up here.": [
+    "app/pages/Home.tsx"
+  ],
+  "Install": [
+    "app/pages/Settings.tsx"
+  ],
+  "Install Heartbeat to open it from your desktop or home screen and play without a connection.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Intro": [
+    "app/components/DifficultyGraph.tsx",
+    "app/components/SectionStrip.tsx"
+  ],
+  "It can clear site data. Settings shows whether it has agreed to keep yours, and a regular export is the safe copy. Data belongs to one address, so moving to a new address means exporting here and importing there.": [
+    "app/pages/Guide.tsx"
+  ],
+  "It takes {time} and covers {modules}.": [
+    "app/components/ModeCard.tsx"
+  ],
+  "Jump distance": [
+    "app/pages/ModuleSetup.tsx",
+    "shared/catalog.ts"
+  ],
+  "Jumps": [
+    "shared/catalog.ts"
+  ],
+  "Jumps between targets": [
+    "shared/catalog.ts"
+  ],
+  "Jumps of one length with sharp or wide turns between them.": [
+    "shared/catalog.ts"
+  ],
+  "Jumps on half beats and streams of up to twelve taps.": [
+    "shared/catalog.ts"
+  ],
+  "Jumps to the next miss.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Jumps with a second motion": [
+    "app/pages/stats/Aim.tsx"
+  ],
+  "Keep": [
+    "app/pages/stats/History.tsx"
+  ],
+  "Keep per-object detail for": [
+    "app/pages/Settings.tsx"
+  ],
+  "Keep the current limit": [
+    "app/pages/Settings.tsx"
+  ],
+  "Keep the newest replays": [
+    "app/pages/Settings.tsx"
+  ],
+  "Keep this replay": [
+    "app/pages/Replay.tsx"
+  ],
+  "Kept by the browser": [
+    "app/pages/Settings.tsx"
+  ],
+  "Kept for {n, plural, one {# day} other {# days}} by default. You can change this in Settings. Removing old detail doesn't change ratings, trends or bests.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Kept forever.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Keyboard": [
+    "app/pages/Guide.tsx"
+  ],
+  "Kind": [
+    "app/components/PlayReport.tsx"
+  ],
+  "Landing near the center": [
+    "shared/catalog.ts"
+  ],
+  "Language": [
+    "app/pages/Guide.tsx",
+    "app/pages/Settings.tsx"
+  ],
+  "Large": [
+    "app/pages/Settings.tsx"
+  ],
+  "Large targets close together. The hit windows narrow as you improve.": [
+    "shared/catalog.ts"
+  ],
+  "Large, slow targets with plenty of time to read them.": [
+    "shared/catalog.ts"
+  ],
+  "Larger": [
+    "app/pages/Settings.tsx"
+  ],
+  "Last 7 days against the 4 weeks before": [
+    "app/components/WeeklyChanges.tsx"
+  ],
+  "Last 7 days against the 7 before": [
+    "app/pages/stats/Overview.tsx"
+  ],
+  "Last 90 days": [
+    "app/pages/stats/Overview.tsx"
+  ],
+  "Last export": [
+    "app/pages/Settings.tsx"
+  ],
+  "Last played {when}": [
+    "app/components/ModeCard.tsx"
+  ],
+  "late": [
+    "game/render/strings.ts"
+  ],
+  "Latency": [
+    "app/pages/Guide.tsx"
+  ],
+  "Latest play": [
+    "app/pages/stats/Aim.tsx"
+  ],
+  "Leaving the last target sooner": [
+    "analytics/insightCopy.ts"
+  ],
+  "left": [
+    "analytics/insightCopy.ts"
+  ],
+  "Left": [
+    "app/charts/AimScatter.tsx",
+    "app/charts/Rose.tsx"
+  ],
+  "Left and right buttons, and a pen tip and barrel button.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Left and right mouse buttons count too, and you can hold one while pressing the other.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Left of zero is early and right of zero is late. Each series is a share of its own clicks. The white line is the average and the bracket is one spread either side. Shaded bands are the Crisp, Solid and Rough windows.": [
+    "app/pages/stats/Timing.tsx"
+  ],
+  "Length": [
+    "app/pages/ModuleSetup.tsx",
+    "app/pages/PlaySetup.tsx"
+  ],
+  "Length and seed": [
+    "app/pages/PlaySetup.tsx"
+  ],
+  "Level": [
+    "app/components/DailyCard.tsx",
+    "app/components/ModeCard.tsx",
+    "app/pages/Daily.tsx",
+    "app/pages/PlaySetup.tsx"
+  ],
+  "Level {level}": [
+    "analytics/views.ts",
+    "app/components/DemandBars.tsx",
+    "app/pages/PlaySetup.tsx",
+    "app/state/plan.ts",
+    "game/render/strings.ts"
+  ],
+  "Level 1": [
+    "shared/catalog.ts"
+  ],
+  "Level 1 cleared": [
+    "shared/catalog.ts"
+  ],
+  "Level 2": [
+    "shared/catalog.ts"
+  ],
+  "Level 2 cleared": [
+    "shared/catalog.ts"
+  ],
+  "Level 3": [
+    "shared/catalog.ts"
+  ],
+  "Level 3 cleared": [
+    "shared/catalog.ts"
+  ],
+  "Level 4": [
+    "shared/catalog.ts"
+  ],
+  "Level 4 cleared": [
+    "shared/catalog.ts"
+  ],
+  "Level 5": [
+    "shared/catalog.ts"
+  ],
+  "Level 5 cleared": [
+    "shared/catalog.ts"
+  ],
+  "Level 6": [
+    "shared/catalog.ts"
+  ],
+  "Level 6 cleared": [
+    "shared/catalog.ts"
+  ],
+  "Level 7": [
+    "shared/catalog.ts"
+  ],
+  "Level 7 cleared": [
+    "shared/catalog.ts"
+  ],
+  "Level 8": [
+    "shared/catalog.ts"
+  ],
+  "Level 8 cleared": [
+    "shared/catalog.ts"
+  ],
+  "Level after each set": [
+    "app/components/PlayReport.tsx"
+  ],
+  "Level by set": [
+    "app/components/PlayReport.tsx"
+  ],
+  "level with the ball": [
+    "analytics/insightCopy.ts"
+  ],
+  "Levels change only after plays with no mods, or with {mirror} alone.": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "Light": [
+    "app/pages/Settings.tsx"
+  ],
+  "Link copied.": [
+    "app/components/ShareButton.tsx"
+  ],
+  "Listen to the beat. Your taps count after four beats.": [
+    "game/calibrate/strings.ts"
+  ],
+  "loading": [
+    "app/pages/Settings.tsx"
+  ],
+  "Loading": [
+    "app/components/Skeleton.tsx"
+  ],
+  "Loading the map.": [
+    "app/components/MapPreview.tsx"
+  ],
+  "Loading the preview.": [
+    "app/components/SkinPreview.tsx"
+  ],
+  "Loading the replay.": [
+    "app/pages/Replay.tsx"
+  ],
+  "Loading.": [
+    "app/components/Skeleton.tsx",
+    "app/pages/Daily.tsx",
+    "app/pages/Home.tsx",
+    "app/pages/Replay.tsx",
+    "app/pages/Results.tsx",
+    "app/pages/Welcome.tsx",
+    "app/pages/stats/Aim.tsx",
+    "app/pages/stats/Bests.tsx",
+    "app/pages/stats/History.tsx",
+    "app/pages/stats/Overview.tsx",
+    "app/pages/stats/Patterns.tsx",
+    "app/pages/stats/PlayDetail.tsx",
+    "app/pages/stats/Timing.tsx",
+    "app/pages/stats/Trends.tsx"
+  ],
+  "Locks the pointer and reads mouse movement directly. It needs a click to lock again after a pause, which is why Resume is a button.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Locks the pointer and reads mouse movement directly. Turn it off if the cursor feels wrong or your device is a pen or tablet.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Locks the pointer and reads mouse movement directly. Turn it off if the cursor feels wrong.": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Long": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "long distances": [
+    "analytics/insightCopy.ts"
+  ],
+  "long streams": [
+    "analytics/insightCopy.ts"
+  ],
+  "Long streams and jump runs at a steady level. Shows when your accuracy starts to drop.": [
+    "shared/catalog.ts"
+  ],
+  "Longer wedges hold more taps.": [
+    "app/charts/Rose.tsx"
+  ],
+  "Longest streak, {n, plural, one {# day} other {# days}}": [
+    "app/pages/Daily.tsx"
+  ],
+  "Longest stream": [
+    "app/components/MapPreview.tsx",
+    "shared/catalog.ts"
+  ],
+  "Look": [
+    "app/pages/Settings.tsx"
+  ],
+  "Loose": [
+    "shared/catalog.ts"
+  ],
+  "lost the slider": [
+    "app/pages/Replay.tsx"
+  ],
+  "Low latency canvas": [
+    "app/pages/Settings.tsx"
+  ],
+  "Main": [
+    "app/layout/Shell.tsx"
+  ],
+  "Map": [
+    "app/components/MapPreview.tsx"
+  ],
+  "Map generator": [
+    "app/pages/Settings.tsx"
+  ],
+  "Mark a replay to keep it and it is never removed. Results and the play detail page link to the replay. The newest {n, plural, one {# replay is} other {# replays are}} kept by default, and Settings offers other limits.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Master volume": [
+    "app/pages/Settings.tsx"
+  ],
+  "Max combo": [
+    "app/components/PlayReport.tsx"
+  ],
+  "Measured in target radii and shown as a percentage of a target's width. Along the movement, a positive value means you went past the target. Across the movement, a positive value means to the right of the line you moved along.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Median": [
+    "app/pages/Calibrate.tsx"
+  ],
+  "Medium": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "Medium jumps, sliders and bursts of up to seven taps.": [
+    "shared/catalog.ts"
+  ],
+  "Menus": [
+    "app/pages/Guide.tsx"
+  ],
+  "Metric": [
+    "app/pages/stats/Patterns.tsx",
+    "app/pages/stats/Trends.tsx"
+  ],
+  "Metronome": [
+    "app/pages/Settings.tsx"
+  ],
+  "Metronome volume": [
+    "app/pages/Settings.tsx"
+  ],
+  "Milestones": [
+    "app/pages/Guide.tsx"
+  ],
+  "min": [
+    "app/components/StreakCard.tsx"
+  ],
+  "Minutes": [
+    "app/pages/stats/Overview.tsx"
+  ],
+  "Minutes of play a week. Set it to 0 for no goal.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Minutes per day": [
+    "analytics/trends.ts"
+  ],
+  "Mirror": [
+    "shared/catalog.ts"
+  ],
+  "Miss": [
+    "app/pages/Replay.tsx",
+    "app/pages/Settings.tsx",
+    "shared/catalog.ts"
+  ],
+  "Miss rate": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "missed": [
+    "app/pages/Replay.tsx"
+  ],
+  "missed the target": [
+    "app/pages/Replay.tsx"
+  ],
+  "Misses": [
+    "app/pages/Replay.tsx"
+  ],
+  "Misses and slider breaks": [
+    "app/pages/Replay.tsx"
+  ],
+  "Misses in the replay": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "Mix": [
+    "shared/catalog.ts"
+  ],
+  "Mixed": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "Mixed patterns a little below your usual level, to start a session.": [
+    "shared/catalog.ts"
+  ],
+  "Mode": [
+    "app/pages/stats/History.tsx"
+  ],
+  "Modes": [
+    "app/pages/Guide.tsx"
+  ],
+  "Mods": [
+    "app/pages/Guide.tsx",
+    "app/pages/ModuleSetup.tsx",
+    "app/pages/PlaySetup.tsx"
+  ],
+  "Mods change how a map plays, and each one has a score multiplier. Personal bests are kept separately for each set of mods. A module's level changes only after plays with no mods, or with Mirror alone.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Module": [
+    "app/pages/stats/Bests.tsx"
+  ],
+  "Modules": [
+    "app/pages/stats/Bests.tsx"
+  ],
+  "Modules in this mix": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "Most jumps will move this way.": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "Mouse": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Mouse buttons are turned off in Settings, so only the keys hit.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Mouse buttons count as hits": [
+    "app/pages/Settings.tsx"
+  ],
+  "Movement": [
+    "app/pages/Guide.tsx"
+  ],
+  "moving {direction}": [
+    "analytics/insightCopy.ts"
+  ],
+  "Moving {direction}: {value}, {n, plural, one {# tap} other {# taps}}": [
+    "app/charts/Rose.tsx"
+  ],
+  "Moving {direction}: no taps": [
+    "app/charts/Rose.tsx"
+  ],
+  "Moving {direction}: too few taps for a value, {n, plural, one {# tap} other {# taps}}": [
+    "app/charts/Rose.tsx"
+  ],
+  "Mute all sound": [
+    "app/pages/Settings.tsx"
+  ],
+  "n {n}": [
+    "app/charts/HeatGrid.tsx"
+  ],
+  "never": [
+    "app/pages/Settings.tsx"
+  ],
+  "New best accuracy": [
+    "app/pages/Results.tsx"
+  ],
+  "New best combo": [
+    "app/pages/Results.tsx"
+  ],
+  "New best level": [
+    "app/pages/Results.tsx"
+  ],
+  "New best score": [
+    "app/pages/Results.tsx"
+  ],
+  "New map": [
+    "app/pages/Results.tsx"
+  ],
+  "New seed": [
+    "app/pages/PlaySetup.tsx"
+  ],
+  "Next: {title}": [
+    "app/state/plan.ts"
+  ],
+  "No aimed clicks were recorded.": [
+    "app/components/PlayReport.tsx"
+  ],
+  "No clear change": [
+    "analytics/insightCopy.ts"
+  ],
+  "No clear change between the last 14 days and the 14 before. A change shows only when each period has 3 plays and the difference is larger than the usual swing.": [
+    "app/pages/stats/Trends.tsx"
+  ],
+  "No clear change in {metric} yet. {count} measured since {date}.": [
+    "analytics/insightCopy.ts"
+  ],
+  "No clicks with a direction to plot.": [
+    "app/charts/AimScatter.tsx"
+  ],
+  "No clicks with stored detail from the last 30 days. Play a few maps, or check the detail retention in Settings.": [
+    "app/pages/stats/Timing.tsx"
+  ],
+  "No completed Dynamic plays yet.": [
+    "app/pages/stats/Bests.tsx"
+  ],
+  "No completed module plays yet.": [
+    "app/pages/stats/Bests.tsx"
+  ],
+  "No daily maps played yet. Your first one will show up here.": [
+    "app/pages/Daily.tsx"
+  ],
+  "No data in this range.": [
+    "app/charts/LineChart.tsx"
+  ],
+  "No Fail": [
+    "shared/catalog.ts"
+  ],
+  "No goal": [
+    "app/pages/Settings.tsx"
+  ],
+  "No misses": [
+    "shared/catalog.ts"
+  ],
+  "No mods": [
+    "app/format.ts"
+  ],
+  "No pattern stands out yet. Insights need 3 plays in the last 30 days and enough clicks to be sure of a pattern.": [
+    "app/pages/stats/Overview.tsx"
+  ],
+  "No plays in this mode.": [
+    "app/pages/stats/History.tsx"
+  ],
+  "no plays last week": [
+    "app/pages/stats/Overview.tsx"
+  ],
+  "No plays with this number in the range.": [
+    "app/pages/stats/Aim.tsx"
+  ],
+  "no press": [
+    "app/pages/Replay.tsx"
+  ],
+  "No presses were recorded.": [
+    "app/components/PlayReport.tsx"
+  ],
+  "No rating": [
+    "app/components/Ratings.tsx"
+  ],
+  "No rating for this skill in the last 90 days.": [
+    "app/charts/RatingHistory.tsx"
+  ],
+  "No rating yet": [
+    "app/components/Ratings.tsx"
+  ],
+  "No Rings": [
+    "shared/catalog.ts"
+  ],
+  "No taps in this play.": [
+    "app/charts/Timeline.tsx"
+  ],
+  "No upgrade from {what} version {version}.": [
+    "data/plays.ts"
+  ],
+  "No Web Audio": [
+    "game/audio/audio.ts"
+  ],
+  "No, the browser may clear it": [
+    "app/pages/Settings.tsx"
+  ],
+  "none": [
+    "app/components/DemandBars.tsx",
+    "app/components/SectionStrip.tsx",
+    "app/pages/stats/Bests.tsx",
+    "app/pages/stats/Overview.tsx",
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "None": [
+    "app/components/MapPreview.tsx"
+  ],
+  "Not enough jumps yet. A dot needs 8 jumps of similar distance and time.": [
+    "app/charts/ThroughputScatter.tsx"
+  ],
+  "Not finished": [
+    "app/pages/Daily.tsx"
+  ],
+  "Not now": [
+    "app/components/InsightCard.tsx"
+  ],
+  "Not played yet": [
+    "app/components/DailyCard.tsx",
+    "app/components/ModeCard.tsx"
+  ],
+  "Not started": [
+    "app/pages/Calibrate.tsx",
+    "app/pages/Welcome.tsx"
+  ],
+  "Notes on this play": [
+    "app/pages/Results.tsx"
+  ],
+  "Nothing has changed clearly yet. A change needs at least 3 plays in the last 7 days, 3 in the 4 weeks before, and a clear difference between them.": [
+    "app/components/WeeklyChanges.tsx"
+  ],
+  "Nothing here yet. Play a few maps and your stats will show up.": [
+    "app/copy.ts"
+  ],
+  "Object {n}": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "Object {n}, {judgment}, {ms} milliseconds": [
+    "app/charts/Timeline.tsx"
+  ],
+  "Object {n}, {judgment}, {ms} ms": [
+    "app/charts/Timeline.tsx"
+  ],
+  "Object {n}, {judgment}, no press": [
+    "app/charts/Timeline.tsx"
+  ],
+  "Object {n}, {kind}": [
+    "app/pages/Replay.tsx"
+  ],
+  "Objects": [
+    "app/components/MapPreview.tsx",
+    "app/components/PlayReport.tsx"
+  ],
+  "Objects a minute": [
+    "app/components/MapPreview.tsx"
+  ],
+  "of {goal} min": [
+    "app/components/StreakCard.tsx"
+  ],
+  "of a target's width": [
+    "app/components/PlayReport.tsx"
+  ],
+  "off": [
+    "app/pages/Settings.tsx"
+  ],
+  "Off": [
+    "app/pages/Settings.tsx"
+  ],
+  "Offline and install": [
+    "app/pages/Guide.tsx"
+  ],
+  "Offset now {value} ms": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Older detail is removed. Play summaries, ratings, trends and bests are always kept.": [
+    "app/pages/Settings.tsx"
+  ],
+  "On fast jumps you leave the last target late, after about {pct}% of the time to the next one. Leaving sooner gives the move more time.": [
+    "analytics/insightCopy.ts"
+  ],
+  "On long jumps your first motion goes about {pct}% of a target's width past the center before you pull back.": [
+    "analytics/insightCopy.ts"
+  ],
+  "On long jumps your first motion stops about {pct}% of a target's width short, and a second motion makes up the rest.": [
+    "analytics/insightCopy.ts"
+  ],
+  "on the beat": [
+    "app/state/onboarding.ts"
+  ],
+  "on the center": [
+    "analytics/insightCopy.ts",
+    "app/format.ts"
+  ],
+  "on the line": [
+    "analytics/insightCopy.ts",
+    "app/format.ts"
+  ],
+  "on time": [
+    "analytics/insightCopy.ts",
+    "app/format.ts"
+  ],
+  "on, the browser kept acceleration": [
+    "app/pages/Settings.tsx"
+  ],
+  "on, without acceleration": [
+    "app/pages/Settings.tsx"
+  ],
+  "One Dynamic map a day of {n, plural, one {# second} other {# seconds}}, made from the date. It changes at your local midnight. Players who pick the same level on the same date start from the same seed, though another browser can build it a little differently.": [
+    "app/pages/Guide.tsx"
+  ],
+  "One Life": [
+    "shared/catalog.ts"
+  ],
+  "One of your drills measured better than before.": [
+    "shared/catalog.ts"
+  ],
+  "One row for each level, mod set and length": [
+    "app/pages/stats/Bests.tsx"
+  ],
+  "One smooth move per jump": [
+    "analytics/insightCopy.ts"
+  ],
+  "one standard deviation": [
+    "app/components/PlayReport.tsx",
+    "app/pages/stats/Timing.tsx"
+  ],
+  "Only completed plays count. Finish a map to set a best.": [
+    "app/pages/stats/Bests.tsx"
+  ],
+  "Open accessibility settings": [
+    "app/pages/Guide.tsx"
+  ],
+  "Open data settings": [
+    "app/pages/Guide.tsx"
+  ],
+  "Open Play": [
+    "app/pages/Share.tsx"
+  ],
+  "Opens {label}.": [
+    "app/components/InsightCard.tsx"
+  ],
+  "optional": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Options": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "Orange is short or early. Blue is past or late. Gray is close to zero.": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Out of health": [
+    "game/render/strings.ts"
+  ],
+  "Outro": [
+    "app/components/DifficultyGraph.tsx",
+    "app/components/SectionStrip.tsx"
+  ],
+  "Over the play": [
+    "app/pages/Results.tsx"
+  ],
+  "Over time": [
+    "app/pages/stats/Aim.tsx"
+  ],
+  "Overshoot or undershoot": [
+    "analytics/trends.ts",
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Overshooting long jumps": [
+    "analytics/insightCopy.ts"
+  ],
+  "Overshooting short jumps": [
+    "analytics/insightCopy.ts"
+  ],
+  "Overview": [
+    "app/pages/stats/Layout.tsx"
+  ],
+  "p99 {ms} ms": [
+    "game/render/strings.ts"
+  ],
+  "Page not found": [
+    "app/App.tsx"
+  ],
+  "Pages have landmarks and headings, every control has a name, and a play says when it starts, pauses and ends.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Palette": [
+    "app/pages/Settings.tsx"
+  ],
+  "Past": [
+    "app/charts/AimScatter.tsx"
+  ],
+  "Path hints": [
+    "app/pages/Settings.tsx"
+  ],
+  "Pattern complexity": [
+    "shared/catalog.ts"
+  ],
+  "Patterns": [
+    "app/pages/stats/Layout.tsx",
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Pause": [
+    "app/pages/Guide.tsx"
+  ],
+  "Pause the preview": [
+    "app/components/SkinPreview.tsx"
+  ],
+  "Pause##playback": [
+    "app/components/MapPreview.tsx",
+    "app/pages/Replay.tsx"
+  ],
+  "Paused": [
+    "app/pages/PlayScreen.tsx"
+  ],
+  "Peak": [
+    "app/components/DifficultyGraph.tsx",
+    "app/components/SectionStrip.tsx"
+  ],
+  "Pens and tablets": [
+    "app/pages/Guide.tsx"
+  ],
+  "Per-object detail": [
+    "app/pages/Guide.tsx"
+  ],
+  "Pick 2 to 4. They play in the order you pick them, one set each.": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "Pick at least 2 modules.": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "Pinpoint": [
+    "shared/catalog.ts"
+  ],
+  "Placement": [
+    "app/pages/Welcome.tsx",
+    "app/state/onboarding.ts",
+    "shared/catalog.ts"
+  ],
+  "Play": [
+    "app/copy.ts",
+    "app/pages/Home.tsx",
+    "app/pages/PlaySetup.tsx"
+  ],
+  "Play {n, plural, one {# more map} other {# more maps}} outside the drill to measure it.": [
+    "analytics/insightCopy.ts"
+  ],
+  "Play a map": [
+    "app/pages/Home.tsx"
+  ],
+  "Play again": [
+    "app/pages/PlayScreen.tsx"
+  ],
+  "play detail": [
+    "data/plays.ts"
+  ],
+  "Play for a minute to start a streak.": [
+    "app/components/StreakCard.tsx"
+  ],
+  "Play generated maps at eight levels, or set every part of the difficulty yourself.": [
+    "app/pages/Home.tsx"
+  ],
+  "Play once and the rates your browser reported will show up here.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Play summaries": [
+    "app/pages/Guide.tsx"
+  ],
+  "play summary": [
+    "data/plays.ts"
+  ],
+  "Play the preview": [
+    "app/components/SkinPreview.tsx"
+  ],
+  "Play this map again": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "Play today to keep it going.": [
+    "app/components/StreakCard.tsx"
+  ],
+  "Play today's map": [
+    "app/components/DailyCard.tsx"
+  ],
+  "Play today's map again": [
+    "app/components/DailyCard.tsx"
+  ],
+  "Play with these settings": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "Play##noun": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "Play##playback": [
+    "app/components/MapPreview.tsx",
+    "app/pages/Replay.tsx"
+  ],
+  "Playfield": [
+    "app/pages/PlayScreen.tsx"
+  ],
+  "Playing": [
+    "app/pages/Guide.tsx",
+    "app/pages/PlayScreen.tsx"
+  ],
+  "Playing. Press Esc to pause.": [
+    "app/pages/PlayScreen.tsx"
+  ],
+  "Plays": [
+    "app/pages/stats/Bests.tsx",
+    "app/pages/stats/Overview.tsx",
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Plays and pauses.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Plays per day": [
+    "analytics/trends.ts"
+  ],
+  "Plays with no mods, or with Mirror alone": [
+    "app/pages/stats/Bests.tsx"
+  ],
+  "Plays, hours, streaks, combos, daily maps, a drill that worked, the placement test and clearing each level 1 to 8 with 90% accuracy are marked the first time you reach them.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Pointer": [
+    "app/pages/Settings.tsx"
+  ],
+  "Pointer rate": [
+    "app/pages/Settings.tsx"
+  ],
+  "Position in the map": [
+    "app/components/MapPreview.tsx"
+  ],
+  "Position in the replay": [
+    "app/pages/Replay.tsx"
+  ],
+  "Positive values draw targets earlier. Use it if targets seem to arrive late.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Practice habits": [
+    "app/pages/Guide.tsx"
+  ],
+  "Precision": [
+    "shared/catalog.ts"
+  ],
+  "Press {esc}. The pause menu has Resume, Restart and Quit.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Press {first} or {second}. Both keys can be changed in Settings.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Press a hit key or click each time the ring closes on the target.": [
+    "game/calibrate/strings.ts"
+  ],
+  "Press a hit key or click on every click you hear.": [
+    "game/calibrate/strings.ts"
+  ],
+  "Press a hit key or click to start.": [
+    "game/calibrate/strings.ts"
+  ],
+  "Press a key": [
+    "app/components/KeyCapture.tsx",
+    "app/pages/Settings.tsx"
+  ],
+  "pressed too early": [
+    "app/pages/Replay.tsx"
+  ],
+  "Pulse": [
+    "shared/catalog.ts"
+  ],
+  "Quarter {n}": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "Quick runs of taps close together. Trains tapping speed and even timing.": [
+    "shared/catalog.ts"
+  ],
+  "Quit": [
+    "app/pages/Home.tsx",
+    "app/pages/Results.tsx",
+    "app/pages/stats/History.tsx"
+  ],
+  "Quit##verb": [
+    "app/pages/PlayScreen.tsx"
+  ],
+  "Radius": [
+    "app/pages/PlaySetup.tsx"
+  ],
+  "Range": [
+    "app/pages/stats/Aim.tsx",
+    "app/pages/stats/Trends.tsx"
+  ],
+  "Rating from approach time, with Fade and Spotlight counting extra, scaled by your hit rate.": [
+    "app/copy.ts"
+  ],
+  "Rating from hit window size, scaled by your share of Crisp hits.": [
+    "app/copy.ts"
+  ],
+  "Rating from jump length and speed, scaled by how many jumps you hit and how close to the center.": [
+    "app/copy.ts"
+  ],
+  "Rating from slider speed, scaled by how much of each slider you keep.": [
+    "app/copy.ts"
+  ],
+  "Rating from spinner speed, scaled by how many rotations you finish.": [
+    "app/copy.ts"
+  ],
+  "Rating from stream tempo, scaled by the average judgment on stream notes, where Crisp counts most.": [
+    "app/copy.ts"
+  ],
+  "Rating from target size, scaled by how close to the center you click.": [
+    "app/copy.ts"
+  ],
+  "Rating history": [
+    "app/pages/stats/Overview.tsx"
+  ],
+  "Ratings": [
+    "app/pages/Guide.tsx",
+    "app/pages/Home.tsx",
+    "app/pages/stats/Overview.tsx"
+  ],
+  "Ratings, trends and the patterns in how you aim and time your clicks.": [
+    "app/copy.ts"
+  ],
+  "Raw input": [
+    "app/pages/Guide.tsx",
+    "app/pages/Settings.tsx",
+    "app/pages/Welcome.tsx"
+  ],
+  "Raw input is off": [
+    "game/render/strings.ts"
+  ],
+  "Raw input only. At 1x one mouse count moves the cursor one pixel at 100% browser zoom.": [
+    "app/pages/Settings.tsx",
+    "app/pages/Welcome.tsx"
+  ],
+  "Reached": [
+    "app/pages/stats/Bests.tsx"
+  ],
+  "Read the guide": [
+    "app/App.tsx",
+    "app/pages/Home.tsx"
+  ],
+  "Reading": [
+    "shared/catalog.ts"
+  ],
+  "Ready. Click or press {key} to start. Esc pauses.": [
+    "app/pages/PlayScreen.tsx"
+  ],
+  "Recent plays": [
+    "app/pages/Home.tsx"
+  ],
+  "Reduce motion": [
+    "app/pages/Guide.tsx",
+    "app/pages/Settings.tsx"
+  ],
+  "Reload": [
+    "app/components/ErrorBoundary.tsx",
+    "app/layout/Shell.tsx"
+  ],
+  "Reload the page to get the latest version, then open the link again.": [
+    "app/pages/Share.tsx"
+  ],
+  "Reloading usually fixes it. Your plays stay on this device.": [
+    "app/components/ErrorBoundary.tsx"
+  ],
+  "Remove them": [
+    "app/pages/Settings.tsx"
+  ],
+  "Removed {n} that the file marks as deleted.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Repeats": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "Replay": [
+    "app/pages/Replay.tsx"
+  ],
+  "Replay limit": [
+    "app/pages/Settings.tsx"
+  ],
+  "Replay of the play": [
+    "app/pages/Replay.tsx"
+  ],
+  "Replay, {title}": [
+    "app/pages/Replay.tsx"
+  ],
+  "Replays": [
+    "app/pages/Guide.tsx"
+  ],
+  "Replays stored": [
+    "app/pages/Settings.tsx"
+  ],
+  "Replays you mark to keep, and replays of new bests, are never removed. Older ones are removed after your next play or the next time Heartbeat starts.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Rest": [
+    "analytics/insightCopy.ts",
+    "app/components/DifficultyGraph.tsx",
+    "app/components/SectionStrip.tsx"
+  ],
+  "Restart": [
+    "app/pages/PlayScreen.tsx"
+  ],
+  "Restarting": [
+    "game/render/strings.ts"
+  ],
+  "Results": [
+    "app/pages/Guide.tsx",
+    "app/pages/Replay.tsx",
+    "app/pages/Results.tsx"
+  ],
+  "Resume": [
+    "app/pages/PlayScreen.tsx"
+  ],
+  "Retry": [
+    "app/pages/Guide.tsx",
+    "app/pages/Results.tsx"
+  ],
+  "Retry key": [
+    "app/pages/Settings.tsx"
+  ],
+  "Retry key, currently {key}. Press to change.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Review": [
+    "app/pages/Home.tsx"
+  ],
+  "right": [
+    "analytics/insightCopy.ts"
+  ],
+  "Right": [
+    "app/charts/AimScatter.tsx",
+    "app/charts/Rose.tsx"
+  ],
+  "Ring": [
+    "app/pages/Settings.tsx"
+  ],
+  "Rough": [
+    "shared/catalog.ts"
+  ],
+  "Rows are the distance between targets in target widths. Columns are the time between them in ms.": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Rows are the turn from the last move. Columns are the distance in target widths.": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "rpm": [
+    "game/render/strings.ts"
+  ],
+  "Rules that look at your clicks from the last 30 days, at most 3000 of them. Each rule needs a minimum number of clicks and a clear effect before it says anything. Every insight states its numbers and how many clicks they came from, and names a module and options to train it with.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Run setup again": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Running out of health doesn't end the play.": [
+    "shared/catalog.ts"
+  ],
+  "Safari has no high-rate pointer events, and Firefox has no low latency canvas. Both play normally with slightly more delay.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Saving is not working in this browser. {error} Plays will not be kept.": [
+    "app/layout/Shell.tsx"
+  ],
+  "Saving your play.": [
+    "app/pages/PlayScreen.tsx"
+  ],
+  "Scales the text on every page. The playfield keeps its size.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Scattered": [
+    "shared/catalog.ts"
+  ],
+  "Score": [
+    "analytics/views.ts",
+    "app/components/PlayReport.tsx"
+  ],
+  "Score multiplier x{value}": [
+    "app/pages/PlaySetup.tsx"
+  ],
+  "Screen readers": [
+    "app/pages/Guide.tsx"
+  ],
+  "Section": [
+    "app/components/SectionStrip.tsx"
+  ],
+  "Sections": [
+    "app/pages/Results.tsx",
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "Sections of the map in order": [
+    "app/components/SectionStrip.tsx"
+  ],
+  "See trends": [
+    "app/pages/stats/Overview.tsx"
+  ],
+  "Seed": [
+    "app/pages/PlaySetup.tsx"
+  ],
+  "Seeds": [
+    "app/pages/Guide.tsx"
+  ],
+  "Seek {n, plural, one {# second} other {# seconds}}.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Sensitivity": [
+    "app/pages/Settings.tsx",
+    "app/pages/Welcome.tsx"
+  ],
+  "Set {n}": [
+    "app/components/SectionStrip.tsx",
+    "game/render/strings.ts"
+  ],
+  "Set {n}, {module}": [
+    "app/components/PlayReport.tsx"
+  ],
+  "Set a weekly goal": [
+    "app/components/StreakCard.tsx"
+  ],
+  "Set each part of the difficulty yourself.": [
+    "app/pages/PlaySetup.tsx"
+  ],
+  "Set up Heartbeat": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Sets from two to four modules in turn. Each module keeps its own level.": [
+    "shared/catalog.ts"
+  ],
+  "Setting": [
+    "app/pages/stats/Bests.tsx"
+  ],
+  "Settings": [
+    "app/layout/Shell.tsx",
+    "app/pages/Settings.tsx"
+  ],
+  "Settings can delete every play, progress and drill. Your settings stay.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Settings can export everything as a .json or .json.gz file and import it again. Without replays the file is much smaller. Importing skips plays that are already there, and files from version 1.0 still import.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Settings sections": [
+    "app/pages/Settings.tsx"
+  ],
+  "Setup has three short steps, and you can skip any of them.": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Setup is finished": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Setup steps": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Setup takes a few minutes. You choose your input, it measures your display's delay, and a short test finds your starting levels.": [
+    "app/pages/Home.tsx"
+  ],
+  "Seven daily maps": [
+    "shared/catalog.ts"
+  ],
+  "Share link format": [
+    "app/pages/Settings.tsx"
+  ],
+  "Share links": [
+    "app/pages/Guide.tsx"
+  ],
+  "Share map": [
+    "app/components/ShareButton.tsx"
+  ],
+  "Share map on the play setup, the results and the Daily page copies a link. Opening it fills in the setup with the same mode, difficulty, mods, length and seed. It never starts a play by itself, and module links use your own levels.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Share of each slider you stayed on": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "Share today's map": [
+    "app/components/DailyCard.tsx"
+  ],
+  "Shared map": [
+    "app/pages/Share.tsx"
+  ],
+  "Sharp": [
+    "app/pages/ModuleSetup.tsx",
+    "shared/catalog.ts"
+  ],
+  "Sharp back-and-forth jumps": [
+    "analytics/insightCopy.ts"
+  ],
+  "sharp turns": [
+    "analytics/insightCopy.ts"
+  ],
+  "Short": [
+    "app/charts/AimScatter.tsx",
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "Short approach times and busy screens": [
+    "shared/catalog.ts"
+  ],
+  "Short approach times with many targets on screen at once.": [
+    "shared/catalog.ts"
+  ],
+  "Short approach times, long streams and wide jumps.": [
+    "shared/catalog.ts"
+  ],
+  "short distances": [
+    "analytics/insightCopy.ts"
+  ],
+  "Short is 3 to 5 taps, medium 6 to 12 and long 13 to 24.": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "Short jumps and the first short bursts.": [
+    "shared/catalog.ts"
+  ],
+  "Short modules that raise or lower their difficulty after every set.": [
+    "app/copy.ts"
+  ],
+  "Short modules train jumps, streams, tracking and more, and each one adjusts its level to you.": [
+    "app/pages/Home.tsx"
+  ],
+  "short streams": [
+    "analytics/insightCopy.ts"
+  ],
+  "Show": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Show frame rate": [
+    "app/pages/Settings.tsx"
+  ],
+  "Shows a word on every Crisp hit. Solid, Rough and Miss always show.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Shows where each click landed in time.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Sideways spread": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Since you started this drill on {date}, {metric} {change}. That's based on {before} before and {after} after.": [
+    "analytics/insightCopy.ts"
+  ],
+  "Single targets spread across the field. Trains how far you move and where you stop.": [
+    "shared/catalog.ts"
+  ],
+  "Skill": [
+    "app/pages/stats/Overview.tsx"
+  ],
+  "Skill ratings out of {max}. {summary}.": [
+    "app/components/Radar.tsx"
+  ],
+  "Skip and finish": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Skip setup": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Skip this step": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Skip to content": [
+    "app/layout/Shell.tsx"
+  ],
+  "slider": [
+    "app/pages/Replay.tsx"
+  ],
+  "Slider {n}": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "Slider break": [
+    "app/pages/Replay.tsx"
+  ],
+  "Slider heads": [
+    "app/pages/stats/Timing.tsx"
+  ],
+  "Slider parts {hit} of {total}": [
+    "app/components/PlayReport.tsx"
+  ],
+  "Sliders": [
+    "app/components/MapPreview.tsx",
+    "app/components/PlayReport.tsx",
+    "app/pages/Guide.tsx",
+    "app/pages/ModuleSetup.tsx",
+    "app/pages/stats/PlayDetail.tsx",
+    "shared/catalog.ts"
+  ],
+  "Sliders on curves": [
+    "analytics/insightCopy.ts"
+  ],
+  "sliders with repeats": [
+    "analytics/insightCopy.ts"
+  ],
+  "Slow": [
+    "shared/catalog.ts"
+  ],
+  "Small targets at a calm pace. A hit only counts as a success near the center.": [
+    "shared/catalog.ts"
+  ],
+  "Small, fast targets with the shortest approach time.": [
+    "shared/catalog.ts"
+  ],
+  "Smaller targets, sharper angles and streams of up to sixteen taps.": [
+    "shared/catalog.ts"
+  ],
+  "Soft clicks with little pitch.": [
+    "shared/catalog.ts"
+  ],
+  "Solid": [
+    "shared/catalog.ts"
+  ],
+  "Something broke on this page.": [
+    "app/components/ErrorBoundary.tsx"
+  ],
+  "Something went wrong": [
+    "app/pages/PlayScreen.tsx"
+  ],
+  "Sound": [
+    "app/pages/Settings.tsx"
+  ],
+  "Sound couldn't start in this browser, so the audio calibration can't run.": [
+    "game/calibrate/strings.ts"
+  ],
+  "Sound set": [
+    "app/pages/Settings.tsx"
+  ],
+  "Space plays and pauses. The left and right arrow keys move 2 seconds, comma and period step one frame, [ and ] change the speed, and M goes to the next miss.": [
+    "app/pages/Replay.tsx"
+  ],
+  "Space used": [
+    "app/pages/Settings.tsx"
+  ],
+  "Speed": [
+    "app/pages/Replay.tsx",
+    "shared/catalog.ts"
+  ],
+  "spinner": [
+    "app/pages/Replay.tsx"
+  ],
+  "Spinner {n}": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "Spinner speed": [
+    "shared/catalog.ts"
+  ],
+  "Spinners": [
+    "analytics/insightCopy.ts",
+    "app/components/MapPreview.tsx",
+    "app/components/PlayReport.tsx",
+    "app/pages/Guide.tsx",
+    "app/pages/stats/PlayDetail.tsx",
+    "shared/catalog.ts"
+  ],
+  "Spinners with a speed goal that rises as you improve.": [
+    "shared/catalog.ts"
+  ],
+  "Spinning": [
+    "shared/catalog.ts"
+  ],
+  "Spotlight": [
+    "shared/catalog.ts"
+  ],
+  "Spread": [
+    "app/components/PlayReport.tsx",
+    "app/pages/Calibrate.tsx",
+    "app/pages/Welcome.tsx",
+    "app/pages/stats/Timing.tsx"
+  ],
+  "spread {value}": [
+    "app/components/PlayReport.tsx"
+  ],
+  "Square-wave blips.": [
+    "shared/catalog.ts"
+  ],
+  "Stamina": [
+    "shared/catalog.ts"
+  ],
+  "Start": [
+    "app/pages/ModuleSetup.tsx",
+    "app/pages/PlaySetup.tsx"
+  ],
+  "Start drill": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "Start from the Train this button on an insight. Heartbeat stores the measurement the insight was based on. After at least 3 drill sessions it measures the same thing on plays outside the drill, so you can see whether the change carried over. The result is better, no clear change or worse, and it locks after 30 days.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Start here": [
+    "app/components/ModeCard.tsx"
+  ],
+  "Start over": [
+    "app/pages/Calibrate.tsx"
+  ],
+  "Start placement": [
+    "app/components/ModeCard.tsx",
+    "app/pages/Welcome.tsx"
+  ],
+  "Start setup": [
+    "app/pages/Home.tsx"
+  ],
+  "Start today's plan": [
+    "app/state/plan.ts"
+  ],
+  "Start##beginning": [
+    "app/charts/Timeline.tsx"
+  ],
+  "Started {date}. {n, plural, one {# drill session} other {# drill sessions}} so far.": [
+    "app/pages/stats/Overview.tsx"
+  ],
+  "Starting level": [
+    "app/components/ModeCard.tsx"
+  ],
+  "Starting levels": [
+    "app/pages/Results.tsx"
+  ],
+  "Starting levels set": [
+    "shared/catalog.ts"
+  ],
+  "Stats": [
+    "app/copy.ts",
+    "app/pages/stats/Layout.tsx",
+    "app/pages/stats/Overview.tsx"
+  ],
+  "Stats and insights": [
+    "app/pages/Guide.tsx"
+  ],
+  "Staying on sliders": [
+    "shared/catalog.ts"
+  ],
+  "Staying with slider balls": [
+    "analytics/insightCopy.ts"
+  ],
+  "Steady": [
+    "shared/catalog.ts"
+  ],
+  "Step {n}": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Step one frame of {ms} ms.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Stop tracking": [
+    "app/pages/stats/Overview.tsx"
+  ],
+  "Stopping short on long jumps": [
+    "analytics/insightCopy.ts"
+  ],
+  "Stored compressed. The newest {n} are kept by default. Replays you mark to keep, and replays of new bests, are never removed.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Straight": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "Stray presses {n}": [
+    "app/components/PlayReport.tsx"
+  ],
+  "Streaks": [
+    "app/pages/Guide.tsx"
+  ],
+  "Stream length": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "Stream notes": [
+    "app/pages/stats/Timing.tsx"
+  ],
+  "Streams": [
+    "shared/catalog.ts"
+  ],
+  "Stronger text, lines and focus rings. It also turns on when your operating system asks for more contrast.": [
+    "app/pages/Guide.tsx",
+    "app/pages/Settings.tsx"
+  ],
+  "System": [
+    "app/pages/Settings.tsx"
+  ],
+  "System follows your operating system. The playfield changes with the pages.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Tab moves between controls and the arrow keys change options in a group.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Tab moves between controls, so it can't be a hit key.": [
+    "app/components/KeyCapture.tsx"
+  ],
+  "Tab moves between controls, so it can't be the retry key.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Tablet or pen": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Tap as a ring closes on a target. It takes about a minute.": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Tap as the ring closes on the target, and Heartbeat sets how early targets are drawn.": [
+    "app/pages/Calibrate.tsx"
+  ],
+  "Tap as the ring closes.": [
+    "game/calibrate/strings.ts"
+  ],
+  "Tap with the clicks.": [
+    "game/calibrate/strings.ts"
+  ],
+  "Tap with the metronome clicks, and Heartbeat sets how early the clicks play.": [
+    "app/pages/Calibrate.tsx"
+  ],
+  "Tap with the metronome clicks. Use the speakers or headphones you play with.": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Taps": [
+    "app/pages/Calibrate.tsx"
+  ],
+  "Taps, {n} in all. Use the arrow keys to move between them and Enter or Space to watch the replay at that tap.": [
+    "app/charts/Timeline.tsx"
+  ],
+  "Taps, {n} in all. Use the arrow keys to move between them.": [
+    "app/charts/Timeline.tsx"
+  ],
+  "Target": [
+    "app/pages/PlaySetup.tsx"
+  ],
+  "Target of radius {radius} on a 1000 wide field": [
+    "app/pages/PlaySetup.tsx"
+  ],
+  "Target radius in playfield units. The playfield is 1000 units wide.": [
+    "shared/catalog.ts"
+  ],
+  "Target size": [
+    "shared/catalog.ts"
+  ],
+  "Targets are 20% smaller and hit windows are 25% shorter.": [
+    "shared/catalog.ts"
+  ],
+  "Targets are 25% larger and hit windows are 30% longer.": [
+    "shared/catalog.ts"
+  ],
+  "Targets come in three kinds.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Targets fade out before you hit them, and there's no approach ring.": [
+    "shared/catalog.ts"
+  ],
+  "Targets show no approach ring, so you read the timing from the spacing and the beat.": [
+    "shared/catalog.ts"
+  ],
+  "Tempo": [
+    "shared/catalog.ts"
+  ],
+  "Text size": [
+    "app/pages/Guide.tsx",
+    "app/pages/Settings.tsx"
+  ],
+  "That is a step back.": [
+    "app/copy.ts"
+  ],
+  "That is an improvement.": [
+    "app/copy.ts"
+  ],
+  "That tap was too far from a beat and did not count.": [
+    "game/calibrate/strings.ts"
+  ],
+  "The {guide} explains the modes, the controls and how the stats are worked out.": [
+    "app/pages/Settings.tsx"
+  ],
+  "The browser": [
+    "app/pages/Guide.tsx"
+  ],
+  "The browser has not promised to keep this data. Export a file now and then.": [
+    "app/pages/Settings.tsx"
+  ],
+  "The Clear view palette under Look is easier to tell apart with red-green color blindness, and every target can be hit with the keyboard keys under Input.": [
+    "app/pages/Settings.tsx"
+  ],
+  "The Clear view palette uses colors that stay apart with red-green color blindness. A judgment is also shown as a word and played as a sound, so no information is carried by color alone.": [
+    "app/pages/Guide.tsx"
+  ],
+  "The colors from version 1.0.": [
+    "shared/catalog.ts"
+  ],
+  "The default colors.": [
+    "shared/catalog.ts"
+  ],
+  "The engine records every input on a fixed time and position grid, and a replay plays that record back through the same game rules. The viewer has play and pause, speeds from 0.25x to 2x, a scrubber with markers for misses and broken sliders, and a list of misses that jumps to the moment before each one.": [
+    "app/pages/Guide.tsx"
+  ],
+  "The export failed.": [
+    "app/components/ErrorBoundary.tsx",
+    "app/pages/Settings.tsx"
+  ],
+  "The export file has no plays list.": [
+    "data/exportImport.ts"
+  ],
+  "The export file has no version.": [
+    "data/exportImport.ts"
+  ],
+  "The file could not be imported.": [
+    "app/pages/Settings.tsx"
+  ],
+  "The first 40 of {n, plural, one {# miss} other {# misses}}.": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "The first 40 of {n, plural, one {# slider} other {# sliders}}.": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "The first press starts the run and does not count. After four lead-in beats, {n} taps are collected. The result shows here.": [
+    "app/pages/Calibrate.tsx"
+  ],
+  "The first press starts the run. After four lead-in beats, you tap 24 times with a hit key or a mouse button. Taps more than 200 ms from a beat are dropped. The result is the median of your taps, with their spread, and above 30 ms of spread the page asks you to try again.": [
+    "app/pages/Guide.tsx"
+  ],
+  "The game could not load, so the calibration cannot start.": [
+    "app/pages/Calibrate.tsx"
+  ],
+  "The game could not load, so the replay cannot play.": [
+    "app/pages/Replay.tsx"
+  ],
+  "The game could not load.": [
+    "app/components/MapPreview.tsx"
+  ],
+  "The game could not start.": [
+    "app/pages/PlayScreen.tsx",
+    "game/engine/game.ts"
+  ],
+  "The game could not start. {reason}": [
+    "game/engine/game.ts"
+  ],
+  "The histogram needs the per-object detail, which has been removed for this play.": [
+    "app/components/PlayReport.tsx"
+  ],
+  "The hit keys are {first} and {second}. Esc pauses and can't be changed.": [
+    "app/pages/Settings.tsx"
+  ],
+  "The latest {shown} of {n, plural, one {# play} other {# plays}}.": [
+    "app/pages/Daily.tsx"
+  ],
+  "The level is suggested from your recent plays.": [
+    "app/components/DailyCard.tsx"
+  ],
+  "The level moves after every set to keep about 70% to 86% of targets a success.": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "The main targets. Safari works with a few differences.": [
+    "app/pages/Guide.tsx"
+  ],
+  "The map could not be built for these settings.": [
+    "app/components/MapPreview.tsx"
+  ],
+  "The map could not be played.": [
+    "app/components/MapPreview.tsx"
+  ],
+  "The map has no demand to show.": [
+    "app/components/DifficultyGraph.tsx"
+  ],
+  "The map is flipped left to right.": [
+    "shared/catalog.ts"
+  ],
+  "The map played by a simulated player": [
+    "app/components/MapPreview.tsx"
+  ],
+  "The map plays 20% slower. Hit windows keep their length.": [
+    "shared/catalog.ts"
+  ],
+  "The map plays 25% faster. Hit windows keep their length.": [
+    "shared/catalog.ts"
+  ],
+  "The map preview is not available yet, so only the values set directly by your choices are shown.": [
+    "app/copy.ts"
+  ],
+  "The map stays the same until midnight.": [
+    "app/components/DailyCard.tsx"
+  ],
+  "The metronome plays this many milliseconds earlier. Hit sounds always play at once.": [
+    "app/pages/Settings.tsx"
+  ],
+  "The most taps in one stream.": [
+    "shared/catalog.ts"
+  ],
+  "The number after the level is the share of the set that counted as a success.": [
+    "app/components/PlayReport.tsx"
+  ],
+  "The page lost focus. Press a hit key or click to start again.": [
+    "game/calibrate/strings.ts"
+  ],
+  "The per-object detail for this play was removed by the retention setting. The summary numbers below are still here.": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "The play finished, but it could not be saved. {reason}": [
+    "app/pages/PlayScreen.tsx"
+  ],
+  "The play was too short to show how your accuracy changed.": [
+    "app/charts/Fatigue.tsx"
+  ],
+  "The play was too short to split into quarters.": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "The pointer could not be locked, so this play uses the system pointer.": [
+    "game/render/strings.ts"
+  ],
+  "The pointer locks when you start. Esc pauses.": [
+    "game/render/strings.ts"
+  ],
+  "The preview could not load.": [
+    "app/components/SkinPreview.tsx"
+  ],
+  "The preview could not start.": [
+    "app/components/SkinPreview.tsx"
+  ],
+  "The rating at the end of each day.": [
+    "app/charts/RatingHistory.tsx"
+  ],
+  "The replay could not start.": [
+    "app/pages/Replay.tsx"
+  ],
+  "The retry key can't be one of the hit keys.": [
+    "app/pages/Settings.tsx"
+  ],
+  "The retry key is turned off. Turn it on in Settings to restart a map by holding a key.": [
+    "app/pages/Guide.tsx"
+  ],
+  "The same seed can give a slightly different map in a different browser, because math functions differ a little between them. Saved plays store positions, so your stats never depend on regenerating a map.": [
+    "app/pages/Guide.tsx"
+  ],
+  "The same seed gives the same map in this browser. A new seed is picked every time you open this page.": [
+    "app/pages/PlaySetup.tsx"
+  ],
+  "The scatter needs the per-object detail, which has been removed for this play.": [
+    "app/components/PlayReport.tsx"
+  ],
+  "The settings and the seed came from a link. Nothing starts until you press Start.": [
+    "app/pages/Share.tsx"
+  ],
+  "The stats turn those clicks into skill ratings, insights about where you lose accuracy and drills to work on them. There is no account, and nothing leaves this browser.": [
+    "app/pages/Home.tsx"
+  ],
+  "The system cursor has the least delay. Raw input always draws its own cursor.": [
+    "app/pages/Settings.tsx"
+  ],
+  "The test began at {level}": [
+    "app/pages/Results.tsx"
+  ],
+  "The test ended early, so these are less certain": [
+    "app/pages/Results.tsx"
+  ],
+  "Theme": [
+    "app/pages/Guide.tsx",
+    "app/pages/Settings.tsx"
+  ],
+  "There are no misses in this play.": [
+    "app/pages/Replay.tsx"
+  ],
+  "There is nothing at this address. The link may be old, or only part of it was copied.": [
+    "app/App.tsx"
+  ],
+  "These come from the cursor path before each click. They are when you leave the previous target, where your first motion stops, and how far you move afterwards to correct it.": [
+    "app/pages/Guide.tsx"
+  ],
+  "They are absolute devices, so they use the normal cursor even when raw input is on.": [
+    "app/pages/Guide.tsx"
+  ],
+  "This {what} was written by a newer Heartbeat (version {version}).": [
+    "data/plays.ts"
+  ],
+  "This browser could not start the calibration canvas.": [
+    "game/calibrate/strings.ts"
+  ],
+  "This browser could not start the game canvas.": [
+    "game/engine/game.ts",
+    "game/replay/playback.ts"
+  ],
+  "This browser has data from a newer Heartbeat. Reload to update.": [
+    "data/db.ts"
+  ],
+  "This browser has no IndexedDB, so Heartbeat cannot save anything.": [
+    "data/db.ts"
+  ],
+  "This code isn't valid.": [
+    "shared/codes.ts"
+  ],
+  "This code was made by a newer version of Heartbeat.": [
+    "shared/codes.ts"
+  ],
+  "This drill was set up from an insight. Your results will be compared with how you played before.": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "This file is not valid JSON.": [
+    "data/exportImport.ts"
+  ],
+  "This file was made by a newer version of Heartbeat. Update the app and try again.": [
+    "data/exportImport.ts"
+  ],
+  "This is not a Heartbeat export file.": [
+    "data/exportImport.ts"
+  ],
+  "This level is {length} s by design. The closest option, {closest} s, is selected.": [
+    "app/pages/PlaySetup.tsx"
+  ],
+  "This link can't be opened": [
+    "app/pages/Share.tsx"
+  ],
+  "This link was made with a different map generator, so this seed makes a different map here than it did for the person who shared it.": [
+    "app/pages/Share.tsx"
+  ],
+  "This needs 3 finished plays of the same kind in the 30 days before this one.": [
+    "app/pages/Results.tsx"
+  ],
+  "This needs the per-object detail, which has been removed for this play.": [
+    "app/pages/Results.tsx"
+  ],
+  "This play has no replay. Heartbeat keeps replays of your newest plays and your bests, plus any you chose to keep.": [
+    "app/pages/Replay.tsx"
+  ],
+  "This play has no section data.": [
+    "app/components/SectionStrip.tsx"
+  ],
+  "This play isn't saved on this device, so its replay is gone too.": [
+    "app/pages/Replay.tsx"
+  ],
+  "This play isn't saved on this device.": [
+    "app/pages/Results.tsx"
+  ],
+  "This play isn't saved on this device. It may have been deleted.": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "This play used an older map generator, so this seed now makes a different map.": [
+    "app/state/generator.ts"
+  ],
+  "This play was close to your average on every measure.": [
+    "app/pages/Results.tsx"
+  ],
+  "This removes {n, plural, one {# replay} other {# replays}}.": [
+    "app/pages/Settings.tsx"
+  ],
+  "This removes every play, progress and drill.": [
+    "app/pages/Settings.tsx"
+  ],
+  "This replay could not be played.": [
+    "game/replay/playback.ts"
+  ],
+  "This replay is damaged and cannot be played.": [
+    "app/pages/Replay.tsx"
+  ],
+  "This replay is damaged.": [
+    "shared/replay.ts"
+  ],
+  "This replay runs a little differently from the saved result on {n, plural, one {# object} other {# objects}}.": [
+    "app/pages/Replay.tsx"
+  ],
+  "This replay was made by a newer version of Heartbeat.": [
+    "game/replay/playback.ts",
+    "shared/replay.ts"
+  ],
+  "This short test of {time} sets the level each module starts at.": [
+    "app/pages/Welcome.tsx"
+  ],
+  "This week": [
+    "app/components/StreakCard.tsx",
+    "app/pages/Guide.tsx",
+    "app/pages/stats/Overview.tsx"
+  ],
+  "Three sizes for the text on every page. The playfield keeps its size, because target size is part of the difficulty.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Throughput": [
+    "app/pages/Guide.tsx",
+    "app/pages/stats/Aim.tsx"
+  ],
+  "Throughput by jump": [
+    "app/pages/stats/Aim.tsx"
+  ],
+  "Tick": [
+    "app/pages/Settings.tsx"
+  ],
+  "Tier {tier}": [
+    "app/components/Ratings.tsx"
+  ],
+  "Tight": [
+    "shared/catalog.ts"
+  ],
+  "Time before you leave a target": [
+    "app/pages/stats/Aim.tsx"
+  ],
+  "Time played": [
+    "app/components/PlayReport.tsx"
+  ],
+  "Timing": [
+    "app/components/PlayReport.tsx",
+    "app/pages/Settings.tsx",
+    "app/pages/Welcome.tsx",
+    "app/pages/stats/Layout.tsx",
+    "app/pages/stats/Timing.tsx",
+    "app/state/onboarding.ts",
+    "shared/catalog.ts"
+  ],
+  "Timing error of each tap over the play": [
+    "app/charts/Timeline.tsx"
+  ],
+  "Timing errors in 5 ms bins": [
+    "app/components/PlayReport.tsx"
+  ],
+  "Timing errors in 5 ms bins from minus 150 to plus 150 milliseconds": [
+    "app/pages/stats/Timing.tsx"
+  ],
+  "Timing late in streams": [
+    "analytics/insightCopy.ts"
+  ],
+  "Timing offset": [
+    "analytics/trends.ts",
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Timing on fast streams": [
+    "analytics/insightCopy.ts"
+  ],
+  "Timing spread": [
+    "analytics/trends.ts",
+    "analytics/views.ts"
+  ],
+  "Timing strictness": [
+    "shared/catalog.ts"
+  ],
+  "Timing through the play": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "to the left of the line": [
+    "analytics/insightCopy.ts"
+  ],
+  "to the right of the line": [
+    "analytics/insightCopy.ts"
+  ],
+  "Today": [
+    "app/components/PlanCard.tsx"
+  ],
+  "Today's plan could not be loaded.": [
+    "app/pages/Home.tsx"
+  ],
+  "Today's plan is done. Come back tomorrow for a new one.": [
+    "app/components/PlanCard.tsx"
+  ],
+  "Top insight": [
+    "app/pages/Home.tsx"
+  ],
+  "Tracked share of each slider": [
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "Tracking": [
+    "shared/catalog.ts"
+  ],
+  "Train": [
+    "app/copy.ts",
+    "app/pages/Home.tsx",
+    "app/pages/Train.tsx",
+    "app/pages/Welcome.tsx"
+  ],
+  "Train this": [
+    "app/components/InsightCard.tsx"
+  ],
+  "Training modules": [
+    "app/pages/Guide.tsx"
+  ],
+  "Trains {skills} at a fixed level taken from your module levels.": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "Transaction aborted.": [
+    "data/db.ts"
+  ],
+  "Trends": [
+    "app/pages/stats/Layout.tsx",
+    "app/pages/stats/Trends.tsx"
+  ],
+  "Try again": [
+    "app/components/AnalysisError.tsx",
+    "app/pages/Calibrate.tsx"
+  ],
+  "Try saving again": [
+    "app/pages/PlayScreen.tsx"
+  ],
+  "Try the sounds": [
+    "app/pages/Settings.tsx"
+  ],
+  "Turn": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Turn {turn}, {distance} widths: {description}, {n, plural, one {# tap} other {# taps}}": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Turn {turn}, {distance} widths: no taps": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Turn {turn}, {distance} widths: only {n, plural, one {# tap} other {# taps}}": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Turn and distance": [
+    "app/pages/stats/Patterns.tsx"
+  ],
+  "Turn off": [
+    "app/pages/Settings.tsx"
+  ],
+  "Turns": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "Turns off page animations and the sparks, shakes and flashes in a play. On the first visit it follows your operating system.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Turns off page animations, sparks, shakes and the flash on a miss. It also follows your operating system on the first visit.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Two short sets of each of five modules. It sets your starting level in each.": [
+    "shared/catalog.ts"
+  ],
+  "Unchanged": [
+    "app/pages/Results.tsx"
+  ],
+  "under 0.1 MB": [
+    "app/pages/Settings.tsx"
+  ],
+  "Under 0.4": [
+    "analytics/buckets.ts"
+  ],
+  "Under 1": [
+    "analytics/buckets.ts"
+  ],
+  "Under 110": [
+    "analytics/buckets.ts"
+  ],
+  "Under 45 degrees": [
+    "analytics/buckets.ts"
+  ],
+  "unknown": [
+    "app/pages/Settings.tsx"
+  ],
+  "up": [
+    "analytics/insightCopy.ts"
+  ],
+  "Up": [
+    "app/charts/Rose.tsx"
+  ],
+  "up and left": [
+    "analytics/insightCopy.ts"
+  ],
+  "up and right": [
+    "analytics/insightCopy.ts"
+  ],
+  "up and to the left of the line": [
+    "analytics/insightCopy.ts"
+  ],
+  "up and to the right of the line": [
+    "analytics/insightCopy.ts"
+  ],
+  "Up from {level}": [
+    "game/render/strings.ts"
+  ],
+  "Updating": [
+    "app/components/MapPreview.tsx"
+  ],
+  "Variety": [
+    "analytics/insightCopy.ts"
+  ],
+  "Version": [
+    "app/pages/Settings.tsx"
+  ],
+  "Visual calibration": [
+    "app/pages/Calibrate.tsx",
+    "game/calibrate/strings.ts"
+  ],
+  "Visual offset": [
+    "app/pages/Settings.tsx"
+  ],
+  "Visual timing": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Warm-up": [
+    "shared/catalog.ts"
+  ],
+  "Watch": [
+    "app/pages/Replay.tsx"
+  ],
+  "Watch a play again, slow it down and jump to the misses.": [
+    "app/copy.ts"
+  ],
+  "Watch object {n} at {time}": [
+    "app/pages/Replay.tsx"
+  ],
+  "Watch replay": [
+    "app/pages/Results.tsx",
+    "app/pages/stats/PlayDetail.tsx"
+  ],
+  "Watch replays, read the insights and see which drills changed your numbers.": [
+    "app/pages/Home.tsx"
+  ],
+  "Watch the ring. Your taps count after four beats.": [
+    "game/calibrate/strings.ts"
+  ],
+  "Watch this map": [
+    "app/components/MapPreview.tsx"
+  ],
+  "Weekly goal": [
+    "app/pages/Settings.tsx"
+  ],
+  "Welcome": [
+    "app/pages/Home.tsx"
+  ],
+  "went from {before} to {after}": [
+    "analytics/insightCopy.ts"
+  ],
+  "What changed this week": [
+    "app/components/WeeklyChanges.tsx"
+  ],
+  "What to work on": [
+    "app/pages/stats/Overview.tsx"
+  ],
+  "When you move {dir}, your clicks land about {pct}% of a target's width {side}.": [
+    "analytics/insightCopy.ts"
+  ],
+  "When you move {dir}, your clicks scatter across the line by {pct}% of a target's width, against {other}% on your other jumps.": [
+    "analytics/insightCopy.ts"
+  ],
+  "When your clicks land compared with the beat.": [
+    "app/copy.ts"
+  ],
+  "Where each module starts now": [
+    "app/pages/Results.tsx"
+  ],
+  "Where on the screen and at which speeds you miss.": [
+    "app/copy.ts"
+  ],
+  "Where your first motion stops": [
+    "analytics/insightCopy.ts",
+    "app/pages/stats/Aim.tsx"
+  ],
+  "where your first motion stops on long jumps": [
+    "analytics/insightCopy.ts"
+  ],
+  "Wide": [
+    "shared/catalog.ts"
+  ],
+  "wide turns": [
+    "analytics/insightCopy.ts"
+  ],
+  "Wide, flowing jumps": [
+    "analytics/insightCopy.ts"
+  ],
+  "Wide##turn angle": [
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "Without acceleration it needs a recent browser. When that is not available, Heartbeat falls back to raw input with acceleration and says so in Settings.": [
+    "app/pages/Guide.tsx"
+  ],
+  "Without it every module starts at level 3 and moves as you train.": [
+    "app/pages/Welcome.tsx"
+  ],
+  "Without replays the file is much smaller. Plays and stats are always included.": [
+    "app/pages/Settings.tsx"
+  ],
+  "Wood": [
+    "shared/catalog.ts"
+  ],
+  "Worse": [
+    "analytics/insightCopy.ts",
+    "app/components/WeeklyChanges.tsx"
+  ],
+  "Yes": [
+    "app/pages/Settings.tsx"
+  ],
+  "Yes, delete everything": [
+    "app/pages/Settings.tsx"
+  ],
+  "yesterday": [
+    "app/format.ts"
+  ],
+  "You can change any of it later in Settings.": [
+    "app/pages/Welcome.tsx"
+  ],
+  "You can only see the area around your cursor.": [
+    "shared/catalog.ts"
+  ],
+  "You click about {ms} ms {side, select, early {early} other {late}} on average.": [
+    "analytics/insightCopy.ts"
+  ],
+  "You click targets in time with a beat. Every click is saved with its position, its timing and the movement that led to it, and the stats pages turn that into ratings, trends and advice.": [
+    "app/pages/Guide.tsx"
+  ],
+  "You finish only {pct}% of spinners in time.": [
+    "analytics/insightCopy.ts"
+  ],
+  "You finished 250 plays.": [
+    "shared/catalog.ts"
+  ],
+  "You finished 50 plays.": [
+    "shared/catalog.ts"
+  ],
+  "You finished a Dynamic play of a minute or more without a miss.": [
+    "shared/catalog.ts"
+  ],
+  "You finished Level 1 with 90% accuracy or more.": [
+    "shared/catalog.ts"
+  ],
+  "You finished Level 2 with 90% accuracy or more.": [
+    "shared/catalog.ts"
+  ],
+  "You finished Level 3 with 90% accuracy or more.": [
+    "shared/catalog.ts"
+  ],
+  "You finished Level 4 with 90% accuracy or more.": [
+    "shared/catalog.ts"
+  ],
+  "You finished Level 5 with 90% accuracy or more.": [
+    "shared/catalog.ts"
+  ],
+  "You finished Level 6 with 90% accuracy or more.": [
+    "shared/catalog.ts"
+  ],
+  "You finished Level 7 with 90% accuracy or more.": [
+    "shared/catalog.ts"
+  ],
+  "You finished Level 8 with 90% accuracy or more.": [
+    "shared/catalog.ts"
+  ],
+  "You finished seven daily maps.": [
+    "shared/catalog.ts"
+  ],
+  "You finished the placement test.": [
+    "shared/catalog.ts"
+  ],
+  "You finished your first play.": [
+    "shared/catalog.ts"
+  ],
+  "You hit almost every target, but your clicks land far from the center. On average a click is {pct}% of a target's width off.": [
+    "analytics/insightCopy.ts"
+  ],
+  "You lose more sliders on curves than on straight paths ({a}% kept against {b}%).": [
+    "analytics/insightCopy.ts"
+  ],
+  "You make a second motion on {pct}% of your longer jumps. Try for one smooth move that stops on the target.": [
+    "analytics/insightCopy.ts"
+  ],
+  "You miss more on sharp back-and-forth jumps than on wide, flowing ones ({a}% against {b}%).": [
+    "analytics/insightCopy.ts"
+  ],
+  "You miss more on wide, flowing jumps than on sharp back-and-forth ones ({a}% against {b}%).": [
+    "analytics/insightCopy.ts"
+  ],
+  "You miss more when {cut} or more targets are on screen ({a}% against {b}% on quieter screens).": [
+    "analytics/insightCopy.ts"
+  ],
+  "You often let go of sliders shortly before they end. The end counted on {pct}% of sliders, while {ticks}% of the ticks counted.": [
+    "analytics/insightCopy.ts"
+  ],
+  "You overshoot long, fast jumps (over {cut} target widths). Your clicks land about {pct}% of a target's width past the center.": [
+    "analytics/insightCopy.ts"
+  ],
+  "You overshoot short jumps by about {pct}% of a target's width.": [
+    "analytics/insightCopy.ts"
+  ],
+  "You play {n, plural, one {# short set} other {# short sets}} of each of {modules}. The difficulty follows how you do, and the results show a starting level for each module.": [
+    "app/pages/Welcome.tsx"
+  ],
+  "You played on 30 days in a row.": [
+    "shared/catalog.ts"
+  ],
+  "You played on seven days in a row.": [
+    "shared/catalog.ts"
+  ],
+  "You quit before the end.": [
+    "app/pages/Results.tsx"
+  ],
+  "You ran out of health before the map ended.": [
+    "app/pages/Results.tsx"
+  ],
+  "You reached a combo of 100.": [
+    "shared/catalog.ts"
+  ],
+  "You reached a combo of 500.": [
+    "shared/catalog.ts"
+  ],
+  "You reached your weekly goal.": [
+    "app/components/StreakCard.tsx"
+  ],
+  "You rush fast streams, about {ms} ms early on average.": [
+    "analytics/insightCopy.ts"
+  ],
+  "You stop short on long, fast jumps (over {cut} target widths). Your clicks land about {pct}% of a target's width before the center.": [
+    "analytics/insightCopy.ts"
+  ],
+  "You trail behind slider balls by about {pct}% of a target's width.": [
+    "analytics/insightCopy.ts"
+  ],
+  "You're late on fast streams by about {ms} ms on average.": [
+    "analytics/insightCopy.ts"
+  ],
+  "You've played {module} four times in a row. Try another module next, then come back to it.": [
+    "analytics/insightCopy.ts"
+  ],
+  "your accuracy drop in the second half": [
+    "analytics/insightCopy.ts"
+  ],
+  "Your accuracy drops by about {points} points in the second half of a play.": [
+    "analytics/insightCopy.ts"
+  ],
+  "Your accuracy over your last three plays is {last}%, against {avg}% for this session. A break might help before you go on.": [
+    "analytics/insightCopy.ts"
+  ],
+  "Your accuracy went from {a} to {b} this week.": [
+    "analytics/views.ts"
+  ],
+  "your aim on long, fast jumps": [
+    "analytics/insightCopy.ts"
+  ],
+  "your aim on short jumps": [
+    "analytics/insightCopy.ts"
+  ],
+  "Your best scores and module levels.": [
+    "app/copy.ts"
+  ],
+  "your click timing": [
+    "analytics/insightCopy.ts"
+  ],
+  "Your data": [
+    "app/copy.ts",
+    "app/pages/Guide.tsx"
+  ],
+  "Your distance from the center of the target went from {a} to {b} of its width this week.": [
+    "analytics/views.ts"
+  ],
+  "Your first miss ended the play.": [
+    "app/pages/Results.tsx"
+  ],
+  "Your first miss ends the play.": [
+    "shared/catalog.ts"
+  ],
+  "Your level": [
+    "app/components/ModeCard.tsx",
+    "app/pages/ModuleSetup.tsx"
+  ],
+  "Your longest streak is {days}.": [
+    "app/components/StreakCard.tsx"
+  ],
+  "your miss rate on busy screens": [
+    "analytics/insightCopy.ts"
+  ],
+  "your miss rate on sharp jumps": [
+    "analytics/insightCopy.ts"
+  ],
+  "your miss rate on wide jumps": [
+    "analytics/insightCopy.ts"
+  ],
+  "Your newest plays from the last 30 days, up to 60": [
+    "app/pages/stats/Aim.tsx"
+  ],
+  "Your offset is {ms} ms.": [
+    "game/calibrate/strings.ts"
+  ],
+  "Your plays add up to 25 hours.": [
+    "shared/catalog.ts"
+  ],
+  "Your plays add up to five hours.": [
+    "shared/catalog.ts"
+  ],
+  "Your plays could not be read. {message}": [
+    "app/components/AnalysisError.tsx"
+  ],
+  "Your practice went from {a} to {b} minutes a day this week.": [
+    "analytics/views.ts"
+  ],
+  "Your ratings and the next thing to practice.": [
+    "app/copy.ts"
+  ],
+  "Your skills": [
+    "app/pages/Home.tsx"
+  ],
+  "Your stats": [
+    "app/pages/Results.tsx"
+  ],
+  "Your taps were uneven. Try once more for a steadier number.": [
+    "app/state/onboarding.ts"
+  ],
+  "Your throughput went from {a} to {b} bits per second this week.": [
+    "analytics/views.ts"
+  ],
+  "Your timing gets looser after the first five taps of a stream ({a} ms spread against {b} ms).": [
+    "analytics/insightCopy.ts"
+  ],
+  "Your timing offset went from {a} to {b} this week.": [
+    "analytics/views.ts"
+  ],
+  "your timing on fast streams": [
+    "analytics/insightCopy.ts"
+  ],
+  "your timing spread late in streams": [
+    "analytics/insightCopy.ts"
+  ],
+  "Your timing spread went from {a} to {b} this week.": [
+    "analytics/views.ts"
+  ]
+}

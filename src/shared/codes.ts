@@ -16,12 +16,13 @@ import {
   SHARE_MODE_ORDER,
   SHARE_MOD_ORDER,
 } from './catalog';
+import { t } from './i18n';
 import type { DifficultySettings, LaunchRequest, ModId, ModeId, ModuleId, ModuleOptions } from './types';
 
 export class ShareCodeError extends Error {
   readonly kind: 'invalid' | 'newer';
   constructor(kind: 'invalid' | 'newer') {
-    super(kind === 'newer' ? 'This code was made by a newer version of Heartbeat.' : "This code isn't valid.");
+    super(kind === 'newer' ? t('This code was made by a newer version of Heartbeat.') : t("This code isn't valid."));
     this.name = 'ShareCodeError';
     this.kind = kind;
   }
@@ -140,7 +141,11 @@ export function encodeShare(launch: LaunchRequest, generatorVersion: number): st
   const mode = MODES[launch.modeId];
   const dynamic = launch.modeId === 'dynamic';
   const preset =
-    dynamic && launch.presetLevel !== null && Number.isInteger(launch.presetLevel) && launch.presetLevel >= 1 && launch.presetLevel <= LEVEL_PRESETS.length;
+    dynamic &&
+    launch.presetLevel !== null &&
+    Number.isInteger(launch.presetLevel) &&
+    launch.presetLevel >= 1 &&
+    launch.presetLevel <= LEVEL_PRESETS.length;
   const hasOptions = mode.options.length > 0;
 
   const seed = launch.seed >>> 0;
@@ -245,7 +250,10 @@ export function decodeShare(code: string): { launch: Partial<LaunchRequest>; gen
   const lengthSec = snapTo(bytes[7]! | (bytes[8]! << 8), mode.lengthOptions);
   const mask = bytes[9]! | (bytes[10]! << 8);
   const generatorVersion = bytes[11]!;
-  const mods = cleanMods(SHARE_MOD_ORDER.filter((_, i) => (mask & (1 << i)) !== 0), modeId);
+  const mods = cleanMods(
+    SHARE_MOD_ORDER.filter((_, i) => (mask & (1 << i)) !== 0),
+    modeId,
+  );
 
   let difficulty: DifficultySettings = { ...DEFAULT_DIFFICULTY };
   let presetLevel: number | null = null;

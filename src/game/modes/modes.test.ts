@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { aimDemand, DEFAULT_MODULE_LEVEL, MODES, MODULE_IDS, PLACEMENT, rawDemandAt, readingDemand, speedDemand, spinDemand, timingDemand, trackingDemand, precisionDemand } from '../../shared/catalog';
+import {
+  aimDemand,
+  DEFAULT_MODULE_LEVEL,
+  MODES,
+  MODULE_IDS,
+  PLACEMENT,
+  rawDemandAt,
+  readingDemand,
+  speedDemand,
+  spinDemand,
+  timingDemand,
+  trackingDemand,
+  precisionDemand,
+} from '../../shared/catalog';
 import type { HitObject, ModeId, ModuleId, SliderObject, SpinnerObject } from '../../shared/types';
 import { computeFeatures } from '../map/features';
 import { createRng } from '../map/rng';
@@ -94,7 +107,11 @@ function measured(module: ModuleId, objects: HitObject[]): number {
   switch (module) {
     case 'jumps':
     case 'angles':
-      return mean(objects.flatMap((o, i) => (f[i]!.distance !== null && f[i]!.gapMs !== null ? [aimDemand(f[i]!.distance!, f[i]!.gapMs!, o.radius)] : [])));
+      return mean(
+        objects.flatMap((o, i) =>
+          f[i]!.distance !== null && f[i]!.gapMs !== null ? [aimDemand(f[i]!.distance!, f[i]!.gapMs!, o.radius)] : [],
+        ),
+      );
     case 'streams':
       return mean(objects.flatMap((_, i) => (f[i]!.runIndex >= 2 ? [speedDemand(f[i]!.gapMs!)] : [])));
     case 'tracking':
@@ -120,7 +137,9 @@ describe('level caps', () => {
     expect(reading).toBeLessThan(13.5);
     for (const m of ['jumps', 'angles', 'tracking', 'spinning', 'precision', 'timing'] as const) expect(maxLevelFor(m)).toBe(15);
     // Past the cap the settings are the same.
-    expect(Math.abs(paramsAtLevel('reading', 15).approachMs - paramsAtLevel('reading', maxLevelFor('reading')).approachMs)).toBeLessThanOrEqual(2);
+    expect(
+      Math.abs(paramsAtLevel('reading', 15).approachMs - paramsAtLevel('reading', maxLevelFor('reading')).approachMs),
+    ).toBeLessThanOrEqual(2);
     const a = buildSet({ module: 'streams', level: streams, options: {}, set: 0, seed: 3, startTime: 2000, indexBase: 0, groupBase: 0 });
     const b = buildSet({ module: 'streams', level: 15, options: {}, set: 0, seed: 3, startTime: 2000, indexBase: 0, groupBase: 0 });
     const gap = (o: typeof a.objects) => o[2]!.time - o[1]!.time;
@@ -141,10 +160,20 @@ describe('module sets', () => {
     for (const module of MODULE_IDS) {
       for (const level of [2, 5, 8]) {
         for (const seed of [1, 2, 3]) {
-          const set = buildSet({ module, level, options: MODES[module].defaultOptions, set: 0, seed, startTime: 2000, indexBase: 0, groupBase: 0 });
+          const set = buildSet({
+            module,
+            level,
+            options: MODES[module].defaultOptions,
+            set: 0,
+            seed,
+            startTime: 2000,
+            indexBase: 0,
+            groupBase: 0,
+          });
           const want = rawDemandAt(SKILL[module], level);
           const got = measured(module, set.objects);
-          if (Math.abs(got - want) / want > 0.1) throw new Error(`${module} L${level} seed ${seed}: wanted ${want.toFixed(2)}, got ${got.toFixed(2)}`);
+          if (Math.abs(got - want) / want > 0.1)
+            throw new Error(`${module} L${level} seed ${seed}: wanted ${want.toFixed(2)}, got ${got.toFixed(2)}`);
         }
       }
     }
@@ -152,7 +181,16 @@ describe('module sets', () => {
 
   it('build the set size the mode lists', () => {
     for (const module of MODULE_IDS) {
-      const set = buildSet({ module, level: 4, options: MODES[module].defaultOptions, set: 0, seed: 9, startTime: 2000, indexBase: 0, groupBase: 0 });
+      const set = buildSet({
+        module,
+        level: 4,
+        options: MODES[module].defaultOptions,
+        set: 0,
+        seed: 9,
+        startTime: 2000,
+        indexBase: 0,
+        groupBase: 0,
+      });
       const want = MODES[module].setSize;
       expect(set.objects.length).toBeGreaterThanOrEqual(Math.floor(want * 0.85));
       expect(set.objects.length).toBeLessThanOrEqual(want);
@@ -178,7 +216,16 @@ describe('module sets', () => {
     let near = 0;
     let moves = 0;
     for (let seed = 1; seed <= 10; seed++) {
-      const set = buildSet({ module: 'jumps', level: 3, options: { distanceFocus: 'mixed', directionFocus: 2 }, set: 0, seed, startTime: 2000, indexBase: 0, groupBase: 0 });
+      const set = buildSet({
+        module: 'jumps',
+        level: 3,
+        options: { distanceFocus: 'mixed', directionFocus: 2 },
+        set: 0,
+        seed,
+        startTime: 2000,
+        indexBase: 0,
+        groupBase: 0,
+      });
       const f = computeFeatures({ objects: set.objects, durationMs: 1e5 });
       for (const x of f) {
         if (x.direction === null) continue;
@@ -196,7 +243,10 @@ describe('module sets', () => {
         let near = 0;
         let moves = 0;
         for (let seed = 1; seed <= 8; seed++) {
-          const launch = { ...launchFor(undefined, seed, 60, [...mods], 'jumps'), options: { distanceFocus: 'mixed' as const, directionFocus: octant } };
+          const launch = {
+            ...launchFor(undefined, seed, 60, [...mods], 'jumps'),
+            options: { distanceFocus: 'mixed' as const, directionFocus: octant },
+          };
           const map = setupPlay(launch).map;
           const first = map.objects.filter((o) => o.set === 0);
           const f = computeFeatures({ objects: first, durationMs: 1e5 });
@@ -213,7 +263,16 @@ describe('module sets', () => {
   });
 
   it('use only the shapes asked for', () => {
-    const set = buildSet({ module: 'tracking', level: 4, options: { sliderFocus: 'straight' }, set: 0, seed: 3, startTime: 2000, indexBase: 0, groupBase: 0 });
+    const set = buildSet({
+      module: 'tracking',
+      level: 4,
+      options: { sliderFocus: 'straight' },
+      set: 0,
+      seed: 3,
+      startTime: 2000,
+      indexBase: 0,
+      groupBase: 0,
+    });
     expect(set.objects.length).toBeGreaterThan(3);
     for (const o of set.objects) expect((o as SliderObject).shape).toBe('straight');
   });
@@ -237,11 +296,28 @@ describe('module sets', () => {
 });
 
 describe('setupPlay', () => {
-  const modes: ModeId[] = ['dynamic', 'jumps', 'angles', 'streams', 'tracking', 'spinning', 'precision', 'reading', 'timing', 'stamina', 'warmup', 'mix'];
+  const modes: ModeId[] = [
+    'dynamic',
+    'jumps',
+    'angles',
+    'streams',
+    'tracking',
+    'spinning',
+    'precision',
+    'reading',
+    'timing',
+    'stamina',
+    'warmup',
+    'mix',
+  ];
 
   it('builds every mode with a first object after the lead-in', () => {
     for (const modeId of modes) {
-      const launch = { ...launchFor(undefined, 4, MODES[modeId].defaultLengthSec, [], modeId), options: MODES[modeId].defaultOptions, levels: { jumps: 4, streams: 5 } };
+      const launch = {
+        ...launchFor(undefined, 4, MODES[modeId].defaultLengthSec, [], modeId),
+        options: MODES[modeId].defaultOptions,
+        levels: { jumps: 4, streams: 5 },
+      };
       const setup = setupPlay(launch);
       expect(setup.map.objects.length, modeId).toBeGreaterThanOrEqual(2);
       expect(setup.map.objects[0]!.time, modeId).toBeGreaterThanOrEqual(2000);
@@ -262,7 +338,10 @@ describe('setupPlay', () => {
   it('keeps the first target of each Stamina and Warm-up chunk clear of the last one', () => {
     for (const modeId of ['stamina', 'warmup'] as const) {
       for (let seed = 1; seed <= 6; seed++) {
-        const setup = setupPlay({ ...launchFor(undefined, seed, 180, [], modeId), levels: { jumps: 5, streams: 6, tracking: 4, precision: 5 } });
+        const setup = setupPlay({
+          ...launchFor(undefined, seed, 180, [], modeId),
+          levels: { jumps: 5, streams: 6, tracking: 4, precision: 5 },
+        });
         const objs = setup.map.objects;
         let boundaries = 0;
         for (let i = 1; i < objs.length; i++) {
@@ -306,7 +385,10 @@ describe('setupPlay', () => {
 });
 
 describe('placement', () => {
-  const placement = (seed = 5, levels: Partial<Record<ModuleId, number>> = {}) => ({ ...launchFor(undefined, seed, 240, [], 'placement'), levels });
+  const placement = (seed = 5, levels: Partial<Record<ModuleId, number>> = {}) => ({
+    ...launchFor(undefined, seed, 240, [], 'placement'),
+    levels,
+  });
 
   it('starts every module at level 3, or its saved level, with a full step', () => {
     const setup = setupPlay(placement(5, { streams: 6.5 }));
@@ -375,7 +457,10 @@ describe('placement', () => {
     for (const m of PLACEMENT.modules) {
       const played = run.result.levels.filter((s) => s.module === m);
       // Set 1 at 3 moves up to 4, set 2 at 4 moves up to 5. The second set's own level is not the result.
-      expect(played.map((s) => s.level), m).toEqual([3, 4]);
+      expect(
+        played.map((s) => s.level),
+        m,
+      ).toEqual([3, 4]);
       expect(run.result.finalLevels[m], m).toBe(5);
     }
   });

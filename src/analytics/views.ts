@@ -3,6 +3,7 @@
 // `weeklyChanges` (sentences about what moved this week), `playVsAverage` (deltas for one play),
 // `fatigueCurve` (rolling accuracy over time) and `demandTimeline` (level-scale demand per bin of a map).
 
+import { t } from '../shared/i18n';
 import type { PlayData, PlaySummary } from '../data/schema';
 import { JUDGMENTS, MODES, SKILLS } from '../shared/catalog';
 import type { HitRecord, MapSection, ObjectFeatures, PlayableMap, SkillId } from '../shared/types';
@@ -44,11 +45,11 @@ export function ratingHistory(summaries: readonly PlaySummary[], days: number, n
   const sorted = [...summaries].sort((a, b) => a.startedAt - b.startedAt);
   const series: RatingSeries[] = SKILL_ORDER.map((skill) => ({ skill, points: [] }));
   for (let day = today - count + 1; day <= today; day++) {
-    const t = day === today ? now : dayNumberStart(day + 1) - 1;
-    const upTo = sorted.filter((s) => s.startedAt <= t);
+    const cutoff = day === today ? now : dayNumberStart(day + 1) - 1;
+    const upTo = sorted.filter((s) => s.startedAt <= cutoff);
     for (const line of series) {
-      const r = skillRating(line.skill, upTo, t);
-      line.points.push({ day, t, rating: r ? r.rating : null, provisional: r ? r.provisional : false, tier: r ? r.tier : 0 });
+      const r = skillRating(line.skill, upTo, cutoff);
+      line.points.push({ day, t: cutoff, rating: r ? r.rating : null, provisional: r ? r.provisional : false, tier: r ? r.tier : 0 });
     }
   }
   return series;
@@ -71,7 +72,14 @@ export interface RadarAxis {
 export function radarData(ratings: Record<SkillId, RatingInfo | null>): RadarAxis[] {
   return SKILL_ORDER.map((skill) => {
     const r = ratings[skill];
-    return { skill, label: SKILLS[skill].label, rating: r ? r.rating : 0, tier: r ? r.tier : 0, provisional: r ? r.provisional : false, hasData: r !== null };
+    return {
+      skill,
+      label: SKILLS[skill].label,
+      rating: r ? r.rating : 0,
+      tier: r ? r.tier : 0,
+      provisional: r ? r.provisional : false,
+      hasData: r !== null,
+    };
   });
 }
 
@@ -96,8 +104,12 @@ export interface ThroughputPoint {
 /** One point per distance-and-gap bucket with 8 or more jumps, for a scatter of nominal against effective difficulty. */
 export function throughputScatter(source: Rows | readonly PlayData[]): ThroughputPoint[] {
   const rows = Array.isArray(source) ? buildRows(source as readonly PlayData[]) : (source as Rows);
-  return throughputBuckets(rows.taps.map((t) => t.rec)).map((b) => ({
-    key: b.key, n: b.n, nominalId: round2(b.idNominal), ide: round2(b.ide), tp: round2(b.tp),
+  return throughputBuckets(rows.taps.map((tap) => tap.rec)).map((b) => ({
+    key: b.key,
+    n: b.n,
+    nominalId: round2(b.idNominal),
+    ide: round2(b.ide),
+    tp: round2(b.tp),
   }));
 }
 
@@ -120,34 +132,51 @@ const whole = (v: number): string => String(Math.round(v));
 
 const WEEKLY_METRICS: WeeklyMetric[] = [
   {
-    id: 'accuracy', unit: 'share', better: 'up', value: (s) => s.accuracy,
+    id: 'accuracy',
+    unit: 'share',
+    better: 'up',
+    value: (s) => s.accuracy,
     show: (v) => `${whole(v * 100)}%`,
-    sentence: (a, b) => `Your accuracy went from ${a} to ${b} this week.`,
+    sentence: (a, b) => t('Your accuracy went from {a} to {b} this week.', { a, b }),
   },
   {
-    id: 'timingSd', unit: 'ms', better: 'down', value: (s) => (s.timing.n >= 20 ? s.timing.sd : null),
+    id: 'timingSd',
+    unit: 'ms',
+    better: 'down',
+    value: (s) => (s.timing.n >= 20 ? s.timing.sd : null),
     show: (v) => `${whole(v)} ms`,
-    sentence: (a, b) => `Your timing spread went from ${a} to ${b} this week.`,
+    sentence: (a, b) => t('Your timing spread went from {a} to {b} this week.', { a, b }),
   },
   {
-    id: 'timingMean', unit: 'ms', better: 'down', value: (s) => (s.timing.n >= 20 ? Math.abs(s.timing.mean) : null),
+    id: 'timingMean',
+    unit: 'ms',
+    better: 'down',
+    value: (s) => (s.timing.n >= 20 ? Math.abs(s.timing.mean) : null),
     show: (v) => `${whole(v)} ms`,
-    sentence: (a, b) => `Your timing offset went from ${a} to ${b} this week.`,
+    sentence: (a, b) => t('Your timing offset went from {a} to {b} this week.', { a, b }),
   },
   {
-    id: 'radial', unit: 'width', better: 'down', value: (s) => (s.aim.n >= 20 ? s.aim.radialMean : null),
+    id: 'radial',
+    unit: 'width',
+    better: 'down',
+    value: (s) => (s.aim.n >= 20 ? s.aim.radialMean : null),
     show: (v) => `${whole(v * 50)}%`,
-    sentence: (a, b) => `Your distance from the center of the target went from ${a} to ${b} of its width this week.`,
+    sentence: (a, b) => t('Your distance from the center of the target went from {a} to {b} of its width this week.', { a, b }),
   },
   {
-    id: 'throughput', unit: 'bits', better: 'up', value: (s) => s.throughput?.bitsPerSec ?? null,
+    id: 'throughput',
+    unit: 'bits',
+    better: 'up',
+    value: (s) => s.throughput?.bitsPerSec ?? null,
     show: (v) => v.toFixed(1),
-    sentence: (a, b) => `Your throughput went from ${a} to ${b} bits per second this week.`,
+    sentence: (a, b) => t('Your throughput went from {a} to {b} bits per second this week.', { a, b }),
   },
   {
-    id: 'minutes', unit: 'minutes', better: null,
+    id: 'minutes',
+    unit: 'minutes',
+    better: null,
     show: (v) => whole(v),
-    sentence: (a, b) => `Your practice went from ${a} to ${b} minutes a day this week.`,
+    sentence: (a, b) => t('Your practice went from {a} to {b} minutes a day this week.', { a, b }),
   },
 ];
 
@@ -195,7 +224,8 @@ export function weeklyChanges(summaries: readonly PlaySummary[], now: number): W
       after = dailyMinutes(recent, today - 6, 7);
       before = dailyMinutes(earlier, today - 34, 28);
     } else {
-      const pick = (list: PlaySummary[]): number[] => list.map((s) => m.value!(s)).filter((v): v is number => v !== null && Number.isFinite(v));
+      const pick = (list: PlaySummary[]): number[] =>
+        list.map((s) => m.value!(s)).filter((v): v is number => v !== null && Number.isFinite(v));
       after = pick(recent);
       before = pick(earlier);
       if (after.length < 3 || before.length < 3) continue;
@@ -246,10 +276,38 @@ export interface PlayVsAverage {
 }
 
 const DELTAS: { id: PlayDeltaId; label: string; better: 'up' | 'down'; value: (s: PlaySummary) => number | null }[] = [
-  { id: 'accuracy', label: 'Accuracy', better: 'up', value: (s) => s.accuracy },
-  { id: 'timingSd', label: 'Timing spread', better: 'down', value: (s) => (s.timing.n >= 20 ? s.timing.sd : null) },
-  { id: 'radial', label: 'Distance from the center', better: 'down', value: (s) => (s.aim.n >= 20 ? s.aim.radialMean : null) },
-  { id: 'score', label: 'Score', better: 'up', value: (s) => s.score },
+  {
+    id: 'accuracy',
+    get label() {
+      return t('Accuracy');
+    },
+    better: 'up',
+    value: (s) => s.accuracy,
+  },
+  {
+    id: 'timingSd',
+    get label() {
+      return t('Timing spread');
+    },
+    better: 'down',
+    value: (s) => (s.timing.n >= 20 ? s.timing.sd : null),
+  },
+  {
+    id: 'radial',
+    get label() {
+      return t('Distance from the center');
+    },
+    better: 'down',
+    value: (s) => (s.aim.n >= 20 ? s.aim.radialMean : null),
+  },
+  {
+    id: 'score',
+    get label() {
+      return t('Score');
+    },
+    better: 'up',
+    value: (s) => s.score,
+  },
 ];
 
 /**
@@ -276,7 +334,14 @@ export function playVsAverage(summary: PlaySummary, summaries: readonly PlaySumm
     const others = peers.map(d.value).filter((v): v is number => v !== null && Number.isFinite(v));
     if (own === null || others.length < 3) continue;
     const average = mean(others);
-    deltas.push({ id: d.id, label: d.label, value: own, average, diff: own - average, better: d.better === 'up' ? own > average : own < average });
+    deltas.push({
+      id: d.id,
+      label: d.label,
+      value: own,
+      average,
+      diff: own - average,
+      better: d.better === 'up' ? own > average : own < average,
+    });
   }
   if (deltas.length === 0) return null;
   const n = peers.length;
@@ -284,13 +349,13 @@ export function playVsAverage(summary: PlaySummary, summaries: readonly PlaySumm
   let text: string;
   if (summary.modeId !== 'dynamic') {
     peersText = MODES[summary.modeId].label;
-    text = `Compared with ${n} earlier ${peersText} plays`;
+    text = t('Compared with {n} earlier {mode} plays', { n, mode: peersText });
   } else if (summary.presetLevel !== null) {
-    peersText = `Level ${summary.presetLevel}`;
-    text = `Compared with ${n} earlier plays at ${peersText}`;
+    peersText = t('Level {level}', { level: summary.presetLevel });
+    text = t('Compared with {n} earlier plays at {level}', { n, level: peersText });
   } else {
-    peersText = 'custom Dynamic';
-    text = `Compared with ${n} earlier custom Dynamic plays`;
+    peersText = t('custom Dynamic');
+    text = t('Compared with {n} earlier custom Dynamic plays', { n });
   }
   return { n, peers: peersText, text, deltas };
 }
@@ -353,7 +418,7 @@ export function demandTimeline(
   const step = binMs > 0 ? binMs : 2000;
   const items = itemsFromMap(map as PlayableMap, features);
   const count = Math.max(1, Math.ceil(map.durationMs / step));
-  const groups: typeof items[] = Array.from({ length: count }, () => []);
+  const groups: (typeof items)[] = Array.from({ length: count }, () => []);
   map.objects.forEach((o, i) => {
     const bin = Math.min(count - 1, Math.max(0, Math.floor(o.time / step)));
     groups[bin]!.push(items[i]!);

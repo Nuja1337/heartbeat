@@ -8,6 +8,7 @@ import type { UiPrefs } from '../../data/schema';
 import { cloneSettings, loadSettings, saveSettings } from '../../data/settings';
 import { DEFAULT_SETTINGS } from '../../shared/catalog';
 import type { Settings } from '../../shared/types';
+import { t } from '../i18n';
 import { osPrefersReducedMotion, withFirstRunMotion } from './appearance';
 
 interface AppState {
@@ -50,18 +51,26 @@ export const useAppState = (): AppState => useSyncExternalStore(subscribe, getAp
 export const getSettings = (): Settings => state.settings;
 
 export function useSettings(): [Settings, (change: (s: Settings) => Settings) => void] {
-  const s = useSyncExternalStore(subscribe, () => state.settings, () => state.settings);
+  const s = useSyncExternalStore(
+    subscribe,
+    () => state.settings,
+    () => state.settings,
+  );
   return [s, updateSettings];
 }
 
 export function updateSettings(change: (s: Settings) => Settings): void {
   const next = change(cloneSettings(state.settings));
   set({ settings: next });
-  saveSettings(next).catch((e: unknown) => set({ storageError: e instanceof Error ? e.message : 'Could not save settings.' }));
+  saveSettings(next).catch((e: unknown) => set({ storageError: e instanceof Error ? e.message : t('Could not save settings.') }));
 }
 
 export function usePrefs(): [UiPrefs, (change: (p: UiPrefs) => UiPrefs) => void] {
-  const p = useSyncExternalStore(subscribe, () => state.prefs, () => state.prefs);
+  const p = useSyncExternalStore(
+    subscribe,
+    () => state.prefs,
+    () => state.prefs,
+  );
   return [p, updatePrefs];
 }
 
@@ -86,7 +95,7 @@ export function boot(): Promise<void> {
     } catch (e) {
       const settings = withFirstRunMotion(state.settings, osPrefersReducedMotion());
       if (e instanceof DbNewerError) set({ settings, dbMessage: e.message, blocked: false, ready: true });
-      else set({ settings, storageError: e instanceof Error ? e.message : 'Could not open the database.', blocked: false, ready: true });
+      else set({ settings, storageError: e instanceof Error ? e.message : t('Could not open the database.'), blocked: false, ready: true });
     }
   })();
   return booting;

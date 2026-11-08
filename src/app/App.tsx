@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useLayoutEffect } from 'react';
+import { Suspense, lazy, useEffect, useLayoutEffect, useState } from 'react';
 import type { ComponentType } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { DB_BLOCKED_MESSAGE } from '../data/db';
@@ -7,12 +7,13 @@ import { scheduleReplayRetention } from '../data/replays';
 import { scheduleRetention } from '../data/retention';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SessionSkeleton } from './components/Skeleton';
-import { LinkButton, Notice, Panel } from './components/ui';
+import { LinkButton, Notice, Panel, usePageTitle } from './components/ui';
 import { Shell, Wordmark } from './layout/Shell';
 import { Home } from './pages/Home';
 import { initPwa } from './pwa';
 import { invalidateAnalysis } from './state/analysis';
-import { applyAppearance } from './state/appearance';
+import { applyAppearance, applyLanguage, watchOs } from './state/appearance';
+import { activateLocale, languageFor, t, useLocale } from './i18n';
 import { boot, useAppState } from './state/store';
 
 /** Routes load their code on demand (PLAN-2 §8.1). Home stays in the entry chunk. */
@@ -31,6 +32,7 @@ const Settings = lazyNamed(() => import('./pages/Settings'), 'Settings');
 const Share = lazyNamed(() => import('./pages/Share'), 'Share');
 const Welcome = lazyNamed(() => import('./pages/Welcome'), 'Welcome');
 const Calibrate = lazyNamed(() => import('./pages/Calibrate'), 'Calibrate');
+const Guide = lazyNamed(() => import('./pages/Guide'), 'Guide');
 const StatsLayout = lazyNamed(() => import('./pages/stats/Layout'), 'StatsLayout');
 const Overview = lazyNamed(() => import('./pages/stats/Overview'), 'Overview');
 const Trends = lazyNamed(() => import('./pages/stats/Trends'), 'Trends');
@@ -42,14 +44,18 @@ const History = lazyNamed(() => import('./pages/stats/History'), 'History');
 const PlayDetail = lazyNamed(() => import('./pages/stats/PlayDetail'), 'PlayDetail');
 
 function NotFound() {
+  usePageTitle(t('Page not found'));
   return (
     <Panel className="max-w-xl">
       <span className="hb-kicker">404</span>
-      <h1 className="mt-3 text-2xl">Page not found</h1>
-      <p className="mt-2 text-ink-2">There is nothing at this address.</p>
-      <LinkButton to="/" variant="primary" className="mt-6">
-        Go home
-      </LinkButton>
+      <h1 className="mt-3 text-2xl">{t('Page not found')}</h1>
+      <p className="mt-2 text-ink-2">{t('There is nothing at this address. The link may be old, or only part of it was copied.')}</p>
+      <div className="mt-6 flex flex-wrap gap-2">
+        <LinkButton to="/" variant="primary">
+          {t('Go home')}
+        </LinkButton>
+        <LinkButton to="/guide">{t('Read the guide')}</LinkButton>
+      </div>
     </Panel>
   );
 }
@@ -61,7 +67,7 @@ function BootScreen() {
     <div className="grid min-h-screen place-items-center px-4" aria-busy="true">
       <div className="flex flex-col items-center gap-4">
         <Wordmark className="text-2xl" />
-        {blocked && <Notice tone="warn">{DB_BLOCKED_MESSAGE}</Notice>}
+        {blocked && <Notice tone="warn">{t(DB_BLOCKED_MESSAGE)}</Notice>}
       </div>
     </div>
   );
@@ -69,6 +75,9 @@ function BootScreen() {
 
 export function App() {
   const { ready, settings } = useAppState();
+  const locale = useLocale();
+  // The first dictionary is loaded before the first page shows, so a non-English player never sees English flash.
+  const [languageReady, setLanguageReady] = useState(false);
 
   useEffect(() => {
     initPwa();
@@ -79,16 +88,37 @@ export function App() {
     });
   }, []);
 
-  // The palette and reduced motion live on the root element, so every screen and the game follow them.
+  // The theme, the palette and reduced motion live on the root element, so every screen and the game follow them.
+  // A theme or contrast setting that follows the OS is applied again when the OS changes. Until the saved settings
+  // have loaded, the attributes the boot script set from localStorage stay, so the page never flashes another theme.
   useLayoutEffect(() => {
+    if (!ready) return;
     applyAppearance(settings);
-  }, [settings]);
+    return watchOs(() => applyAppearance(settings));
+  }, [ready, settings]);
 
-  if (!ready) return <BootScreen />;
+  // The language. Settings load with the database, so the choice is only known once the app is ready. Text that the
+  // analysis cached in the old language is worked out again.
+  useEffect(() => {
+    if (!ready) return;
+    let alive = true;
+    const wanted = languageFor(settings.language);
+    void activateLocale(wanted).then((active) => {
+      if (!alive) return;
+      applyLanguage(active);
+      invalidateAnalysis();
+      setLanguageReady(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [ready, settings.language]);
+
+  if (!ready || !languageReady) return <BootScreen />;
 
   return (
     <BrowserRouter>
-      <Routes>
+      <Routes key={locale}>
         <Route
           path="/session"
           element={
@@ -111,6 +141,7 @@ export function App() {
           <Route path="s/:code" element={<Share />} />
           <Route path="welcome" element={<Welcome />} />
           <Route path="calibrate" element={<Calibrate />} />
+          <Route path="guide" element={<Guide />} />
           <Route path="stats" element={<StatsLayout />}>
             <Route index element={<Overview />} />
             <Route path="trends" element={<Trends />} />

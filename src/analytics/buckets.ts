@@ -1,6 +1,7 @@
 // Record classes and the bins that group taps. Bins are applied at analysis time, so changing them
 // needs no migration. Keys look like dg:long:g3, turn:sharp, dir:4, vel:2, motion:stream, td:sharp:long.
 
+import { msg } from '../shared/i18n';
 import type { BucketStat } from '../data/schema';
 import type { HitRecord, Judgment } from '../shared/types';
 import { aggOf, mergeAgg } from './stats';
@@ -46,28 +47,28 @@ export type DistanceBin = (typeof DISTANCE_BINS)[number];
 // Real maps put most jumps between 1 and 3 widths, so the bins are finer there.
 const DISTANCE_EDGES = [1, 2, 3, 4.5];
 export const DISTANCE_LABELS: Record<DistanceBin, string> = {
-  stack: 'Under 1',
-  short: '1 to 2',
-  medium: '2 to 3',
-  long: '3 to 4.5',
-  far: '4.5 and up',
+  stack: msg('Under 1'),
+  short: msg('1 to 2'),
+  medium: msg('2 to 3'),
+  long: msg('3 to 4.5'),
+  far: msg('4.5 and up'),
 };
 
 export const GAP_EDGES = [110, 160, 250, 400, 700];
 export const GAP_COUNT = GAP_EDGES.length + 1;
-export const GAP_LABELS = ['Under 110', '110 to 160', '160 to 250', '250 to 400', '400 to 700', '700 and up'];
+export const GAP_LABELS = [msg('Under 110'), msg('110 to 160'), msg('160 to 250'), msg('250 to 400'), msg('400 to 700'), msg('700 and up')];
 
 const VELOCITY_EDGES = [0.4, 0.9, 1.5];
-export const VELOCITY_LABELS = ['Under 0.4', '0.4 to 0.9', '0.9 to 1.5', '1.5 and up'];
+export const VELOCITY_LABELS = [msg('Under 0.4'), msg('0.4 to 0.9'), msg('0.9 to 1.5'), msg('1.5 and up')];
 
 export const TURN_BINS = ['straight', 'wide', 'sharp', 'reversal'] as const;
 export type TurnBin = (typeof TURN_BINS)[number];
 const TURN_EDGES = [45, 100, 150];
 export const TURN_LABELS: Record<TurnBin, string> = {
-  straight: 'Under 45 degrees',
-  wide: '45 to 100',
-  sharp: '100 to 150',
-  reversal: '150 and up',
+  straight: msg('Under 45 degrees'),
+  wide: msg('45 to 100'),
+  sharp: msg('100 to 150'),
+  reversal: msg('150 and up'),
 };
 
 function binIndex(v: number, edges: readonly number[]): number {
@@ -83,7 +84,7 @@ export const turnBin = (deg: number): TurnBin => TURN_BINS[binIndex(deg, TURN_ED
 
 /** Octant 0 is moving right, then clockwise on screen: 2 is down, 4 is left, 6 is up. */
 export function octantOf(directionDeg: number): number {
-  return Math.floor((((directionDeg + 22.5) % 360) + 360) % 360 / 45) % 8;
+  return Math.floor(((((directionDeg + 22.5) % 360) + 360) % 360) / 45) % 8;
 }
 
 export const OCTANT_NAMES = ['right', 'down and right', 'down', 'down and left', 'left', 'up and left', 'up', 'up and right'];

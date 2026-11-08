@@ -3,8 +3,9 @@
 
 import type { DemandTimeline } from '../../analytics/index';
 import type { SectionRole } from '../../shared/types';
-import { CHART, linear, niceTicks } from '../charts/scale';
-import { duration } from '../format';
+import { linear, niceTicks, useChartColors } from '../charts/scale';
+import { duration, level } from '../format';
+import { msg, t } from '../i18n';
 
 type DemandBin = DemandTimeline['bins'][number];
 
@@ -19,7 +20,13 @@ const ROLE_COLOR: Record<SectionRole, string> = {
   rest: 'var(--color-ink-2)',
   outro: 'var(--color-ink-3)',
 };
-const ROLE_LABEL: Record<SectionRole, string> = { intro: 'Intro', build: 'Build', peak: 'Peak', rest: 'Rest', outro: 'Outro' };
+const ROLE_LABEL: Record<SectionRole, string> = {
+  intro: msg('Intro'),
+  build: msg('Build'),
+  peak: msg('Peak'),
+  rest: msg('Rest'),
+  outro: msg('Outro'),
+};
 const ROLE_ORDER: SectionRole[] = ['intro', 'build', 'peak', 'rest', 'outro'];
 
 /** Runs of consecutive bins that have a value. A bin with no objects leaves a gap. */
@@ -37,16 +44,21 @@ export function demandRuns(bins: readonly DemandBin[]): DemandBin[][] {
 }
 
 /** The sentence a screen reader gets for the graph. */
-export function graphSummary(t: DemandTimeline): string {
-  const values = t.bins.map((b) => b.overall).filter((v): v is number => v !== null);
-  if (values.length === 0) return 'The map has no demand to show.';
+export function graphSummary(timeline: DemandTimeline): string {
+  const values = timeline.bins.map((b) => b.overall).filter((v): v is number => v !== null);
+  if (values.length === 0) return t('The map has no demand to show.');
   const peak = Math.max(...values);
   const low = Math.min(...values);
-  const last = t.bins[t.bins.length - 1]?.end ?? 0;
-  return `Difficulty over ${duration(last)}, from level ${low.toFixed(1)} at the lowest to level ${peak.toFixed(1)} at the highest.`;
+  const last = timeline.bins[timeline.bins.length - 1]?.end ?? 0;
+  return t('Difficulty over {length}, from level {low} at the lowest to level {high} at the highest.', {
+    length: duration(last),
+    low: level(low),
+    high: level(peak),
+  });
 }
 
 export function DifficultyGraph({ timeline }: { timeline: DemandTimeline }) {
+  const C = useChartColors();
   const { bins, sections } = timeline;
   const end = bins.length ? bins[bins.length - 1]!.end : 1;
   const values = bins.map((b) => b.overall).filter((v): v is number => v !== null);
@@ -73,7 +85,9 @@ export function DifficultyGraph({ timeline }: { timeline: DemandTimeline }) {
               fill={ROLE_COLOR[s.role!]}
               fillOpacity={s.role === 'peak' ? 0.16 : 0.1}
             >
-              <title>{`${ROLE_LABEL[s.role!]}, ${duration(s.start)} to ${duration(s.end)}`}</title>
+              <title>
+                {t('{role}, {start} to {end}', { role: t(ROLE_LABEL[s.role!]), start: duration(s.start), end: duration(s.end) })}
+              </title>
             </rect>
           ))}
         {sections
@@ -83,15 +97,22 @@ export function DifficultyGraph({ timeline }: { timeline: DemandTimeline }) {
           ))}
         {ticks.map((v) => (
           <g key={v}>
-            <line x1={M.l} x2={W - M.r} y1={y(v)} y2={y(v)} stroke={v === 0 ? CHART.axis : CHART.grid} />
-            <text x={M.l - 6} y={y(v)} dy="0.32em" textAnchor="end" fontSize={11} fill={CHART.ink2}>
+            <line x1={M.l} x2={W - M.r} y1={y(v)} y2={y(v)} stroke={v === 0 ? C.axis : C.grid} />
+            <text x={M.l - 6} y={y(v)} dy="0.32em" textAnchor="end" fontSize={11} fill={C.ink2}>
               {v}
             </text>
           </g>
         ))}
-        {timeTicks.map((t) => (
-          <text key={t} x={x(t)} y={H - 6} fontSize={11} fill={CHART.ink2} textAnchor={t === 0 ? 'start' : t >= end - 1 ? 'end' : 'middle'}>
-            {duration(t)}
+        {timeTicks.map((tick) => (
+          <text
+            key={tick}
+            x={x(tick)}
+            y={H - 6}
+            fontSize={11}
+            fill={C.ink2}
+            textAnchor={tick === 0 ? 'start' : tick >= end - 1 ? 'end' : 'middle'}
+          >
+            {duration(tick)}
           </text>
         ))}
         {runs.map((run, i) => {
@@ -110,12 +131,12 @@ export function DifficultyGraph({ timeline }: { timeline: DemandTimeline }) {
       <figcaption className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-3">
         <span className="flex items-center gap-1.5">
           <span aria-hidden className="h-0.5 w-3 rounded-full bg-accent" />
-          Demand, on the level scale
+          {t('Demand, on the level scale')}
         </span>
         {roles.map((r) => (
           <span key={r} className="flex items-center gap-1.5">
             <span aria-hidden className="size-2 rounded-sm" style={{ background: ROLE_COLOR[r] }} />
-            {ROLE_LABEL[r]}
+            {t(ROLE_LABEL[r])}
           </span>
         ))}
       </figcaption>

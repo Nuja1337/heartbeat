@@ -26,11 +26,15 @@ describe('boundaries', () => {
   });
 
   it('keeps browser code in the files that may use it', () => {
-    const browserOk = /^(engine\/(game|input|loop|playfield)\.ts|calibrate\/calibration\.ts|replay\/playback\.ts|render\/|audio\/|dev\/|testing\/fake|index\.ts$)/;
-    const browserApi = /\b(document|window|navigator|AudioContext|HTMLCanvasElement|requestAnimationFrame|CanvasRenderingContext2D|OffscreenCanvas|ResizeObserver)\b/;
+    const browserOk =
+      /^(engine\/(game|input|loop|playfield)\.ts|calibrate\/calibration\.ts|replay\/playback\.ts|render\/|audio\/|dev\/|testing\/fake|index\.ts$)/;
+    const browserApi =
+      /\b(document|window|navigator|AudioContext|HTMLCanvasElement|requestAnimationFrame|CanvasRenderingContext2D|OffscreenCanvas|ResizeObserver)\b/;
     for (const f of all) {
       if (browserOk.test(rel(f))) continue;
-      const src = readFileSync(f, 'utf8').replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+      const src = readFileSync(f, 'utf8')
+        .replace(/\/\/.*$/gm, '')
+        .replace(/\/\*[\s\S]*?\*\//g, '');
       expect(src, rel(f)).not.toMatch(browserApi);
     }
   });

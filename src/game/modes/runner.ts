@@ -226,7 +226,8 @@ export class ModeRunner implements SetController {
     const out: Partial<Record<ModuleId, number>> = {};
     // Placement reports where the staircase moves after the last set's result, so a player who passes both sets
     // of a module is placed above where they started. Every other mode averages the second half of its sets.
-    for (const [m, s] of this.stairs) if (s.history.length > 0) out[m] = Math.round((this.placement ? s.level : s.finalLevel()) * 100) / 100;
+    for (const [m, s] of this.stairs)
+      if (s.history.length > 0) out[m] = Math.round((this.placement ? s.level : s.finalLevel()) * 100) / 100;
     return out;
   }
 }
@@ -244,7 +245,11 @@ export function setupPlay(launch: LaunchRequest): PlaySetup {
     return { map, controller: null, progressMs: map.durationMs };
   }
   const runner = new ModeRunner(launch, mods);
-  return { map: runner.map, controller: runner, progressMs: launch.modeId === 'placement' ? PLACEMENT_PROGRESS_MS : launch.lengthSec * 1000 };
+  return {
+    map: runner.map,
+    controller: runner,
+    progressMs: launch.modeId === 'placement' ? PLACEMENT_PROGRESS_MS : launch.lengthSec * 1000,
+  };
 }
 
 /** A module's staircase at the start of a play. Placement starts at the saved level (or 3) and takes a full step. */

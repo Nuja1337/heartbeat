@@ -20,7 +20,15 @@ const HOUR = 3_600_000;
 function launch(seed: number, level = 4): LaunchRequest {
   const preset = LEVEL_PRESETS[level - 1]!;
   return {
-    modeId: 'dynamic', difficulty: preset.difficulty, presetLevel: level, options: {}, mods: [], seed, lengthSec: 90, levels: {}, drillId: null,
+    modeId: 'dynamic',
+    difficulty: preset.difficulty,
+    presetLevel: level,
+    options: {},
+    mods: [],
+    seed,
+    lengthSec: 90,
+    levels: {},
+    drillId: null,
   };
 }
 

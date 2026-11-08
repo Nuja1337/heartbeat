@@ -232,7 +232,18 @@ export class GameSession {
     };
   }
 
-  private emit(type: FeedbackType, t: Ms, index: number, judgment: Judgment | null, x: number, y: number, value = 0, head = false, reason: MissReason | null = null, setEnd: SetEndInfo | null = null): void {
+  private emit(
+    type: FeedbackType,
+    t: Ms,
+    index: number,
+    judgment: Judgment | null,
+    x: number,
+    y: number,
+    value = 0,
+    head = false,
+    reason: MissReason | null = null,
+    setEnd: SetEndInfo | null = null,
+  ): void {
     if (this.listeners.length === 0) return;
     const e: FeedbackEvent = { type, t, index, judgment, x, y, value, combo: this.scoring.combo, head, reason, setEnd };
     for (const l of this.listeners) l(e);
@@ -450,7 +461,10 @@ export class GameSession {
     this.scoring.finalize(judgment);
     // An object that was skipped had no press of its own, so an earlier stray press is not its.
     const skipped = s.headJudgment === 'miss' && s.missReason === 'skipped';
-    const press = skipped ? null : (s.press ?? (judgment === 'miss' && s.aimPress ? { t: s.aimPress.t, x: s.aimPress.x, y: s.aimPress.y, slot: s.aimPress.slot } : null));
+    const press = skipped
+      ? null
+      : (s.press ??
+        (judgment === 'miss' && s.aimPress ? { t: s.aimPress.t, x: s.aimPress.x, y: s.aimPress.y, slot: s.aimPress.slot } : null));
     const rec = buildRecord({
       obj: o,
       prev: i > 0 ? (this.objs[i - 1] as ObjState).obj : null,

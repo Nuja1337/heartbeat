@@ -89,7 +89,9 @@ export function suggestedDynamicLevel(
   now: number,
 ): number {
   const recent = summaries
-    .filter((s) => s.modeId === 'dynamic' && s.presetLevel !== null && s.status !== 'quit' && s.startedAt >= now - 14 * DAY && s.startedAt <= now)
+    .filter(
+      (s) => s.modeId === 'dynamic' && s.presetLevel !== null && s.status !== 'quit' && s.startedAt >= now - 14 * DAY && s.startedAt <= now,
+    )
     .sort((a, b) => b.startedAt - a.startedAt)[0];
   if (recent) {
     const step = recent.status === 'failed' || recent.accuracy < 0.85 ? -1 : recent.accuracy >= 0.95 ? 1 : 0;
@@ -191,8 +193,15 @@ export function buildDailyPlan(
     'warmup',
     'Warm-up',
     {
-      modeId: 'warmup', difficulty: { ...DEFAULT_DIFFICULTY }, presetLevel: null, options: { ...MODES.warmup.defaultOptions }, mods: [],
-      seed: planSeed(date, 0), lengthSec: PLAN_WARMUP_SEC, levels, drillId: null,
+      modeId: 'warmup',
+      difficulty: { ...DEFAULT_DIFFICULTY },
+      presetLevel: null,
+      options: { ...MODES.warmup.defaultOptions },
+      mods: [],
+      seed: planSeed(date, 0),
+      lengthSec: PLAN_WARMUP_SEC,
+      levels,
+      drillId: null,
     },
     null,
   );
@@ -207,8 +216,15 @@ export function buildDailyPlan(
     'dynamic',
     preset.label,
     {
-      modeId: 'dynamic', difficulty: { ...preset.difficulty }, presetLevel: level, options: {}, mods: [],
-      seed: planSeed(date, steps.length), lengthSec: PLAN_DYNAMIC_SEC, levels, drillId: null,
+      modeId: 'dynamic',
+      difficulty: { ...preset.difficulty },
+      presetLevel: level,
+      options: {},
+      mods: [],
+      seed: planSeed(date, steps.length),
+      lengthSec: PLAN_DYNAMIC_SEC,
+      levels,
+      drillId: null,
     },
     null,
   );

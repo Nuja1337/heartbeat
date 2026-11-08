@@ -29,15 +29,44 @@ const TARGETS = [
 ].filter(existsSync);
 
 const BANNED_WORDS = [
-  'simply', 'just', 'really', 'actually', 'truly', 'seamless', 'seamlessly', 'robust', 'powerful', 'effortless', 'effortlessly',
-  'elevate', 'empower', 'unlock', 'unleash', 'leverage', 'delve', 'harness', 'streamline', 'cutting-edge', 'game-changer',
-  'supercharge', 'journey', 'testament', 'crucial', 'vital', 'pivotal', 'comprehensive', 'intuitive',
+  'simply',
+  'just',
+  'really',
+  'actually',
+  'truly',
+  'seamless',
+  'seamlessly',
+  'robust',
+  'powerful',
+  'effortless',
+  'effortlessly',
+  'elevate',
+  'empower',
+  'unlock',
+  'unleash',
+  'leverage',
+  'delve',
+  'harness',
+  'streamline',
+  'cutting-edge',
+  'game-changer',
+  'supercharge',
+  'journey',
+  'testament',
+  'crucial',
+  'vital',
+  'pivotal',
+  'comprehensive',
+  'intuitive',
 ];
 const BANNED_PHRASES = ['hard rock', 'double time', 'beatmap', 'osu!', 'unstable rate'];
 
 /** Source without comments. Text in strings and JSX stays. */
 function withoutComments(src: string): string {
-  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[\s;{}(),])\/\/.*$/gm, '$1').replace(/<!--[\s\S]*?-->/g, '');
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[\s;{}(),])\/\/.*$/gm, '$1')
+    .replace(/<!--[\s\S]*?-->/g, '');
 }
 
 describe('writing rules', () => {

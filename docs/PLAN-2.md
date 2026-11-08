@@ -596,9 +596,10 @@ export const REPLAY_LIMIT_CHOICES: readonly (number | null)[] = [25, 100, 300, n
 
 export const DEFAULT_SETTINGS: Settings = {
   v: 1,
+  language: 'auto',
   input: { rawInput: false, sensitivity: 1, keys: ['KeyZ', 'KeyX'], mouseButtons: true, cursor: 'system', cursorScale: 1, cursorTrail: false, retryKey: 'Backquote' },
   audio: { master: 0.6, muted: false, hits: 0.8, effects: 0.8, ambient: 0.5, soundSet: 'glass', metronome: 'off', metronomeVolume: 0.5, offsetMs: 0 },
-  display: { errorBar: true, pathHints: true, crispPopups: false, earlyLate: true, reduceMotion: false, lowLatency: true, showFps: false, visualOffsetMs: 0, frameGraph: false },
+  display: { errorBar: true, pathHints: true, crispPopups: false, earlyLate: true, reduceMotion: false, lowLatency: true, showFps: false, visualOffsetMs: 0, frameGraph: false, theme: 'system', textSize: 'default', highContrast: false },
   skin: { palette: 'heartbeat', cursorStyle: 'ring', approach: 'ring', fieldGrid: true, clickRipple: true },
   goals: { weeklyMinutes: 60 },
   data: { detailRetentionDays: 365, replayLimit: 100 },
@@ -1356,7 +1357,7 @@ Progress is kept in meta `onboarding`.
   --color-bg: #07090e;  --color-bg-2: #0b0f17;
   --color-surface: #0f141d;  --color-surface-2: #151c28;  --color-surface-3: #1c2534;
   --color-line: #1e2735;  --color-line-2: #2b3648;
-  --color-ink: #eef1f6;  --color-ink-2: #a3adbd;  --color-ink-3: #6b7689;
+  --color-ink: #eef1f6;  --color-ink-2: #a3adbd;  --color-ink-3: #7c879b;
   --color-accent: #c9f25c;  --color-accent-ink: #121a05;
   --color-data: #5ee7f2;  --color-warn: #ffb340;  --color-danger: #ff4f6a;
   --font-display: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;

@@ -179,8 +179,16 @@ describe('ranking', () => {
 
   it('puts the top 3 on different modules where it can', () => {
     const mk = (key: string, mode: 'jumps' | 'streams' | 'angles' | null, severity: number): Insight => ({
-      key, ruleId: 'long-undershoot', variant: null, severity, n: 1, title: key, text: '', basis: '',
-      recommendation: mode ? { modeId: mode, options: {}, label: mode } : null, baseline: null,
+      key,
+      ruleId: 'long-undershoot',
+      variant: null,
+      severity,
+      n: 1,
+      title: key,
+      text: '',
+      basis: '',
+      recommendation: mode ? { modeId: mode, options: {}, label: mode } : null,
+      baseline: null,
     });
     const sorted = [mk('a', 'jumps', 9), mk('b', 'jumps', 8), mk('c', 'streams', 7), mk('d', 'angles', 6), mk('e', null, 5)];
     expect(diversify(sorted).map((i) => i.key)).toEqual(['a', 'c', 'd', 'b', 'e']);
@@ -212,7 +220,9 @@ describe('late-leave', () => {
     const found = detectInsights(history({ movement: { leaveFrac: 0.55 } }), NOW);
     const i = find(found, 'late-leave')!;
     expect(i).toBeDefined();
-    expect(i.text).toMatch(/^On fast jumps you leave the last target late, after about \d+% of the time to the next one\. Leaving sooner gives the move more time\.$/);
+    expect(i.text).toMatch(
+      /^On fast jumps you leave the last target late, after about \d+% of the time to the next one\. Leaving sooner gives the move more time\.$/,
+    );
     expect(Number(i.text.match(/about (\d+)%/)![1])).toBeGreaterThanOrEqual(50);
     expect(i.recommendation?.modeId).toBe('jumps');
     expect(i.basis).toMatch(/^Based on \d+ jumps from the last 30 days\.$/);
@@ -221,7 +231,15 @@ describe('late-leave', () => {
 
   it('stays silent below the threshold and below the minimum n', () => {
     expect(find(detectInsights(history({ movement: { leaveFrac: 0.28 } }), NOW), 'late-leave')).toBeUndefined();
-    expect(find(detectInsights(history({ movement: { leaveFrac: 0.55 } }, 3).map((p) => ({ ...p, records: p.records.slice(0, 30) })), NOW), 'late-leave')).toBeUndefined();
+    expect(
+      find(
+        detectInsights(
+          history({ movement: { leaveFrac: 0.55 } }, 3).map((p) => ({ ...p, records: p.records.slice(0, 30) })),
+          NOW,
+        ),
+        'late-leave',
+      ),
+    ).toBeUndefined();
     // 1.0 records have no leave time at all.
     expect(find(detectInsights(history({}), NOW), 'late-leave')).toBeUndefined();
   });
@@ -241,7 +259,9 @@ describe('first-motion', () => {
     expect(i).toBeDefined();
     expect(i.variant).toMatch(/^short:s[\d.]+v[\d.]+$/);
     expect(i.key).toMatch(/^first-motion:short:/);
-    expect(i.text).toMatch(/^On long jumps your first motion stops about \d+% of a target's width short, and a second motion makes up the rest\.$/);
+    expect(i.text).toMatch(
+      /^On long jumps your first motion stops about \d+% of a target's width short, and a second motion makes up the rest\.$/,
+    );
     expect(i.recommendation?.modeId).toBe('jumps');
     expect(i.recommendation?.options.distanceFocus).toBe('long');
   });
@@ -273,7 +293,10 @@ describe('corrections', () => {
   it('needs both the share and the path length, and enough jumps', () => {
     expect(find(detectInsights(history({ movement: { correctionShare: 0.8, correctionPath: 0.3 } }), NOW), 'corrections')).toBeUndefined();
     expect(find(detectInsights(history({ movement: { correctionShare: 0.3, correctionPath: 0.9 } }), NOW), 'corrections')).toBeUndefined();
-    const thin = history({ movement: { correctionShare: 0.8, correctionPath: 0.9 } }, 3).map((p) => ({ ...p, records: p.records.slice(0, 40) }));
+    const thin = history({ movement: { correctionShare: 0.8, correctionPath: 0.9 } }, 3).map((p) => ({
+      ...p,
+      records: p.records.slice(0, 40),
+    }));
     expect(find(detectInsights(thin, NOW), 'corrections')).toBeUndefined();
   });
 
@@ -313,10 +336,22 @@ describe('the new rules define sample, good and threshold', () => {
     const insight = find(detectInsights(prior, NOW), 'late-leave')!;
     const drill = createDrill(insight, 'drill-ll', NOW)!;
     const drillPlays = [0, 1, 2].map((k) =>
-      toPlay(makeFixture({ seed: 900 + k, modeId: 'jumps', objects: 60, jumpsOnly: true, drillId: 'drill-ll', startedAt: NOW + (k + 1) * 2 * 3_600_000, movement: { leaveFrac: 0.2 } })),
+      toPlay(
+        makeFixture({
+          seed: 900 + k,
+          modeId: 'jumps',
+          objects: 60,
+          jumpsOnly: true,
+          drillId: 'drill-ll',
+          startedAt: NOW + (k + 1) * 2 * 3_600_000,
+          movement: { leaveFrac: 0.2 },
+        }),
+      ),
     );
     const after = Array.from({ length: 6 }, (_, k) =>
-      toPlay(makeFixture({ seed: 500 + k, objects: 200, jumpsOnly: true, startedAt: NOW + DAY + k * 3_600_000, movement: { leaveFrac: 0.15 } })),
+      toPlay(
+        makeFixture({ seed: 500 + k, objects: 200, jumpsOnly: true, startedAt: NOW + DAY + k * 3_600_000, movement: { leaveFrac: 0.15 } }),
+      ),
     );
     const ev = evaluateDrill(drill, [...drillPlays, ...after], NOW + 2 * DAY);
     expect(ev.outcome).toBe('better');
@@ -328,7 +363,17 @@ describe('the new rules define sample, good and threshold', () => {
 
 describe('drill text with equal-looking numbers', () => {
   const eval1 = (before: number, after: number) => ({
-    outcome: 'better' as const, sessions: 3, sessionsNeeded: 3, morePlays: 0, before, after, nBefore: 50, nAfter: 60, nNeeded: 40, stat: 3, evaluatedAt: NOW,
+    outcome: 'better' as const,
+    sessions: 3,
+    sessionsNeeded: 3,
+    morePlays: 0,
+    before,
+    after,
+    nBefore: 50,
+    nAfter: 60,
+    nNeeded: 40,
+    stat: 3,
+    evaluatedAt: NOW,
   });
   it('does not show the same number twice', () => {
     const t = drillText({ ruleId: 'stream-fade', variant: null, createdAt: NOW, eval: eval1(20.2, 19.8) });

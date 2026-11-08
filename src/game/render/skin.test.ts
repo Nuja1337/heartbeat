@@ -63,3 +63,16 @@ describe('resolveSkin', () => {
     expect([0, 1, 2, 3, 4, 7, -1, -4].map(groupOf)).toEqual([0, 1, 2, 3, 0, 3, 3, 0]);
   });
 });
+
+describe('light theme', () => {
+  it('darkens every colour and bakes a different set of bitmaps', () => {
+    const dark = resolveSkin(withSkin({ palette: 'heartbeat' }), 'dark');
+    const light = resolveSkin(withSkin({ palette: 'heartbeat' }), 'light');
+    expect(light.bitmapKey).not.toBe(dark.bitmapKey);
+    expect(light.groups).not.toEqual(dark.groups);
+    expect(light.judge).not.toEqual(dark.judge);
+    for (const c of [...light.groups, ...light.judge]) expect(c).toMatch(/^#[0-9a-f]{6}$/);
+    // The same request gives the same strings, so the renderer can compare them by identity.
+    expect(resolveSkin(withSkin({ palette: 'heartbeat' }), 'light').groupFill).toBe(light.groupFill);
+  });
+});

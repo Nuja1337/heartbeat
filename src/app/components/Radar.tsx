@@ -2,6 +2,7 @@
 
 import type { RadarAxis } from '../../analytics/index';
 import { level as levelText } from '../format';
+import { t } from '../i18n';
 
 const W = 360;
 const H = 272;
@@ -20,10 +21,23 @@ export function Radar({ axes, max, className = '' }: { axes: readonly RadarAxis[
   const rings = [0.25, 0.5, 0.75, 1];
   const shape = axes.map((a, i) => point(i, n, (Math.min(a.rating, max) / max) * R));
   const path = shape.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ') + ' Z';
-  const summary = axes.map((a) => (a.hasData ? `${a.label} ${levelText(a.rating)}${a.provisional ? ' provisional' : ''}` : `${a.label} no rating`)).join(', ');
+  const summary = axes
+    .map((a) =>
+      !a.hasData
+        ? t('{skill} no rating', { skill: a.label })
+        : a.provisional
+          ? t('{skill} {rating} provisional', { skill: a.label, rating: levelText(a.rating) })
+          : t('{skill} {rating}', { skill: a.label, rating: levelText(a.rating) }),
+    )
+    .join(', ');
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className={`mx-auto w-full max-w-[380px] ${className}`} role="img" aria-label={`Skill ratings out of ${max}. ${summary}.`}>
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      className={`mx-auto w-full max-w-[380px] ${className}`}
+      role="img"
+      aria-label={t('Skill ratings out of {max}. {summary}.', { max, summary })}
+    >
       {rings.map((k) => (
         <polygon
           key={k}
@@ -41,8 +55,22 @@ export function Radar({ axes, max, className = '' }: { axes: readonly RadarAxis[
       {axes.map((a, i) => {
         const [x, y] = shape[i]!;
         return (
-          <circle key={a.skill} cx={x} cy={y} r={3.5} fill={a.hasData ? (a.provisional ? 'var(--color-bg)' : 'var(--color-data)') : 'var(--color-ink-3)'} stroke="var(--color-data)" strokeWidth={a.provisional ? 1.5 : 0}>
-            <title>{a.hasData ? `${a.label}, ${levelText(a.rating)}${a.provisional ? ', provisional' : ''}` : `${a.label}, no rating yet`}</title>
+          <circle
+            key={a.skill}
+            cx={x}
+            cy={y}
+            r={3.5}
+            fill={a.hasData ? (a.provisional ? 'var(--color-bg)' : 'var(--color-data)') : 'var(--color-ink-3)'}
+            stroke="var(--color-data)"
+            strokeWidth={a.provisional ? 1.5 : 0}
+          >
+            <title>
+              {!a.hasData
+                ? t('{skill}, no rating yet', { skill: a.label })
+                : a.provisional
+                  ? t('{skill}, {rating}, provisional', { skill: a.label, rating: levelText(a.rating) })
+                  : t('{skill}, {rating}', { skill: a.label, rating: levelText(a.rating) })}
+            </title>
           </circle>
         );
       })}
@@ -50,7 +78,15 @@ export function Radar({ axes, max, className = '' }: { axes: readonly RadarAxis[
         const [x, y] = point(i, n, LABEL_R);
         const anchor = Math.abs(x - CX) < 6 ? 'middle' : x > CX ? 'start' : 'end';
         return (
-          <text key={a.skill} x={x} y={y} dy="0.32em" textAnchor={anchor} fontSize={11} fill={a.hasData ? 'var(--color-ink-2)' : 'var(--color-ink-3)'}>
+          <text
+            key={a.skill}
+            x={x}
+            y={y}
+            dy="0.32em"
+            textAnchor={anchor}
+            fontSize={11}
+            fill={a.hasData ? 'var(--color-ink-2)' : 'var(--color-ink-3)'}
+          >
             {a.label}
             {a.hasData && (
               <tspan fill="var(--color-ink)" dx={4}>

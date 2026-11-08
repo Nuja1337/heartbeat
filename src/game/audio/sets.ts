@@ -26,12 +26,32 @@ export type RecipeKey = keyof SoundSetRecipes;
 
 /** Every recipe a set has to supply. Tests walk this list. */
 export const RECIPE_KEYS: readonly RecipeKey[] = [
-  'crisp', 'solid', 'rough', 'miss', 'tick', 'tickMiss', 'repeat', 'sliderEnd', 'comboBreak', 'milestone',
-  'spinChime', 'spinBonus', 'countdown', 'setResult', 'fail',
+  'crisp',
+  'solid',
+  'rough',
+  'miss',
+  'tick',
+  'tickMiss',
+  'repeat',
+  'sliderEnd',
+  'comboBreak',
+  'milestone',
+  'spinChime',
+  'spinBonus',
+  'countdown',
+  'setResult',
+  'fail',
 ];
 
 /** The tonal sounds that are not hits. A wave and a gain scale turn one table into the next set. */
-function tonal(wave: OscillatorType, scale: number, lowpass: number): Pick<SoundSetRecipes, 'repeat' | 'sliderEnd' | 'comboBreak' | 'milestone' | 'spinChime' | 'spinBonus' | 'countdown' | 'setResult' | 'fail'> {
+function tonal(
+  wave: OscillatorType,
+  scale: number,
+  lowpass: number,
+): Pick<
+  SoundSetRecipes,
+  'repeat' | 'sliderEnd' | 'comboBreak' | 'milestone' | 'spinChime' | 'spinBonus' | 'countdown' | 'setResult' | 'fail'
+> {
   const b = (bus: Bus, f0: number, f1: number, dur: number, gain: number, delay = 0) =>
     blip(bus, 'effects', wave, f0, f1, dur, gain * scale, delay, lowpass);
   return {

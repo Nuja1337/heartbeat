@@ -45,7 +45,10 @@ describe('2.0 charts and cards render', () => {
     expect(renderToString(createElement(ThroughputScatter, { points }))).toContain('svg');
     expect(renderToString(createElement(ThroughputScatter, { points: [] }))).toContain('Not enough jumps');
     const line = ratingHistory([summary], 90, NOW).find((l) => l.skill === 'aim')!;
-    expect(renderToString(createElement(RatingHistory, { points: line.points, label: 'Aim' }))).toContain('path');
+    // One rated day draws a dot and no line.
+    const oneDay = renderToString(createElement(RatingHistory, { points: line.points, label: 'Aim' }));
+    expect(oneDay).toContain('circle');
+    expect(oneDay).not.toContain('<path');
     const none = ratingHistory([], 90, NOW)[0]!;
     expect(renderToString(createElement(RatingHistory, { points: none.points, label: 'Aim' }))).toContain('No rating');
   });

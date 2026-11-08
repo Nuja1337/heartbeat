@@ -11,7 +11,14 @@ import { parseOffsetText } from './components/OffsetField';
 import { Calibrate } from './pages/Calibrate';
 import { Welcome } from './pages/Welcome';
 import {
-  EMPTY_ONBOARDING, finished, nextStep, offsetToApply, offsetWords, patchOnboarding, stepDone, withStepDone,
+  EMPTY_ONBOARDING,
+  finished,
+  nextStep,
+  offsetToApply,
+  offsetWords,
+  patchOnboarding,
+  stepDone,
+  withStepDone,
 } from './state/onboarding';
 
 beforeEach(async () => {
@@ -92,7 +99,9 @@ describe('calibration offsets', () => {
 
 describe('pages render', () => {
   const at = (path: string, element: ReturnType<typeof createElement>) =>
-    renderToString(createElement(MemoryRouter, { initialEntries: [path] }, createElement(Routes, null, createElement(Route, { path: '*', element }))));
+    renderToString(
+      createElement(MemoryRouter, { initialEntries: [path] }, createElement(Routes, null, createElement(Route, { path: '*', element }))),
+    );
 
   it('Welcome waits for the stored state', () => {
     expect(at('/welcome', createElement(Welcome))).toContain('Loading.');

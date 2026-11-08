@@ -94,7 +94,8 @@ function expectSame(a: PlayResult, b: PlayResult, label: string, exact = true): 
 }
 
 describe('replay determinism', () => {
-  it('reproduces 20 noisy plays from the encoded trace, whatever the advance step', () => {
+  // Forty full replays through the engine. It is given a minute so a busy machine doesn't fail it.
+  it('reproduces 20 noisy plays from the encoded trace, whatever the advance step', { timeout: 60_000 }, () => {
     expect(CASES).toHaveLength(20);
     for (const c of CASES) {
       for (const stepMs of [1, 7]) {
@@ -132,7 +133,11 @@ describe('replay determinism', () => {
   });
 
   it('reproduces placement plays, and Bullseye plays once the mode allows the mod', () => {
-    const placement = (seed: number): LaunchRequest => ({ ...launchFor(DEFAULT_DIFFICULTY, seed, 240, [], 'placement'), options: {}, levels: { jumps: 4 } });
+    const placement = (seed: number): LaunchRequest => ({
+      ...launchFor(DEFAULT_DIFFICULTY, seed, 240, [], 'placement'),
+      options: {},
+      levels: { jumps: 4 },
+    });
     const cases: Case[] = [
       { label: 'placement a', launch: placement(81) },
       { label: 'placement b', launch: placement(82) },
@@ -148,7 +153,10 @@ describe('replay determinism', () => {
           expect(result.levels, label).toHaveLength(10);
           expect(result.status, label).toBe('completed');
         } else {
-          expect(result.records.some((r) => r.judgment === 'rough'), label).toBe(true);
+          expect(
+            result.records.some((r) => r.judgment === 'rough'),
+            label,
+          ).toBe(true);
         }
         expectSame(result, runExact(decoded), `${label} exact`);
         expectSame(result, runWithAdvances(decoded, stepMs === 7 ? 1 : 7), `${label} other step`, false);

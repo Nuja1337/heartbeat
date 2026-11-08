@@ -64,7 +64,8 @@ export function buildSliderGeometry(obj: SliderObject): SliderGeometry {
   }
   // Ticks that fall after the end check do not count, so a release just before the end is legal.
   const endAt = endCheckTime(obj);
-  for (let i = times.length - 1; i >= 0; i--) if ((times[i] as { t: number; k: CheckKind }).k === 1 && (times[i] as { t: number }).t > endAt) times.splice(i, 1);
+  for (let i = times.length - 1; i >= 0; i--)
+    if ((times[i] as { t: number; k: CheckKind }).k === 1 && (times[i] as { t: number }).t > endAt) times.splice(i, 1);
   times.sort((a, b) => a.t - b.t);
   const partsBeforeEnd = times.length;
   pointAt(flat, obj.repeats % 2 === 0 ? flat.length : 0, at);

@@ -1,4 +1,5 @@
-import { CHART, linear, niceTicks } from './scale';
+import { t } from '../i18n';
+import { linear, niceTicks, useChartColors } from './scale';
 
 export interface HistSeries {
   label: string;
@@ -49,6 +50,7 @@ export function Histogram({
   label: string;
   compact?: boolean;
 }) {
+  const C = useChartColors();
   // A narrow card scales the drawing down, so the compact chart uses a narrow drawing to keep text readable.
   const W = compact ? 400 : 720;
   const font = compact ? 12 : 11;
@@ -80,13 +82,13 @@ export function Histogram({
       {!compact &&
         yTicks.map((v) => (
           <g key={v}>
-            <line x1={M.l} x2={W - M.r} y1={y(v)} y2={y(v)} stroke={CHART.grid} />
-            <text x={M.l - 6} y={y(v)} dy="0.32em" textAnchor="end" fontSize={font} fill={CHART.ink2}>
+            <line x1={M.l} x2={W - M.r} y1={y(v)} y2={y(v)} stroke={C.grid} />
+            <text x={M.l - 6} y={y(v)} dy="0.32em" textAnchor="end" fontSize={font} fill={C.ink2}>
               {Math.round(v * 100)}%
             </text>
           </g>
         ))}
-      <line x1={x(0)} x2={x(0)} y1={M.t} y2={height - M.b} stroke={CHART.axis} strokeDasharray="3 3" />
+      <line x1={x(0)} x2={x(0)} y1={M.t} y2={height - M.b} stroke={C.axis} strokeDasharray="3 3" />
       {shares[0]?.map((s, i) => (
         <rect
           key={i}
@@ -111,23 +113,51 @@ export function Histogram({
       ))}
       {mean !== undefined && Math.abs(mean) <= 150 && (
         <g>
-          <line x1={x(mean)} x2={x(mean)} y1={M.t} y2={height - M.b} stroke={CHART.ink} strokeWidth={1.5} />
+          <line x1={x(mean)} x2={x(mean)} y1={M.t} y2={height - M.b} stroke={C.ink} strokeWidth={1.5} />
           {sd !== undefined && (
             <>
-              <line x1={x(Math.max(HIST_MIN, mean - sd))} x2={x(Math.min(HIST_MAX, mean + sd))} y1={M.t + 6} y2={M.t + 6} stroke={CHART.ink} strokeWidth={1.5} />
-              <line x1={x(Math.max(HIST_MIN, mean - sd))} x2={x(Math.max(HIST_MIN, mean - sd))} y1={M.t + 2} y2={M.t + 10} stroke={CHART.ink} strokeWidth={1.5} />
-              <line x1={x(Math.min(HIST_MAX, mean + sd))} x2={x(Math.min(HIST_MAX, mean + sd))} y1={M.t + 2} y2={M.t + 10} stroke={CHART.ink} strokeWidth={1.5} />
+              <line
+                x1={x(Math.max(HIST_MIN, mean - sd))}
+                x2={x(Math.min(HIST_MAX, mean + sd))}
+                y1={M.t + 6}
+                y2={M.t + 6}
+                stroke={C.ink}
+                strokeWidth={1.5}
+              />
+              <line
+                x1={x(Math.max(HIST_MIN, mean - sd))}
+                x2={x(Math.max(HIST_MIN, mean - sd))}
+                y1={M.t + 2}
+                y2={M.t + 10}
+                stroke={C.ink}
+                strokeWidth={1.5}
+              />
+              <line
+                x1={x(Math.min(HIST_MAX, mean + sd))}
+                x2={x(Math.min(HIST_MAX, mean + sd))}
+                y1={M.t + 2}
+                y2={M.t + 10}
+                stroke={C.ink}
+                strokeWidth={1.5}
+              />
             </>
           )}
         </g>
       )}
       {xTicks.map((v) => (
-        <text key={v} x={x(v)} y={height - 22} textAnchor={v === HIST_MIN ? 'start' : v === HIST_MAX ? 'end' : 'middle'} fontSize={font} fill={CHART.ink2}>
+        <text
+          key={v}
+          x={x(v)}
+          y={height - 22}
+          textAnchor={v === HIST_MIN ? 'start' : v === HIST_MAX ? 'end' : 'middle'}
+          fontSize={font}
+          fill={C.ink2}
+        >
           {v > 0 ? `+${v}` : v}
         </text>
       ))}
-      <text x={(M.l + W - M.r) / 2} y={height - 6} textAnchor="middle" fontSize={font} fill={CHART.ink2}>
-        Early (left) and late (right), in ms
+      <text x={(M.l + W - M.r) / 2} y={height - 6} textAnchor="middle" fontSize={font} fill={C.ink2}>
+        {t('Early (left) and late (right), in ms')}
       </text>
     </svg>
   );

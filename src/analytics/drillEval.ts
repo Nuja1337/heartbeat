@@ -77,7 +77,8 @@ function compare(drill: Drill, sample: Sample): Compared | null {
   if (b.kind === 'mean' && sample.kind === 'mean') {
     const after = aggOf(sample.values);
     const w = welch(after, { n: b.n, mean: b.mean, sd: b.sd });
-    const improvement = good === 'zero' ? Math.abs(b.mean) - Math.abs(after.mean) : good === 'up' ? after.mean - b.mean : b.mean - after.mean;
+    const improvement =
+      good === 'zero' ? Math.abs(b.mean) - Math.abs(after.mean) : good === 'up' ? after.mean - b.mean : b.mean - after.mean;
     return { before: b.mean, after: after.mean, improvement, stat: w.t };
   }
   if (b.kind === 'rate' && sample.kind === 'rate') {
@@ -150,4 +151,3 @@ export function archiveDrill(drill: Drill, plays: readonly PlayData[], now: numb
   const ev = drill.final ?? evaluateDrill(drill, plays, now);
   return { ...drill, status: 'archived', final: ev };
 }
-

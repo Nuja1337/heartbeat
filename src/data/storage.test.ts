@@ -7,8 +7,18 @@ import { gunzipBytes } from './gzip';
 import { buildExport, exportBytes, ImportError, importBytes, importExport, LEGACY_EXPORT_FORMAT, parseExportBytes } from './exportImport';
 import { getDeviceId, getMeta, loadUiPrefs, saveUiPrefs, getTierHistory } from './meta';
 import {
-  countPlays, deleteAllData, deletePlay, getDetail, getRecords, getSummary, listSummaries, listSummariesByMode,
-  listSummariesSince, loadPlayData, savePlay, shouldSave,
+  countPlays,
+  deleteAllData,
+  deletePlay,
+  getDetail,
+  getRecords,
+  getSummary,
+  listSummaries,
+  listSummariesByMode,
+  listSummariesSince,
+  loadPlayData,
+  savePlay,
+  shouldSave,
 } from './plays';
 import { applyPlayToProgress, loadProgress } from './progress';
 import { runRetention } from './retention';
@@ -175,7 +185,11 @@ describe('progress', () => {
 
 describe('settings and prefs', () => {
   it('merges stored settings over the defaults and clamps them', async () => {
-    const s = sanitizeSettings({ input: { sensitivity: 99, keys: ['KeyA', 'KeyS'] }, audio: { master: -2 }, data: { detailRetentionDays: null } });
+    const s = sanitizeSettings({
+      input: { sensitivity: 99, keys: ['KeyA', 'KeyS'] },
+      audio: { master: -2 },
+      data: { detailRetentionDays: null },
+    });
     expect(s.input.sensitivity).toBe(5);
     expect(s.input.keys).toEqual(['KeyA', 'KeyS']);
     expect(s.audio.master).toBe(0);

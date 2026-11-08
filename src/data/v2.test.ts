@@ -9,17 +9,29 @@ import { DEFAULT_SETTINGS, REPLAY_LIMIT_CHOICES, SCORING_VERSION, SETTING_RANGES
 import { decodeReplay, encodeReplay, isTightBuffer, ReplayFormatError } from '../shared/replay';
 import type { PlayResult } from '../shared/types';
 import { OBJECT_COLUMNS, PATTERNS, packRecords, tableToJson, unpackRecords } from './columns';
-import {
-  DB_BLOCKED_MESSAGE, DB_NEWER_MESSAGE, DB_VERSION, DbNewerError, deleteDatabase, onDbBlocked, openDb, req, withTx,
-} from './db';
+import { DB_BLOCKED_MESSAGE, DB_NEWER_MESSAGE, DB_VERSION, DbNewerError, deleteDatabase, onDbBlocked, openDb, req, withTx } from './db';
 import { buildExport, ImportError, importExport } from './exportImport';
 import type { ExportFile } from './exportImport';
 import { makeReplayData } from './fixtures/replayData';
 import { openV1 } from './fixtures/v1Migration';
 import { base64ToBytes, bytesToBase64, gzipBytes } from './gzip';
 import {
-  getInsightSnooze, getMeta, getMilestones, getOnboarding, getPlan, getTierHistory, loadUiPrefs, mergeMilestones, planKey, prunePlans,
-  savePlan, saveUiPrefs, setMeta, setMilestones, setOnboarding, snoozeInsight,
+  getInsightSnooze,
+  getMeta,
+  getMilestones,
+  getOnboarding,
+  getPlan,
+  getTierHistory,
+  loadUiPrefs,
+  mergeMilestones,
+  planKey,
+  prunePlans,
+  savePlan,
+  saveUiPrefs,
+  setMeta,
+  setMilestones,
+  setOnboarding,
+  snoozeInsight,
 } from './meta';
 import { countPlays, deleteAllData, deletePlay, getSummary, listSummaries, savePlay, upgradeSummary } from './plays';
 import { countReplayRemovals, getReplay, getReplayRow, replayStorage, runReplayRetention, setReplayKeep } from './replays';
@@ -53,14 +65,29 @@ describe('summary v2', () => {
   it('emits the placeholder fields', () => {
     const s = summarizePlay(makeFixture({ seed: 1, objects: 30 }).result);
     expect(s.v).toBe(2);
-    expect(s).toMatchObject({ hasReplay: false, sections: null, movement: null, throughput: null, milestones: [], scoringVersion: SCORING_VERSION });
+    expect(s).toMatchObject({
+      hasReplay: false,
+      sections: null,
+      movement: null,
+      throughput: null,
+      milestones: [],
+      scoringVersion: SCORING_VERSION,
+    });
   });
 
   it('lifts a 1.0 summary and refuses a newer one', () => {
     const v1 = { ...summarizePlay(makeFixture({ seed: 1, objects: 30 }).result), v: 1 } as Record<string, unknown>;
     for (const k of ['hasReplay', 'sections', 'movement', 'throughput', 'scoringVersion', 'milestones']) delete v1[k];
     const up = upgradeSummary(v1);
-    expect(up).toMatchObject({ v: 2, hasReplay: false, sections: null, movement: null, throughput: null, scoringVersion: 1, milestones: [] });
+    expect(up).toMatchObject({
+      v: 2,
+      hasReplay: false,
+      sections: null,
+      movement: null,
+      throughput: null,
+      scoringVersion: 1,
+      milestones: [],
+    });
     expect(() => upgradeSummary({ ...up, v: 3 })).toThrow(/newer/);
   });
 
@@ -76,11 +103,30 @@ describe('summary v2', () => {
 describe('columns', () => {
   it('stores the new movement fields and reads old details without them', () => {
     const { records } = makeFixture({ seed: 4, objects: 20 });
-    records[3]!.movement = { ...records[3]!.movement, leaveMs: 120, primaryAlong: -0.5, primaryLateral: 0.25, primaryEndMs: -40, correctionPath: 1.5 };
+    records[3]!.movement = {
+      ...records[3]!.movement,
+      leaveMs: 120,
+      primaryAlong: -0.5,
+      primaryLateral: 0.25,
+      primaryEndMs: -40,
+      correctionPath: 1.5,
+    };
     const packed = packRecords(records);
     const back = unpackRecords(packed);
-    expect(back[3]!.movement).toMatchObject({ leaveMs: 120, primaryAlong: -0.5, primaryLateral: 0.25, primaryEndMs: -40, correctionPath: 1.5 });
-    expect(back[4]!.movement).toMatchObject({ leaveMs: null, primaryAlong: null, primaryLateral: null, primaryEndMs: null, correctionPath: null });
+    expect(back[3]!.movement).toMatchObject({
+      leaveMs: 120,
+      primaryAlong: -0.5,
+      primaryLateral: 0.25,
+      primaryEndMs: -40,
+      correctionPath: 1.5,
+    });
+    expect(back[4]!.movement).toMatchObject({
+      leaveMs: null,
+      primaryAlong: null,
+      primaryLateral: null,
+      primaryEndMs: null,
+      correctionPath: null,
+    });
 
     for (const name of ['leaveMs', 'primaryAlong', 'primaryLateral', 'primaryEndMs', 'correctionPath']) {
       expect(OBJECT_COLUMNS[name as 'leaveMs']).toBe('f32');
@@ -95,7 +141,20 @@ describe('columns', () => {
   });
 
   it('appends the new patterns without moving the old ones', () => {
-    expect(PATTERNS.slice(0, 12)).toEqual(['single', 'jump', 'backforth', 'triangle', 'square', 'star', 'flow', 'stream', 'burst', 'doubles', 'slider', 'spinner']);
+    expect(PATTERNS.slice(0, 12)).toEqual([
+      'single',
+      'jump',
+      'backforth',
+      'triangle',
+      'square',
+      'star',
+      'flow',
+      'stream',
+      'burst',
+      'doubles',
+      'slider',
+      'spinner',
+    ]);
     expect(PATTERNS.slice(12)).toEqual(['stack', 'cutstream', 'spacedstream', 'polygon']);
     const { records } = makeFixture({ seed: 4, objects: 10 });
     records[0]!.pattern = 'polygon';
@@ -112,7 +171,14 @@ describe('savePlay with a replay', () => {
     expect((await getSummary(saved!.summary.id))!.hasReplay).toBe(true);
 
     const row = await getReplayRow(saved!.summary.id);
-    expect(row).toMatchObject({ playId: saved!.summary.id, v: 1, startedAt: saved!.summary.startedAt, keep: 0, events: data.trace.count, engineVersion: 2 });
+    expect(row).toMatchObject({
+      playId: saved!.summary.id,
+      v: 1,
+      startedAt: saved!.summary.startedAt,
+      keep: 0,
+      events: data.trace.count,
+      engineVersion: 2,
+    });
     expect(row!.rawBytes).toBe(encodeReplay(data).byteLength);
     const bytes = await withTx('replayBytes', 'readonly', (tx) => req(tx.objectStore('replayBytes').get(saved!.summary.id)));
     expect(bytes.bytes[0]).toBe(0x1f);
@@ -307,7 +373,12 @@ describe('settings', () => {
       goals: { weeklyMinutes: '60' },
       data: { replayLimit: 40 },
     });
-    expect(s.audio).toMatchObject({ soundSet: d.audio.soundSet, metronome: d.audio.metronome, metronomeVolume: d.audio.metronomeVolume, offsetMs: d.audio.offsetMs });
+    expect(s.audio).toMatchObject({
+      soundSet: d.audio.soundSet,
+      metronome: d.audio.metronome,
+      metronomeVolume: d.audio.metronomeVolume,
+      offsetMs: d.audio.offsetMs,
+    });
     expect(s.display.visualOffsetMs).toBe(d.display.visualOffsetMs);
     expect(s.display.frameGraph).toBe(d.display.frameGraph);
     expect(s.skin).toEqual(d.skin);
@@ -323,13 +394,27 @@ describe('settings', () => {
 
   it('clamps numbers to their ranges', () => {
     const r = SETTING_RANGES;
-    const high = sanitizeSettings({ audio: { metronomeVolume: 9, offsetMs: 9999 }, display: { visualOffsetMs: 999 }, goals: { weeklyMinutes: 99_999 } });
+    const high = sanitizeSettings({
+      audio: { metronomeVolume: 9, offsetMs: 9999 },
+      display: { visualOffsetMs: 999 },
+      goals: { weeklyMinutes: 99_999 },
+    });
     expect([high.audio.metronomeVolume, high.audio.offsetMs, high.display.visualOffsetMs, high.goals.weeklyMinutes]).toEqual([
-      r.metronomeVolume.max, r.audioOffsetMs.max, r.visualOffsetMs.max, r.weeklyMinutes.max,
+      r.metronomeVolume.max,
+      r.audioOffsetMs.max,
+      r.visualOffsetMs.max,
+      r.weeklyMinutes.max,
     ]);
-    const low = sanitizeSettings({ audio: { metronomeVolume: -9, offsetMs: -9999 }, display: { visualOffsetMs: -999 }, goals: { weeklyMinutes: -5 } });
+    const low = sanitizeSettings({
+      audio: { metronomeVolume: -9, offsetMs: -9999 },
+      display: { visualOffsetMs: -999 },
+      goals: { weeklyMinutes: -5 },
+    });
     expect([low.audio.metronomeVolume, low.audio.offsetMs, low.display.visualOffsetMs, low.goals.weeklyMinutes]).toEqual([
-      r.metronomeVolume.min, r.audioOffsetMs.min, r.visualOffsetMs.min, r.weeklyMinutes.min,
+      r.metronomeVolume.min,
+      r.audioOffsetMs.min,
+      r.visualOffsetMs.min,
+      r.weeklyMinutes.min,
     ]);
   });
 
@@ -367,7 +452,9 @@ describe('meta helpers', () => {
     const a = { 'first-play': { at: 500, playId: 'a' }, 'plays-50': { at: 900, playId: null } } as const;
     const b = { 'first-play': { at: 300, playId: 'b' }, 'streak-7': { at: 100, playId: null } } as const;
     expect(mergeMilestones({ ...a }, { ...b })).toEqual({
-      'first-play': { at: 300, playId: 'b' }, 'plays-50': { at: 900, playId: null }, 'streak-7': { at: 100, playId: null },
+      'first-play': { at: 300, playId: 'b' },
+      'plays-50': { at: 900, playId: null },
+      'streak-7': { at: 100, playId: null },
     });
   });
 
@@ -407,7 +494,12 @@ describe('meta helpers', () => {
     expect(fresh).toMatchObject({ daily: { level: null }, playback: { speed: 1 }, installDismissed: false });
     // What 1.0 stored.
     await setMeta('ui', { fullscreen: true, dynamic: fresh.dynamic, modules: {} });
-    expect(await loadUiPrefs()).toMatchObject({ fullscreen: true, daily: { level: null }, playback: { speed: 1 }, installDismissed: false });
+    expect(await loadUiPrefs()).toMatchObject({
+      fullscreen: true,
+      daily: { level: null },
+      playback: { speed: 1 },
+      installDismissed: false,
+    });
     await saveUiPrefs({ ...fresh, daily: { level: 5 }, playback: { speed: 2 }, installDismissed: true });
     expect(await loadUiPrefs()).toMatchObject({ daily: { level: 5 }, playback: { speed: 2 }, installDismissed: true });
     await setMeta('ui', { fullscreen: false, daily: { level: 'x' }, playback: { speed: -1 } });
@@ -457,7 +549,12 @@ describe('export v2', () => {
     expect(bytesAfter).toEqual(bytesBefore);
     for (const id of ids) expect(await getReplay(id)).not.toBeNull();
     const summaries = await listSummaries();
-    expect(summaries.filter((s) => s.hasReplay).map((s) => s.id).sort()).toEqual([...ids].sort());
+    expect(
+      summaries
+        .filter((s) => s.hasReplay)
+        .map((s) => s.id)
+        .sort(),
+    ).toEqual([...ids].sort());
   });
 
   it('leaves replays out when asked, and the imported plays say so', async () => {
@@ -533,11 +630,17 @@ describe('export v2', () => {
     expect(file.meta.onboarding).toEqual({ done: true, at: 5, input: true, calibrated: true, placed: true });
 
     // Same database: the earlier time wins and local onboarding is kept.
-    file.meta.milestones = { 'first-play': { at: 100, playId: 'x' }, 'streak-7': { at: 50, playId: null }, nonsense: { at: 1, playId: null } } as never;
+    file.meta.milestones = {
+      'first-play': { at: 100, playId: 'x' },
+      'streak-7': { at: 50, playId: null },
+      nonsense: { at: 1, playId: null },
+    } as never;
     file.meta.onboarding = { done: false, at: null, input: false, calibrated: false, placed: false };
     await importExport(file);
     expect(await getMilestones()).toEqual({
-      'first-play': { at: 100, playId: 'x' }, 'plays-50': { at: 900, playId: null }, 'streak-7': { at: 50, playId: null },
+      'first-play': { at: 100, playId: 'x' },
+      'plays-50': { at: 900, playId: null },
+      'streak-7': { at: 50, playId: null },
     });
     expect((await getOnboarding())!.done).toBe(true);
 
@@ -560,7 +663,9 @@ describe('export v2', () => {
 
     await deleteDatabase();
     expect((await importExport({ ...file, formatVersion: 1 })).playsAdded).toBe(4);
-    await expect(importExport({ ...file, formatVersion: 3 })).rejects.toThrow('This file was made by a newer version of Heartbeat. Update the app and try again.');
+    await expect(importExport({ ...file, formatVersion: 3 })).rejects.toThrow(
+      'This file was made by a newer version of Heartbeat. Update the app and try again.',
+    );
     await expect(importExport({ ...file, formatVersion: 3 })).rejects.toBeInstanceOf(ImportError);
   });
 });

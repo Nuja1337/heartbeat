@@ -2,20 +2,19 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import type { CalibrationHandle, CalibrationKind, CalibrationResult } from '../../shared/types';
 import { Button, LinkButton, Notice, PageHeader, Panel, Stat } from '../components/ui';
+import { msg, t } from '../i18n';
 import { useGame } from '../state/engine';
 import { UNEVEN_NOTE, UNEVEN_SD_MS, offsetToApply, offsetWords, patchOnboarding } from '../state/onboarding';
 import { getSettings, updateSettings } from '../state/store';
 
-const COPY: Record<CalibrationKind, { title: string; intro: string; setting: string }> = {
+const COPY: Record<CalibrationKind, { title: string; intro: string }> = {
   visual: {
-    title: 'Visual calibration',
-    intro: 'Tap as the ring closes on the target, and Heartbeat sets how early targets are drawn.',
-    setting: 'Visual offset',
+    title: msg('Visual calibration'),
+    intro: msg('Tap as the ring closes on the target, and Heartbeat sets how early targets are drawn.'),
   },
   audio: {
-    title: 'Audio calibration',
-    intro: 'Tap with the metronome clicks, and Heartbeat sets how early the clicks play.',
-    setting: 'Audio offset',
+    title: msg('Audio calibration'),
+    intro: msg('Tap with the metronome clicks, and Heartbeat sets how early the clicks play.'),
   },
 };
 
@@ -25,7 +24,7 @@ export function Calibrate() {
   const kind: CalibrationKind = params.get('kind') === 'audio' ? 'audio' : 'visual';
   const fromWelcome = params.get('from') === 'welcome';
   const back = fromWelcome ? '/welcome' : '/settings';
-  const backLabel = fromWelcome ? 'Back to setup' : 'Back to settings';
+  const backLabel = fromWelcome ? t('Back to setup') : t('Back to settings');
   const navigate = useNavigate();
   const { game, failed } = useGame();
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -62,7 +61,9 @@ export function Calibrate() {
   const apply = () => {
     if (!result) return;
     const value = offsetToApply(kind, result.offsetMs);
-    updateSettings((s) => (kind === 'visual' ? { ...s, display: { ...s.display, visualOffsetMs: value } } : { ...s, audio: { ...s.audio, offsetMs: value } }));
+    updateSettings((s) =>
+      kind === 'visual' ? { ...s, display: { ...s.display, visualOffsetMs: value } } : { ...s, audio: { ...s.audio, offsetMs: value } },
+    );
     setApplied(value);
     // The visual calibration is the one that counts for setup. The audio one is optional.
     if (kind === 'visual') patchOnboarding((o) => ({ ...o, calibrated: true })).catch(() => undefined);
@@ -80,23 +81,29 @@ export function Calibrate() {
   return (
     <>
       <PageHeader
-        title={copy.title}
-        intro={copy.intro}
+        title={t(copy.title)}
+        intro={t(copy.intro)}
         actions={
           <>
             {kind === 'visual' ? (
-              <LinkButton to={`/calibrate?kind=audio${fromWelcome ? '&from=welcome' : ''}`} variant="ghost">Audio calibration</LinkButton>
+              <LinkButton to={`/calibrate?kind=audio${fromWelcome ? '&from=welcome' : ''}`} variant="ghost">
+                {t('Audio calibration')}
+              </LinkButton>
             ) : (
-              <LinkButton to={`/calibrate?kind=visual${fromWelcome ? '&from=welcome' : ''}`} variant="ghost">Visual calibration</LinkButton>
+              <LinkButton to={`/calibrate?kind=visual${fromWelcome ? '&from=welcome' : ''}`} variant="ghost">
+                {t('Visual calibration')}
+              </LinkButton>
             )}
-            <LinkButton to={back} variant="ghost">{backLabel}</LinkButton>
+            <LinkButton to={back} variant="ghost">
+              {backLabel}
+            </LinkButton>
           </>
         }
       />
 
       {(failed || error) && (
         <div className="mb-4">
-          <Notice tone="bad">{error ?? 'The game could not load, so the calibration cannot start.'}</Notice>
+          <Notice tone="bad">{error ?? t('The game could not load, so the calibration cannot start.')}</Notice>
         </div>
       )}
 
@@ -105,7 +112,7 @@ export function Calibrate() {
           <Panel marks className="p-2 sm:p-3">
             <canvas
               ref={canvas}
-              aria-label={`${copy.title} canvas`}
+              aria-label={t('{kind, select, visual {Visual calibration canvas} other {Audio calibration canvas}}', { kind })}
               className="block h-80 w-full sm:h-[min(62vh,520px)] select-none rounded-md bg-bg"
               style={{ touchAction: 'none' }}
               onContextMenu={(e) => e.preventDefault()}
@@ -114,38 +121,65 @@ export function Calibrate() {
         </div>
 
         <Panel className="flex flex-col gap-4 self-start">
-          <Stat label="Taps" value={taps ? `${taps.taps} of ${taps.needed}` : 'Not started'} size="lg" />
+          <Stat
+            label={t('Taps')}
+            value={taps ? t('{taps} of {needed}', { taps: taps.taps, needed: taps.needed }) : t('Not started')}
+            size="lg"
+          />
           {result ? (
             <>
               <div className="grid grid-cols-2 gap-4">
-                <Stat label="Median" value={`${Math.round(result.offsetMs)} ms`} sub={offsetWords(result.offsetMs)} size="lg" />
-                <Stat label="Spread" value={`${Math.round(result.sdMs)} ms`} sub="between taps" size="lg" />
+                <Stat label={t('Median')} value={`${Math.round(result.offsetMs)} ms`} sub={offsetWords(result.offsetMs)} size="lg" />
+                <Stat label={t('Spread')} value={`${Math.round(result.sdMs)} ms`} sub={t('between taps')} size="lg" />
               </div>
-              {uneven && <Notice tone="warn">{UNEVEN_NOTE}</Notice>}
+              {uneven && <Notice tone="warn">{t(UNEVEN_NOTE)}</Notice>}
               {applied !== null ? (
-                <Notice tone="good">{copy.setting} set to {applied} ms.</Notice>
+                <Notice tone="good">
+                  {t('{kind, select, visual {Visual offset set to {value} ms.} other {Audio offset set to {value} ms.}}', {
+                    kind,
+                    value: applied,
+                  })}
+                </Notice>
               ) : (
-                <p className="text-sm text-ink-2">Apply sets your {copy.setting.toLowerCase()} to {offsetToApply(kind, result.offsetMs)} ms.</p>
+                <p className="text-sm text-ink-2">
+                  {t(
+                    '{kind, select, visual {Apply sets your visual offset to {value} ms.} other {Apply sets your audio offset to {value} ms.}}',
+                    {
+                      kind,
+                      value: offsetToApply(kind, result.offsetMs),
+                    },
+                  )}
+                </p>
               )}
               <div className="flex flex-wrap gap-2">
                 <Button variant={uneven || applied !== null ? 'secondary' : 'primary'} disabled={applied !== null} onClick={apply}>
-                  {applied !== null ? 'Applied' : 'Apply'}
+                  {applied !== null ? t('Applied') : t('Apply')}
                 </Button>
-                <Button variant={uneven && applied === null ? 'primary' : 'secondary'} onClick={again}>Try again</Button>
+                <Button variant={uneven && applied === null ? 'primary' : 'secondary'} onClick={again}>
+                  {t('Try again')}
+                </Button>
                 {applied !== null && (
-                  <Button variant="primary" onClick={() => navigate(back, { state: { calibration: { kind, offsetMs: result.offsetMs, sdMs: result.sdMs } } })}>
-                    {fromWelcome ? 'Continue setup' : 'Done'}
+                  <Button
+                    variant="primary"
+                    onClick={() => navigate(back, { state: { calibration: { kind, offsetMs: result.offsetMs, sdMs: result.sdMs } } })}
+                  >
+                    {fromWelcome ? t('Continue setup') : t('Done')}
                   </Button>
                 )}
               </div>
             </>
           ) : (
             <p className="text-sm text-ink-2">
-              The first press starts the run and does not count. After four lead-in beats, {taps?.needed ?? 24} taps are collected. The result shows here.
+              {t(
+                'The first press starts the run and does not count. After four lead-in beats, {n} taps are collected. The result shows here.',
+                { n: taps?.needed ?? 24 },
+              )}
             </p>
           )}
           {!result && taps && taps.taps > 0 && (
-            <Button variant="ghost" onClick={again}>Start over</Button>
+            <Button variant="ghost" onClick={again}>
+              {t('Start over')}
+            </Button>
           )}
         </Panel>
       </div>

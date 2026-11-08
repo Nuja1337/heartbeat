@@ -3,12 +3,15 @@
 
 import { Link } from 'react-router';
 import { IconFlame } from '../components/icons';
+import { t } from '../i18n';
 import { useStreak } from '../state/analysis';
 
 export function StreakChip() {
   const streak = useStreak();
   if (!streak || streak.current === 0) return null;
-  const label = `${streak.current} ${streak.current === 1 ? 'day' : 'days'} in a row${streak.atRisk ? '. Play today to keep it.' : ''}`;
+  const label = streak.atRisk
+    ? t('{n, plural, one {# day} other {# days}} in a row. Play today to keep it.', { n: streak.current })
+    : t('{n, plural, one {# day} other {# days}} in a row', { n: streak.current });
   return (
     <Link
       to="/"

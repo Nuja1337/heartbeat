@@ -1,6 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import { PLAYFIELD } from '../../shared/catalog';
-import { boxesIntersect, FIELD_MARGIN, labelBelow, LABEL_DY, MISS_X, newLayout, POP_BOX, popupLayout, popupScale, TextWidths } from './popup';
+import {
+  boxesIntersect,
+  FIELD_MARGIN,
+  labelBelow,
+  LABEL_DY,
+  MISS_X,
+  newLayout,
+  POP_BOX,
+  popupLayout,
+  popupScale,
+  TextWidths,
+} from './popup';
 import { FX } from './theme';
 
 describe('pop-up layout', () => {

@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import { Button, Notice } from './ui';
 
 /** Shown when the saved plays can't be read. The retry reads them again. */
@@ -5,9 +6,9 @@ export function AnalysisError({ message, onRetry }: { message: string; onRetry()
   return (
     <Notice tone="bad">
       <span className="flex flex-wrap items-center gap-3">
-        <span>Your plays could not be read. {message}</span>
+        <span>{t('Your plays could not be read. {message}', { message })}</span>
         <Button size="sm" onClick={onRetry}>
-          Try again
+          {t('Try again')}
         </Button>
       </span>
     </Notice>

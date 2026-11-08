@@ -16,7 +16,14 @@ export const dailyLevel = (chosen: number | null, suggested: number): number => 
  */
 export function dailyLaunch(date: string, level: number, levels: Partial<Record<ModuleId, number>>): LaunchRequest {
   return {
-    ...dynamicLaunch({ presetLevel: level, difficulty: presetDifficulty(level), mods: [], lengthSec: DAILY_LENGTH_SEC, seed: dailySeed(date), levels }),
+    ...dynamicLaunch({
+      presetLevel: level,
+      difficulty: presetDifficulty(level),
+      mods: [],
+      lengthSec: DAILY_LENGTH_SEC,
+      seed: dailySeed(date),
+      levels,
+    }),
     source: { kind: 'daily', date },
   };
 }

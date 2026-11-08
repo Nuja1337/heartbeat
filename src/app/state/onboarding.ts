@@ -6,17 +6,18 @@ import { getOnboarding, setOnboarding } from '../../data/meta';
 import type { Onboarding } from '../../data/schema';
 import { SETTING_RANGES } from '../../shared/catalog';
 import type { CalibrationKind } from '../../shared/types';
+import { msg, t } from '../i18n';
 
 export type OnboardingStep = 'input' | 'timing' | 'placement';
 export const STEPS: readonly { id: OnboardingStep; label: string }[] = [
-  { id: 'input', label: 'Input' },
-  { id: 'timing', label: 'Timing' },
-  { id: 'placement', label: 'Placement' },
+  { id: 'input', label: msg('Input') },
+  { id: 'timing', label: msg('Timing') },
+  { id: 'placement', label: msg('Placement') },
 ];
 
 /** A spread above this many milliseconds means the taps were too uneven to trust the median. */
 export const UNEVEN_SD_MS = 30;
-export const UNEVEN_NOTE = 'Your taps were uneven. Try once more for a steadier number.';
+export const UNEVEN_NOTE = msg('Your taps were uneven. Try once more for a steadier number.');
 
 export const EMPTY_ONBOARDING: Onboarding = { done: false, at: null, input: false, calibrated: false, placed: false };
 
@@ -50,8 +51,8 @@ export function offsetToApply(kind: CalibrationKind, medianMs: number): number {
 /** How a calibration median reads: "12 ms late", "8 ms early" or "on the beat". */
 export function offsetWords(medianMs: number): string {
   const v = Math.round(medianMs);
-  if (v === 0) return 'on the beat';
-  return `${Math.abs(v)} ms ${v > 0 ? 'late' : 'early'}`;
+  if (v === 0) return t('on the beat');
+  return t('{ms} ms {side, select, early {early} other {late}}', { ms: Math.abs(v), side: v > 0 ? 'late' : 'early' });
 }
 
 /** Writes a change to the stored state. It reads the row first, so two screens can't undo each other. */
@@ -62,7 +63,11 @@ export async function patchOnboarding(change: (o: Onboarding) => Onboarding): Pr
 }
 
 /** The stored state. `state` is null until it has been read, and EMPTY_ONBOARDING when setup never started. */
-export function useOnboarding(): { state: Onboarding | null; error: string | null; update(change: (o: Onboarding) => Onboarding): Promise<void> } {
+export function useOnboarding(): {
+  state: Onboarding | null;
+  error: string | null;
+  update(change: (o: Onboarding) => Onboarding): Promise<void>;
+} {
   const [state, setState] = useState<Onboarding | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,7 +77,7 @@ export function useOnboarding(): { state: Onboarding | null; error: string | nul
       (o) => alive && setState(o ?? EMPTY_ONBOARDING),
       (e: unknown) => {
         if (!alive) return;
-        setError(e instanceof Error ? e.message : 'Could not read your setup progress.');
+        setError(e instanceof Error ? e.message : t('Could not read your setup progress.'));
         setState(EMPTY_ONBOARDING);
       },
     );
@@ -87,7 +92,7 @@ export function useOnboarding(): { state: Onboarding | null; error: string | nul
       setState(next);
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save your setup progress.');
+      setError(e instanceof Error ? e.message : t('Could not save your setup progress.'));
     }
   }, []);
 

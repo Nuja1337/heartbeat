@@ -9,18 +9,22 @@ import { Fatigue } from '../charts/Fatigue';
 import { PlayReport } from '../components/PlayReport';
 import { SectionStrip } from '../components/SectionStrip';
 import { ShareButton, canShare } from '../components/ShareButton';
-import { Badge, Button, Delta, GradeBadge, LinkButton, Notice, Panel, SectionTitle, Stat } from '../components/ui';
-import { dateTime, int, level, modList, pct, playTitle, widthPct } from '../format';
+import { Badge, Button, Delta, GradeBadge, LinkButton, Notice, Panel, SectionTitle, Stat, usePageTitle } from '../components/ui';
+import { dateTime, int, level, lowerLabel, modList, pct, playTitle, widthPct } from '../format';
+import { formatNumber } from '../../shared/i18n';
+import { t } from '../i18n';
 import { useAnalysis } from '../state/analysis';
 import { OLD_GENERATOR_NOTE, isOlderGenerator, useGeneratorVersion } from '../state/generator';
 import { setupPath, startWithCurrentLevels } from '../state/launch';
 import { finished, patchOnboarding } from '../state/onboarding';
 import { getAppState } from '../state/store';
 import { usePlay } from '../state/usePlay';
+import { ruleTitle } from '../../analytics/insightCopy';
 
 function statusNote(status: 'completed' | 'failed' | 'quit', mods: readonly string[]): string | null {
-  if (status === 'quit') return 'You quit before the end.';
-  if (status === 'failed') return mods.includes('onelife') ? 'Your first miss ended the play.' : 'You ran out of health before the map ended.';
+  if (status === 'quit') return t('You quit before the end.');
+  if (status === 'failed')
+    return mods.includes('onelife') ? t('Your first miss ended the play.') : t('You ran out of health before the map ended.');
   return null;
 }
 
@@ -46,11 +50,28 @@ interface DeltaView {
 function deltaView(d: PlayDelta): DeltaView {
   switch (d.id) {
     case 'accuracy':
-      return { value: pct(d.value), average: pct(d.average), change: `${SIGN(d.diff)}${Math.abs(d.diff * 100).toFixed(1)} points`, unit: 'share' };
+      return {
+        value: pct(d.value),
+        average: pct(d.average),
+        change: t('{change} points', {
+          change: `${SIGN(d.diff)}${formatNumber(Math.abs(d.diff * 100), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`,
+        }),
+        unit: 'share',
+      };
     case 'timingSd':
-      return { value: `${Math.round(d.value)} ms`, average: `${Math.round(d.average)} ms`, change: `${SIGN(d.diff)}${Math.abs(Math.round(d.diff))} ms`, unit: 'ms' };
+      return {
+        value: `${Math.round(d.value)} ms`,
+        average: `${Math.round(d.average)} ms`,
+        change: `${SIGN(d.diff)}${Math.abs(Math.round(d.diff))} ms`,
+        unit: 'ms',
+      };
     case 'radial':
-      return { value: widthPct(d.value), average: widthPct(d.average), change: `${SIGN(d.diff)}${Math.abs(Math.round(d.diff * 50))}%`, unit: 'width' };
+      return {
+        value: widthPct(d.value),
+        average: widthPct(d.average),
+        change: `${SIGN(d.diff)}${Math.abs(Math.round(d.diff * 50))}%`,
+        unit: 'width',
+      };
     case 'score':
       return { value: int(d.value), average: int(d.average), change: `${SIGN(d.diff)}${int(Math.abs(d.diff))}`, unit: null };
   }
@@ -66,6 +87,7 @@ export function Results() {
   const { data } = useAnalysis();
   const generator = useGeneratorVersion();
   const [startError, setStartError] = useState<string | null>(null);
+  usePageTitle(t('Results'));
 
   const notes = useMemo(() => (play?.records ? playNotes(play.records, play.summary) : []), [play]);
   const fatigue = useMemo(() => (play?.records ? fatigueCurve(play.records) : []), [play]);
@@ -76,7 +98,7 @@ export function Results() {
     if (!s) return;
     // Both read the module levels from the store when clicked, so a play never starts from old levels.
     startWithCurrentLevels(navigate, s.launch, setupPath(s.launch), getAppState().prefs.fullscreen, newSeed).catch((e: unknown) =>
-      setStartError(e instanceof Error ? e.message : 'Could not read your module levels.'),
+      setStartError(e instanceof Error ? e.message : t('Could not read your module levels.')),
     );
   };
 
@@ -114,22 +136,24 @@ export function Results() {
   if (missing) {
     return (
       <Panel>
-        <p>This play isn't saved on this device.</p>
-        <LinkButton to="/" className="mt-3">Home</LinkButton>
+        <p>{t("This play isn't saved on this device.")}</p>
+        <LinkButton to="/" className="mt-3">
+          {t('Home')}
+        </LinkButton>
       </Panel>
     );
   }
-  if (!play || !s) return <p className="text-ink-2">Loading.</p>;
+  if (!play || !s) return <p className="text-ink-2">{t('Loading.')}</p>;
 
   const { records } = play;
   const back = setupPath(s.launch);
   const grade = gradeFor(s.accuracy, s.counts.miss, s.status);
   const drill = s.drillId ? data?.drills.find((d) => d.drill.id === s.drillId) : undefined;
   const pbs = [
-    s.pb.score && 'New best score',
-    s.pb.accuracy && 'New best accuracy',
-    s.pb.combo && 'New best combo',
-    s.pb.level && 'New best level',
+    s.pb.score && t('New best score'),
+    s.pb.accuracy && t('New best accuracy'),
+    s.pb.combo && t('New best combo'),
+    s.pb.level && t('New best level'),
   ].filter((x): x is string => Boolean(x));
   const note = statusNote(s.status, s.mods);
   const older = isOlderGenerator(s.generatorVersion, generator);
@@ -139,29 +163,27 @@ export function Results() {
     <>
       <header className="mb-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
-          {grade ? <GradeBadge grade={grade} size="lg" /> : <Badge tone="warn">{s.status === 'failed' ? 'Failed' : 'Quit'}</Badge>}
+          {grade ? <GradeBadge grade={grade} size="lg" /> : <Badge tone="warn">{s.status === 'failed' ? t('Failed') : t('Quit')}</Badge>}
           <div className="min-w-0">
             <h1 className="text-2xl">{playTitle(s)}</h1>
-            <p className="mt-1 text-ink-2">
-              {dateTime(s.startedAt)}. {modList(s.mods)}.
-            </p>
+            <p className="mt-1 text-ink-2">{t('{date}. {mods}.', { date: dateTime(s.startedAt), mods: modList(s.mods) })}</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="primary" onClick={() => start(false)} aria-keyshortcuts="R">
-            Retry <Key>R</Key>
+            {t('Retry')} <Key>R</Key>
           </Button>
           <Button onClick={() => start(true)} aria-keyshortcuts="N">
-            New map <Key>N</Key>
+            {t('New map')} <Key>N</Key>
           </Button>
           {s.hasReplay && (
             <LinkButton to={`/replay/${s.id}`} aria-keyshortcuts="W">
-              Watch replay <Key>W</Key>
+              {t('Watch replay')} <Key>W</Key>
             </LinkButton>
           )}
           {canShare(s.modeId) && <ShareButton launch={s.launch} />}
           <LinkButton to={back} variant="ghost" aria-keyshortcuts="Escape">
-            Back <Key>Esc</Key>
+            {t('Back')} <Key>Esc</Key>
           </LinkButton>
         </div>
       </header>
@@ -174,19 +196,25 @@ export function Results() {
 
       {older && (
         <div className="mb-4">
-          <Notice tone="warn">{OLD_GENERATOR_NOTE}</Notice>
+          <Notice tone="warn">{t(OLD_GENERATOR_NOTE)}</Notice>
         </div>
       )}
 
       {(note || pbs.length > 0 || s.tiers.length > 0 || s.milestones.length > 0) && (
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          {note && <Badge tone="warn" sentence>{note}</Badge>}
+          {note && (
+            <Badge tone="warn" sentence>
+              {note}
+            </Badge>
+          )}
           {pbs.map((p) => (
-            <Badge key={p} tone="good">{p}</Badge>
+            <Badge key={p} tone="good">
+              {p}
+            </Badge>
           ))}
-          {s.tiers.map((t) => (
-            <Badge key={t.skill} tone="accent">
-              {SKILLS[t.skill].label} reached tier {t.tier}
+          {s.tiers.map((reached) => (
+            <Badge key={reached.skill} tone="accent">
+              {t('{skill} reached tier {tier}', { skill: SKILLS[reached.skill].label, tier: reached.tier })}
             </Badge>
           ))}
           {s.milestones.map((m) => (
@@ -200,7 +228,12 @@ export function Results() {
       {drill && (
         <div className="mb-4">
           <Notice tone={drill.eval.outcome === 'better' ? 'good' : drill.eval.outcome === 'worse' ? 'warn' : 'neutral'}>
-            <span className="font-medium">{drill.drill.title}, {OUTCOME_LABEL[drill.eval.outcome].toLowerCase()}.</span>{' '}
+            <span className="font-medium">
+              {t('{title}, {outcome}.', {
+                title: ruleTitle(drill.drill.ruleId, drill.drill.variant),
+                outcome: lowerLabel(OUTCOME_LABEL[drill.eval.outcome]),
+              })}
+            </span>{' '}
             {drillText({ ruleId: drill.drill.ruleId, variant: drill.drill.variant, createdAt: drill.drill.createdAt, eval: drill.eval })}
           </Notice>
         </div>
@@ -214,45 +247,53 @@ export function Results() {
           <>
             {s.modeId === 'placement' && (
               <Panel marks>
-                <SectionTitle aside={s.status === 'completed' ? 'Where each module starts now' : 'The test ended early, so these are less certain'}>Starting levels</SectionTitle>
+                <SectionTitle
+                  aside={
+                    s.status === 'completed' ? t('Where each module starts now') : t('The test ended early, so these are less certain')
+                  }
+                >
+                  {t('Starting levels')}
+                </SectionTitle>
                 <ul className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3 lg:grid-cols-5">
                   {PLACEMENT.modules.map((m) => (
                     <li key={m}>
                       <Stat
                         label={MODES[m].label}
-                        value={s.finalLevels[m] === undefined ? 'Unchanged' : level(s.finalLevels[m])}
-                        sub={`The test began at ${level(s.launch.levels[m] ?? DEFAULT_MODULE_LEVEL)}`}
+                        value={s.finalLevels[m] === undefined ? t('Unchanged') : level(s.finalLevels[m])}
+                        sub={t('The test began at {level}', { level: level(s.launch.levels[m] ?? DEFAULT_MODULE_LEVEL) })}
                         size="xl"
                       />
                     </li>
                   ))}
                 </ul>
-                <LinkButton to="/train" variant="primary" className="mt-6">Go to Train</LinkButton>
+                <LinkButton to="/train" variant="primary" className="mt-6">
+                  {t('Go to Train')}
+                </LinkButton>
               </Panel>
             )}
             {s.sections && s.sections.length > 0 && (
               <Panel>
-                <SectionTitle aside="Accuracy in each part of the map">Sections</SectionTitle>
+                <SectionTitle aside={t('Accuracy in each part of the map')}>{t('Sections')}</SectionTitle>
                 <SectionStrip sections={s.sections} />
               </Panel>
             )}
 
             <div className="grid gap-6 md:grid-cols-2">
               <Panel>
-                <SectionTitle aside={average?.text}>Against your average</SectionTitle>
+                <SectionTitle aside={average?.text}>{t('Against your average')}</SectionTitle>
                 {!data ? (
-                  <p className="text-ink-2">Loading.</p>
+                  <p className="text-ink-2">{t('Loading.')}</p>
                 ) : !average ? (
-                  <p className="text-ink-2">This needs 3 finished plays of the same kind in the 30 days before this one.</p>
+                  <p className="text-ink-2">{t('This needs 3 finished plays of the same kind in the 30 days before this one.')}</p>
                 ) : rows.length === 0 ? (
-                  <p className="text-ink-2">This play was close to your average on every measure.</p>
+                  <p className="text-ink-2">{t('This play was close to your average on every measure.')}</p>
                 ) : (
                   <ul className="divide-y divide-line">
                     {rows.map(({ d, v }) => (
                       <li key={d.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
                         <span className="min-w-0">
                           <span className="block">{d.label}</span>
-                          <span className="block text-sm text-ink-3">average {v.average}</span>
+                          <span className="block text-sm text-ink-3">{t('average {value}', { value: v.average })}</span>
                         </span>
                         <span className="flex shrink-0 items-center gap-3">
                           <span className="font-display text-lg tabular-nums">{v.value}</span>
@@ -265,14 +306,18 @@ export function Results() {
               </Panel>
 
               <Panel>
-                <SectionTitle>Over the play</SectionTitle>
-                {records ? <Fatigue points={fatigue} compact /> : <p className="text-ink-2">This needs the per-object detail, which has been removed for this play.</p>}
+                <SectionTitle>{t('Over the play')}</SectionTitle>
+                {records ? (
+                  <Fatigue points={fatigue} compact />
+                ) : (
+                  <p className="text-ink-2">{t('This needs the per-object detail, which has been removed for this play.')}</p>
+                )}
               </Panel>
             </div>
 
             {notes.length > 0 && (
               <Panel>
-                <SectionTitle>Notes on this play</SectionTitle>
+                <SectionTitle>{t('Notes on this play')}</SectionTitle>
                 <ul className="space-y-3">
                   {notes.map((n) => (
                     <li key={n.key}>
@@ -288,8 +333,12 @@ export function Results() {
       />
 
       <div className="mt-6 flex flex-wrap gap-4 text-sm">
-        <Link to={`/stats/play/${s.id}`} className="text-accent hover:underline">Full details for this play</Link>
-        <Link to="/stats" className="text-accent hover:underline">Your stats</Link>
+        <Link to={`/stats/play/${s.id}`} className="text-accent hover:underline">
+          {t('Full details for this play')}
+        </Link>
+        <Link to="/stats" className="text-accent hover:underline">
+          {t('Your stats')}
+        </Link>
       </div>
     </>
   );

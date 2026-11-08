@@ -195,8 +195,7 @@ export async function loadUiPrefs(): Promise<UiPrefs> {
     dynamic: { ...base.dynamic, ...(stored.dynamic ?? {}) },
     modules: stored.modules ?? {},
     daily: {
-      level:
-        typeof stored.daily?.level === 'number' && Number.isFinite(stored.daily.level) ? stored.daily.level : base.daily.level,
+      level: typeof stored.daily?.level === 'number' && Number.isFinite(stored.daily.level) ? stored.daily.level : base.daily.level,
     },
     playback: {
       speed:

@@ -45,7 +45,10 @@ describe('screens render', () => {
 
   it('module setup for every module', () => {
     for (const id of ['jumps', 'angles', 'streams', 'tracking', 'spinning', 'precision', 'reading', 'timing', 'mix', 'stamina', 'warmup']) {
-      const html = at(`/train/${id}`, createElement(Routes, null, createElement(Route, { path: '/train/:mode', element: createElement(ModuleSetup) })));
+      const html = at(
+        `/train/${id}`,
+        createElement(Routes, null, createElement(Route, { path: '/train/:mode', element: createElement(ModuleSetup) })),
+      );
       expect(html).toContain('Start');
     }
   });
@@ -65,11 +68,33 @@ describe('charts render', () => {
   });
 
   it('line chart, histogram, scatter, timeline and bars', () => {
-    const points = dailySeries(trendMetric('accuracy'), [summary, { ...summary, startedAt: summary.startedAt + 86_400_000 * 2 }], 'all', summary.startedAt + 86_400_000 * 3);
-    expect(renderToString(createElement(LineChart, { points, decimals: 1, format: (v: number) => `${v}%`, label: 'Accuracy' }))).toContain('svg');
-    expect(renderToString(createElement(LineChart, { points: [], decimals: 1, format: (v: number) => `${v}%`, label: 'Accuracy' }))).toContain('No data');
+    const points = dailySeries(
+      trendMetric('accuracy'),
+      [summary, { ...summary, startedAt: summary.startedAt + 86_400_000 * 2 }],
+      'all',
+      summary.startedAt + 86_400_000 * 3,
+    );
+    expect(renderToString(createElement(LineChart, { points, decimals: 1, format: (v: number) => `${v}%`, label: 'Accuracy' }))).toContain(
+      'svg',
+    );
+    expect(
+      renderToString(createElement(LineChart, { points: [], decimals: 1, format: (v: number) => `${v}%`, label: 'Accuracy' })),
+    ).toContain('No data');
     const timing = fx.records.map((r) => r.timingError).filter((v): v is number => v !== null);
-    expect(renderToString(createElement(Histogram, { label: 'h', series: [{ label: 'a', color: '#fff', counts: histCounts(timing) }, { label: 'b', color: '#f00', counts: histCounts(timing.slice(5)) }], mean: 3, sd: 20, windows: { crisp: 40, solid: 80, rough: 120 } }))).toContain('svg');
+    expect(
+      renderToString(
+        createElement(Histogram, {
+          label: 'h',
+          series: [
+            { label: 'a', color: '#fff', counts: histCounts(timing) },
+            { label: 'b', color: '#f00', counts: histCounts(timing.slice(5)) },
+          ],
+          mean: 3,
+          sd: 20,
+          windows: { crisp: 40, solid: 80, rough: 120 },
+        }),
+      ),
+    ).toContain('svg');
     expect(renderToString(createElement(AimScatter, { records: fx.records }))).toContain('circle');
     expect(renderToString(createElement(Timeline, { records: fx.records }))).toContain('Above zero');
     expect(renderToString(createElement(Bars, { label: 'b', items: [{ label: 'a', value: 1 }] }))).toContain('a');
@@ -79,7 +104,10 @@ describe('charts render', () => {
     const html = renderToString(
       createElement(HeatGrid, {
         rows: [{ key: 'r', label: 'Row' }],
-        cols: [{ key: 'a', label: 'A' }, { key: 'b', label: 'B' }],
+        cols: [
+          { key: 'a', label: 'A' },
+          { key: 'b', label: 'B' },
+        ],
         cell: (_r: string, c: string) => (c === 'a' ? { value: 0.2, n: 50, text: '20%' } : { value: null, n: 3, text: '' }),
         scale: 'sequential',
         max: 0.4,

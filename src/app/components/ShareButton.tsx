@@ -5,13 +5,14 @@ import { MODS } from '../../shared/catalog';
 import { encodeShare } from '../../shared/codes';
 import type { LaunchRequest } from '../../shared/types';
 import { playTitle } from '../format';
+import { t } from '../i18n';
 import { loadGame } from '../state/engine';
 import { Button } from './ui';
 
 /** "Heartbeat map: Dynamic, Level 4, Mirror. {url}" */
 export function shareText(launch: Pick<LaunchRequest, 'modeId' | 'presetLevel' | 'mods'>, url: string): string {
   const parts = [playTitle(launch), ...launch.mods.map((m) => MODS[m].label)];
-  return `Heartbeat map: ${parts.join(', ')}. ${url}`;
+  return t('Heartbeat map: {parts}. {url}', { parts: parts.join(', '), url });
 }
 
 /** The placement test is the same fixed set of rounds for everyone, so there is no map to share. */
@@ -28,7 +29,7 @@ async function copy(text: string): Promise<boolean> {
 
 export function ShareButton({
   launch,
-  label = 'Share map',
+  label,
   variant = 'secondary',
   size = 'md',
 }: {
@@ -51,16 +52,16 @@ export function ShareButton({
     try {
       const { GENERATOR_VERSION } = await loadGame();
       const url = `${window.location.origin}/s/${encodeShare(launch, GENERATOR_VERSION)}`;
-      show((await copy(shareText(launch, url))) ? 'Link copied.' : `Could not copy. The link is ${url}`);
+      show((await copy(shareText(launch, url))) ? t('Link copied.') : t('Could not copy. The link is {url}', { url }));
     } catch {
-      show('Could not make a link for this map.');
+      show(t('Could not make a link for this map.'));
     }
   };
 
   return (
     <span className="inline-flex items-center gap-3">
       <Button variant={variant} size={size} onClick={() => void share()}>
-        {label}
+        {label ?? t('Share map')}
       </Button>
       <span role="status" aria-live="polite" className="min-w-0 break-all text-sm text-ink-2 empty:hidden">
         {message}

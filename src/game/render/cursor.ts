@@ -8,7 +8,6 @@ import { COLORS } from './theme';
 const TRAIL_MS = 80;
 const TRAIL_SEGMENTS = 20;
 const TAU = Math.PI * 2;
-const OUTLINE = 'rgba(7, 9, 14, 0.9)';
 
 /** A data URL for the crosshair the canvas shows in absolute mode when the cursor is not drawn. */
 export const SYSTEM_CURSOR =
@@ -80,7 +79,7 @@ export function drawCursor(
     const b = a + CURSOR.crossArm * scale;
     for (let pass = 0; pass < 2; pass++) {
       ctx.lineWidth = pass === 0 ? 3.5 : 1.75;
-      ctx.strokeStyle = pass === 0 ? OUTLINE : COLORS.ink;
+      ctx.strokeStyle = pass === 0 ? COLORS.outline : COLORS.ink;
       ctx.beginPath();
       ctx.moveTo(px - b, py);
       ctx.lineTo(px - a, py);
@@ -97,7 +96,7 @@ export function drawCursor(
   if (style === 'dot') {
     const r = (CURSOR.dot / 2) * scale;
     ctx.lineWidth = 1.5;
-    ctx.strokeStyle = OUTLINE;
+    ctx.strokeStyle = COLORS.outline;
     ctx.fillStyle = COLORS.ink;
     ctx.beginPath();
     ctx.arc(px, py, r, 0, TAU);
@@ -106,7 +105,7 @@ export function drawCursor(
     return;
   }
   ctx.lineWidth = 2.25;
-  ctx.strokeStyle = OUTLINE;
+  ctx.strokeStyle = COLORS.outline;
   ctx.beginPath();
   ctx.arc(px, py, (CURSOR.ringOuter / 2) * scale, 0, TAU);
   ctx.stroke();

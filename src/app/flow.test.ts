@@ -42,7 +42,13 @@ describe('fake game flow', () => {
 
     // "Train this" records a drill and opens the module setup prefilled.
     const calls: [string, unknown][] = [];
-    await trainThis(top!, analysis.drills.map((d) => d.drill), levelsFromProgress(analysis.progress), analysis.windowPlays, ((to: string, opts: unknown) => calls.push([to, opts])) as never);
+    await trainThis(
+      top!,
+      analysis.drills.map((d) => d.drill),
+      levelsFromProgress(analysis.progress),
+      analysis.windowPlays,
+      ((to: string, opts: unknown) => calls.push([to, opts])) as never,
+    );
     expect(calls[0]![0]).toBe('/train/jumps');
     const prefill = (calls[0]![1] as { state: { prefill: LaunchRequest } }).state.prefill;
     expect(prefill.drillId).not.toBeNull();
@@ -55,7 +61,22 @@ describe('fake game flow', () => {
     expect(await listDrills()).toHaveLength(1);
 
     // Three drill sessions an hour apart, then plays outside the drill.
-    for (let k = 0; k < 3; k++) await savePlay(playAt(moduleLaunch({ modeId: 'jumps', options: prefill.options, mods: [], lengthSec: 90, seed: 500 + k, levels: {}, drillId: prefill.drillId }), 12 - k), NOW);
+    for (let k = 0; k < 3; k++)
+      await savePlay(
+        playAt(
+          moduleLaunch({
+            modeId: 'jumps',
+            options: prefill.options,
+            mods: [],
+            lengthSec: 90,
+            seed: 500 + k,
+            levels: {},
+            drillId: prefill.drillId,
+          }),
+          12 - k,
+        ),
+        NOW,
+      );
     for (let k = 0; k < 4; k++) await savePlay(playAt(dynamic(700 + k), 6 - k), NOW);
 
     invalidateAnalysis();

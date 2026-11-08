@@ -67,10 +67,8 @@ function distToSegment(px: number, py: number, ax: number, ay: number, bx: numbe
 
 function flattenCubic(out: number[], p0: Vec2, c1: Vec2, c2: Vec2, p3: Vec2, depth: number): void {
   const flat =
-    Math.max(
-      distToSegment(c1.x, c1.y, p0.x, p0.y, p3.x, p3.y),
-      distToSegment(c2.x, c2.y, p0.x, p0.y, p3.x, p3.y),
-    ) <= FLATTEN_TOLERANCE / 0.75;
+    Math.max(distToSegment(c1.x, c1.y, p0.x, p0.y, p3.x, p3.y), distToSegment(c2.x, c2.y, p0.x, p0.y, p3.x, p3.y)) <=
+    FLATTEN_TOLERANCE / 0.75;
   if (flat || depth >= 14) {
     out.push(p3.x, p3.y);
     return;

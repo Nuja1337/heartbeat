@@ -123,7 +123,11 @@ export class InputHandler {
     const samples: PointerEvent[] = list.length > 0 ? list : [e];
     let sumMx = 0;
     let sumMy = 0;
-    if (this.rawActive) for (const s of samples) { sumMx += s.movementX; sumMy += s.movementY; }
+    if (this.rawActive)
+      for (const s of samples) {
+        sumMx += s.movementX;
+        sumMy += s.movementY;
+      }
     const useParent = this.rawActive && sumMx === 0 && sumMy === 0 && (e.movementX !== 0 || e.movementY !== 0);
     const sens = this.getSettings().input.sensitivity;
     const l = this.pf.layout;

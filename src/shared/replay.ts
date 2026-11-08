@@ -16,6 +16,7 @@
 // A replay with a corrupt value can still decode (there is no checksum), but its structure is always checked.
 
 import { REPLAY_FORMAT, TRACE, TRACE_OP } from './catalog';
+import { t } from './i18n';
 import type { InputTrace, ReplayData } from './types';
 
 export type ReplayErrorKind = 'damaged' | 'newer';
@@ -23,7 +24,7 @@ export type ReplayErrorKind = 'damaged' | 'newer';
 export class ReplayFormatError extends Error {
   readonly kind: ReplayErrorKind;
   constructor(kind: ReplayErrorKind) {
-    super(kind === 'newer' ? 'This replay was made by a newer version of Heartbeat.' : 'This replay is damaged.');
+    super(kind === 'newer' ? t('This replay was made by a newer version of Heartbeat.') : t('This replay is damaged.'));
     this.name = 'ReplayFormatError';
     this.kind = kind;
   }
@@ -135,10 +136,10 @@ export function encodeReplay(data: ReplayData): Uint8Array {
   writeSecondDiffs(yStream, positioned.length, (k) => quantize(trace.y[positioned[k]!]!, TRACE.posSteps, 'y', positioned[k]!));
 
   const header = new TextEncoder().encode(JSON.stringify(head));
-  const t = tStream.bytes();
+  const tb = tStream.bytes();
   const x = xStream.bytes();
   const y = yStream.bytes();
-  const total = PREFIX_BYTES + header.length + 8 + n + 4 + t.length + 4 + x.length + 4 + y.length;
+  const total = PREFIX_BYTES + header.length + 8 + n + 4 + tb.length + 4 + x.length + 4 + y.length;
   if (total > U32_MAX) throw new RangeError('Replay is too large');
 
   const out = new Uint8Array(total);
@@ -154,8 +155,8 @@ export function encodeReplay(data: ReplayData): Uint8Array {
   put(u32le(n));
   put(u32le(positioned.length));
   put(trace.ops.subarray(0, n));
-  put(u32le(t.length));
-  put(t);
+  put(u32le(tb.length));
+  put(tb);
   put(u32le(x.length));
   put(x);
   put(u32le(y.length));
@@ -240,10 +241,17 @@ function parseHeader(bytes: Uint8Array): Omit<ReplayData, 'trace'> {
   const num = (k: string): boolean => typeof json[k] === 'number' && Number.isFinite(json[k] as number);
   const map = json.map;
   if (
-    !num('format') || !num('engineVersion') || !num('progressMs') || !num('endT') ||
-    typeof json.status !== 'string' || typeof json.judgments !== 'string' ||
-    !isObject(json.launch) || !Array.isArray(json.levels) ||
-    !isObject(map) || !Array.isArray(map.objects) || !Array.isArray(map.sections)
+    !num('format') ||
+    !num('engineVersion') ||
+    !num('progressMs') ||
+    !num('endT') ||
+    typeof json.status !== 'string' ||
+    typeof json.judgments !== 'string' ||
+    !isObject(json.launch) ||
+    !Array.isArray(json.levels) ||
+    !isObject(map) ||
+    !Array.isArray(map.objects) ||
+    !Array.isArray(map.sections)
   ) {
     throw damaged();
   }
@@ -286,9 +294,9 @@ export function decodeReplay(bytes: Uint8Array): ReplayData {
   const yBytes = stream();
   if (r.remaining !== 0) throw damaged();
 
-  const t = new Float64Array(n);
+  const times = new Float64Array(n);
   readSecondDiffs(tBytes, n, (i, q) => {
-    t[i] = q / TRACE.timeSteps;
+    times[i] = q / TRACE.timeSteps;
   });
   const px = new Float32Array(p);
   readSecondDiffs(xBytes, p, (i, q) => {
@@ -310,6 +318,6 @@ export function decodeReplay(bytes: Uint8Array): ReplayData {
     }
   }
 
-  const trace: InputTrace = { count: n, ops, t, x, y };
+  const trace: InputTrace = { count: n, ops, t: times, x, y };
   return { ...head, trace };
 }

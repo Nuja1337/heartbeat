@@ -25,25 +25,25 @@ interface Tok {
   bars: 1 | 2;
 }
 
-const t = (L: string, v: Tok['v'] = '', bars: 1 | 2 = 1): Tok => ({ L, v, bars });
+const mk = (L: string, v: Tok['v'] = '', bars: 1 | 2 = 1): Tok => ({ L, v, bars });
 
 const SCHEMES_GENERAL: Tok[][] = [
-  [t('A'), t('A', "'"), t('B'), t('A', '"')],
-  [t('A'), t('B'), t('A', "'"), t('B', "'")],
-  [t('A'), t('A', "'"), t('B'), t('B', "'")],
-  [t('A'), t('B'), t('A', "'"), t('C')],
+  [mk('A'), mk('A', "'"), mk('B'), mk('A', '"')],
+  [mk('A'), mk('B'), mk('A', "'"), mk('B', "'")],
+  [mk('A'), mk('A', "'"), mk('B'), mk('B', "'")],
+  [mk('A'), mk('B'), mk('A', "'"), mk('C')],
 ];
 const SCHEMES_STREAMS: Tok[][] = [
-  [t('S'), t('A'), t('S', "'"), t('A', "'")],
-  [t('S', '', 2), t('A'), t('A', "'")],
-  [t('S'), t('S', "'"), t('A'), t('S', '"')],
-  [t('S'), t('A'), t('S', "'"), t('B')],
+  [mk('S'), mk('A'), mk('S', "'"), mk('A', "'")],
+  [mk('S', '', 2), mk('A'), mk('A', "'")],
+  [mk('S'), mk('S', "'"), mk('A'), mk('S', '"')],
+  [mk('S'), mk('A'), mk('S', "'"), mk('B')],
 ];
 const SCHEMES_BREAK: Tok[][] = [
-  [t('A'), t('A', "'"), t('L', '', 2)],
-  [t('A'), t('L', '', 2), t('A', "'")],
+  [mk('A'), mk('A', "'"), mk('L', '', 2)],
+  [mk('A'), mk('L', '', 2), mk('A', "'")],
 ];
-const SCHEME_BREAK_PLAIN: Tok[] = [t('A'), t('A', "'"), t('A', '"'), t('A')];
+const SCHEME_BREAK_PLAIN: Tok[] = [mk('A'), mk('A', "'"), mk('A', '"'), mk('A')];
 
 const STREAM_KINDS: PatternKind[] = ['stream', 'burst', 'triple', 'cutstream', 'spacedstream'];
 
@@ -145,7 +145,7 @@ function schemeFor(g: G, st: SecState, ph: Phrase, bars: number): Tok[] {
   }
   // Longer phrases (an outro with a tail) restate the first motif.
   while (used < bars) {
-    out.push(t('A', used % 2 === 0 ? '"' : "'"));
+    out.push(mk('A', used % 2 === 0 ? '"' : "'"));
     used++;
   }
   return out;
@@ -174,7 +174,9 @@ function pickKind(g: G, st: SecState, letter: string, intensity: number, maxBeat
     if (maxBeats < 3) for (const k of ['stream', 'cutstream', 'spacedstream'] as const) weights[PATTERN_KINDS.indexOf(k)] = 0;
     if (weights.every((x) => x === 0)) return 'stream';
   }
-  const kind = PATTERN_KINDS[st.rng.weighted(weights.map((w, i) => w * 0.3 ** (st.used.get(PATTERN_KINDS[i] as PatternKind) ?? 0)))] as PatternKind;
+  const kind = PATTERN_KINDS[
+    st.rng.weighted(weights.map((weight, i) => weight * 0.3 ** (st.used.get(PATTERN_KINDS[i] as PatternKind) ?? 0)))
+  ] as PatternKind;
   st.used.set(kind, (st.used.get(kind) ?? 0) + 1);
   return kind;
 }
@@ -222,7 +224,7 @@ function placeToken(g: G, st: SecState, ph: Phrase, tok: Tok, barStart: number, 
     // The map ends on a downbeat: a long slider, or one note.
     let m: Motif | null = null;
     if (g.p.sliders > 0 && st.rng.chance(0.5)) m = longSliderMotif(g, st, I, 4);
-    if (m && m.steps[0]) (m.steps[0].slider as NonNullable<typeof m.steps[0]['slider']>).repeats = 0;
+    if (m && m.steps[0]) (m.steps[0].slider as NonNullable<(typeof m.steps)[0]['slider']>).repeats = 0;
     if (!m || !place(m, { intensity: I }).ok) {
       const one: Motif = { tag: 'single', steps: [{ off: 0, dist: jumpDistance(g.p, 1, I), turn: st.turns() * 0.6 }], beats: 1 };
       place(one, { intensity: I });
@@ -238,7 +240,8 @@ function placeToken(g: G, st: SecState, ph: Phrase, tok: Tok, barStart: number, 
     if (variant === '"') attempts.unshift(mirror);
     else attempts.push(mirror);
     for (const shift of [25, -25, 50, -50, 80, -80]) attempts.push({ ...base, negate: true, turnShift: shift });
-    for (const s of [0.9, 0.8]) for (const shift of [0, 40, -40]) attempts.push({ ...base, scale: f.scale * s, negate: true, turnShift: shift });
+    for (const s of [0.9, 0.8])
+      for (const shift of [0, 40, -40]) attempts.push({ ...base, scale: f.scale * s, negate: true, turnShift: shift });
     for (const o of attempts) {
       // The mirror option replays absolute positions, so it never takes a scale.
       if (place(known.motif, o).ok) return true;
@@ -309,7 +312,10 @@ function mirrorSecondHalf(g: G, st: SecState, half: number): boolean {
     let ok = true;
     for (const ev of events) {
       const ph = g.plan.phrases[ev.phrase + half] as Phrase;
-      const res = g.builder.addMotif(ev.info.motif, g.timeAt(sp.startBeat + ev.rel + halfBeats), { mirror: { source: ev.info, axis }, intensity: ph.intensity });
+      const res = g.builder.addMotif(ev.info.motif, g.timeAt(sp.startBeat + ev.rel + halfBeats), {
+        mirror: { source: ev.info, axis },
+        intensity: ph.intensity,
+      });
       if (!res.ok) {
         ok = false;
         break;
@@ -322,7 +328,15 @@ function mirrorSecondHalf(g: G, st: SecState, half: number): boolean {
 }
 
 function genSection(g: G, sp: SectionPlan, rng: Rng): boolean {
-  const st: SecState = { sp, rng, turns: turnSource(rng.fork('turns'), g.p), lib: new Map(), used: new Map(), events: null, resume: Math.max(sp.startBeat, g.carry) };
+  const st: SecState = {
+    sp,
+    rng,
+    turns: turnSource(rng.fork('turns'), g.p),
+    lib: new Map(),
+    used: new Map(),
+    events: null,
+    resume: Math.max(sp.startBeat, g.carry),
+  };
   const spin = g.plan.spinners.find((s) => s.section === sp.index);
   const first = g.plan.phrases[sp.firstPhrase] as Phrase;
   if (spin) {

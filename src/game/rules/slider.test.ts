@@ -15,7 +15,8 @@ import {
 } from './slider';
 import type { SliderSink } from './slider';
 
-const straight = (len: number, opts = {}) => makeSlider(0, 1000, { x: 100, y: 300 }, [{ type: 'line', to: { x: 100 + len, y: 300 } }], opts);
+const straight = (len: number, opts = {}) =>
+  makeSlider(0, 1000, { x: 100, y: 300 }, [{ type: 'line', to: { x: 100 + len, y: 300 } }], opts);
 
 class Sink implements SliderSink {
   parts: { kind: number; hit: boolean }[] = [];
@@ -29,11 +30,7 @@ class Sink implements SliderSink {
 }
 
 /** Run a slider with the cursor given by a function of time and a hold function. */
-function run(
-  obj: ReturnType<typeof straight>,
-  cursorAt: (t: number) => Vec2,
-  held: (t: number) => boolean,
-) {
+function run(obj: ReturnType<typeof straight>, cursorAt: (t: number) => Vec2, held: (t: number) => boolean) {
   const g = buildSliderGeometry(obj);
   const r = new SliderRun(g);
   const buf = new CursorBuffer(8192);

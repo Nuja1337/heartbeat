@@ -1,23 +1,46 @@
 import { Link } from 'react-router';
 import type { WeeklyChange } from '../../analytics/index';
+import { t } from '../i18n';
 import { Delta, Panel, SectionTitle } from './ui';
 
 /** What moved in the last 7 days, as the sentences `weeklyChanges` writes. */
-export function WeeklyChanges({ changes, link = false, className = '' }: { changes: readonly WeeklyChange[]; link?: boolean; className?: string }) {
+export function WeeklyChanges({
+  changes,
+  link = false,
+  className = '',
+}: {
+  changes: readonly WeeklyChange[];
+  link?: boolean;
+  className?: string;
+}) {
   return (
     <Panel className={className}>
-      <SectionTitle aside={link ? <Link to="/stats" className="text-accent hover:underline">All stats</Link> : 'Last 7 days against the 4 weeks before'}>
-        What changed this week
+      <SectionTitle
+        aside={
+          link ? (
+            <Link to="/stats" className="text-accent hover:underline">
+              {t('All stats')}
+            </Link>
+          ) : (
+            t('Last 7 days against the 4 weeks before')
+          )
+        }
+      >
+        {t('What changed this week')}
       </SectionTitle>
       {changes.length === 0 ? (
-        <p className="text-ink-2">Nothing has changed clearly yet. A change needs at least 3 plays in the last 7 days, 3 in the 4 weeks before, and a clear difference between them.</p>
+        <p className="text-ink-2">
+          {t(
+            'Nothing has changed clearly yet. A change needs at least 3 plays in the last 7 days, 3 in the 4 weeks before, and a clear difference between them.',
+          )}
+        </p>
       ) : (
         <ul className="divide-y divide-line">
           {changes.slice(0, 4).map((c) => (
             <li key={c.id} className="flex items-start justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
               <span>{c.text}</span>
               <span className="mt-0.5 shrink-0">
-                <Delta value={c.improved === null ? 'Changed' : c.improved ? 'Better' : 'Worse'} good={c.improved} />
+                <Delta value={c.improved === null ? t('Changed') : c.improved ? t('Better') : t('Worse')} good={c.improved} />
               </span>
             </li>
           ))}

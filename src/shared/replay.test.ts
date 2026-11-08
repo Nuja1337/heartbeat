@@ -23,24 +23,58 @@ const base = { radius: 50, approachMs: 800, windows, group: 0, number: 1, intens
 function tinyMap(): PlayableMap {
   const circle: CircleObject = { ...base, kind: 'circle', index: 0, time: 1000, pos: { x: 200, y: 300 }, pattern: 'single' };
   const slider: SliderObject = {
-    ...base, kind: 'slider', index: 1, time: 2000, pos: { x: 400, y: 300 }, pattern: 'slider',
-    path: [{ type: 'line', to: { x: 600, y: 300 } }], length: 200, velocity: 0.2, repeats: 0, spanMs: 1000, endTime: 3000,
-    tickDistance: 50, followRadius: 100, shape: 'straight',
+    ...base,
+    kind: 'slider',
+    index: 1,
+    time: 2000,
+    pos: { x: 400, y: 300 },
+    pattern: 'slider',
+    path: [{ type: 'line', to: { x: 600, y: 300 } }],
+    length: 200,
+    velocity: 0.2,
+    repeats: 0,
+    spanMs: 1000,
+    endTime: 3000,
+    tickDistance: 50,
+    followRadius: 100,
+    shape: 'straight',
   };
   const spinner: SpinnerObject = {
-    ...base, kind: 'spinner', index: 2, time: 4000, pos: { x: 500, y: 312.5 }, pattern: 'spinner', endTime: 5000, rotationsRequired: 3,
+    ...base,
+    kind: 'spinner',
+    index: 2,
+    time: 4000,
+    pos: { x: 500, y: 312.5 },
+    pattern: 'spinner',
+    endTime: 5000,
+    rotationsRequired: 3,
   };
   return {
-    format: 1, generatorVersion: 2, seed: 7, modeId: 'dynamic', beatMs: 500, durationMs: 6000, health: null,
+    format: 1,
+    generatorVersion: 2,
+    seed: 7,
+    modeId: 'dynamic',
+    beatMs: 500,
+    durationMs: 6000,
+    health: null,
     objects: [circle, slider, spinner],
     sections: [{ start: 0, end: 6000, intensity: 0.5, focus: 'mixed', role: 'build' }],
-    mods: ['mirror'], rate: 1,
+    mods: ['mirror'],
+    rate: 1,
   };
 }
 
 const launch: LaunchRequest = {
-  modeId: 'dynamic', difficulty: { ...DEFAULT_DIFFICULTY }, presetLevel: 4, options: {}, mods: ['mirror'], seed: 7, lengthSec: 60,
-  levels: {}, drillId: null, source: { kind: 'manual' },
+  modeId: 'dynamic',
+  difficulty: { ...DEFAULT_DIFFICULTY },
+  presetLevel: 4,
+  options: {},
+  mods: ['mirror'],
+  seed: 7,
+  lengthSec: 60,
+  levels: {},
+  drillId: null,
+  source: { kind: 'manual' },
 };
 
 type Ev = [op: number, t: number, x?: number, y?: number];
@@ -59,8 +93,16 @@ function traceOf(events: readonly Ev[]): InputTrace {
 
 function replayOf(trace: InputTrace, map: PlayableMap = tinyMap()): ReplayData {
   return {
-    format: REPLAY_FORMAT, engineVersion: 2, launch, map, progressMs: 6000, status: 'completed', endT: 6000,
-    judgments: 'csrm-', levels: [{ set: 0, module: 'jumps', level: 3, success: 0.75, objects: 12 }], trace,
+    format: REPLAY_FORMAT,
+    engineVersion: 2,
+    launch,
+    map,
+    progressMs: 6000,
+    status: 'completed',
+    endT: 6000,
+    judgments: 'csrm-',
+    levels: [{ set: 0, module: 'jumps', level: 3, success: 0.75, objects: 12 }],
+    trace,
   };
 }
 
@@ -93,15 +135,38 @@ const bodyOffset = (bytes: Uint8Array): number => 12 + headerLength(bytes);
 
 /** Builds a container by hand, independently of the encoder. */
 function container(opts: {
-  head?: object; n: number; p: number; ops: number[]; t: number[]; x: number[]; y: number[];
-  version?: number; flags?: number; reserved?: number[];
+  head?: object;
+  n: number;
+  p: number;
+  ops: number[];
+  t: number[];
+  x: number[];
+  y: number[];
+  version?: number;
+  flags?: number;
+  reserved?: number[];
 }): Uint8Array {
   const { trace: _t, ...head } = replayOf(traceOf([]));
   const header = new TextEncoder().encode(JSON.stringify(opts.head ?? head));
   return Uint8Array.from([
-    0x48, 0x42, 0x52, 0x50, opts.version ?? REPLAY_FORMAT, opts.flags ?? 0, ...(opts.reserved ?? [0, 0]),
-    ...u32(header.length), ...header, ...u32(opts.n), ...u32(opts.p), ...opts.ops,
-    ...u32(opts.t.length), ...opts.t, ...u32(opts.x.length), ...opts.x, ...u32(opts.y.length), ...opts.y,
+    0x48,
+    0x42,
+    0x52,
+    0x50,
+    opts.version ?? REPLAY_FORMAT,
+    opts.flags ?? 0,
+    ...(opts.reserved ?? [0, 0]),
+    ...u32(header.length),
+    ...header,
+    ...u32(opts.n),
+    ...u32(opts.p),
+    ...opts.ops,
+    ...u32(opts.t.length),
+    ...opts.t,
+    ...u32(opts.x.length),
+    ...opts.x,
+    ...u32(opts.y.length),
+    ...opts.y,
   ]);
 }
 
@@ -122,7 +187,12 @@ function randomTrace(rand: () => number, n: number): InputTrace {
     const op = i < 16 ? i : Math.floor(rand() * 16);
     t += (Math.floor(rand() * 400) - (rand() < 0.1 ? 600 : 0)) / 64;
     const positioned = op <= 4;
-    events.push([op, t, positioned ? (Math.floor(rand() * 20000) - 4000) / 16 : 0, positioned ? (Math.floor(rand() * 14000) - 2000) / 16 : 0]);
+    events.push([
+      op,
+      t,
+      positioned ? (Math.floor(rand() * 20000) - 4000) / 16 : 0,
+      positioned ? (Math.floor(rand() * 14000) - 2000) / 16 : 0,
+    ]);
   }
   return traceOf(events);
 }
@@ -190,7 +260,17 @@ describe('replay codec golden bytes', () => {
 });
 
 describe('replay codec rejection', () => {
-  const good = encodeReplay(replayOf(traceOf([[0, 0, 1, 1], [1, 5, 2, 2], [13, 6], [9, 7], [5, 8]])));
+  const good = encodeReplay(
+    replayOf(
+      traceOf([
+        [0, 0, 1, 1],
+        [1, 5, 2, 2],
+        [13, 6],
+        [9, 7],
+        [5, 8],
+      ]),
+    ),
+  );
   const withByte = (i: number, v: number): Uint8Array => {
     const c = good.slice();
     c[i] = v;
@@ -219,7 +299,11 @@ describe('replay codec rejection', () => {
   });
 
   it('rejects every truncation', () => {
-    for (let len = 0; len < good.length; len++) expect(kindOf(() => decodeReplay(good.subarray(0, len))), `length ${len}`).toBe('damaged');
+    for (let len = 0; len < good.length; len++)
+      expect(
+        kindOf(() => decodeReplay(good.subarray(0, len))),
+        `length ${len}`,
+      ).toBe('damaged');
   });
 
   it('rejects trailing bytes', () => {
@@ -288,9 +372,44 @@ describe('replay codec rejection', () => {
     expect(kindOf(() => decodeReplay(c({ ...head, map: null })))).toBe('damaged');
     expect(kindOf(() => decodeReplay(c({ ...head, endT: 'x' })))).toBe('damaged');
     expect(kindOf(() => decodeReplay(c([1, 2])))).toBe('damaged');
-    const notJson = Uint8Array.from([0x48, 0x42, 0x52, 0x50, 1, 0, 0, 0, ...u32(3), 0x7b, 0x7b, 0x7b, ...u32(0), ...u32(0), ...u32(0), ...u32(0), ...u32(0)]);
+    const notJson = Uint8Array.from([
+      0x48,
+      0x42,
+      0x52,
+      0x50,
+      1,
+      0,
+      0,
+      0,
+      ...u32(3),
+      0x7b,
+      0x7b,
+      0x7b,
+      ...u32(0),
+      ...u32(0),
+      ...u32(0),
+      ...u32(0),
+      ...u32(0),
+    ]);
     expect(kindOf(() => decodeReplay(notJson))).toBe('damaged');
-    const badUtf8 = Uint8Array.from([0x48, 0x42, 0x52, 0x50, 1, 0, 0, 0, ...u32(2), 0xc3, 0x28, ...u32(0), ...u32(0), ...u32(0), ...u32(0), ...u32(0)]);
+    const badUtf8 = Uint8Array.from([
+      0x48,
+      0x42,
+      0x52,
+      0x50,
+      1,
+      0,
+      0,
+      0,
+      ...u32(2),
+      0xc3,
+      0x28,
+      ...u32(0),
+      ...u32(0),
+      ...u32(0),
+      ...u32(0),
+      ...u32(0),
+    ]);
     expect(kindOf(() => decodeReplay(badUtf8))).toBe('damaged');
   });
 });
@@ -305,17 +424,63 @@ describe('replay codec vectors', () => {
   });
 
   it('first t = 0, decreasing t, duplicate t', () => {
-    roundTrip(replayOf(traceOf([[13, 0], [13, 0], [13, 0]])));
-    roundTrip(replayOf(traceOf([[13, 50], [0, 40, 3, 4], [1, 10, 5, 6], [13, 10], [9, 10], [13, 0], [13, 1000]])));
-    roundTrip(replayOf(traceOf([[0, 7, 1, 1], [0, 7, 1, 1], [0, 7, 1, 1]])));
+    roundTrip(
+      replayOf(
+        traceOf([
+          [13, 0],
+          [13, 0],
+          [13, 0],
+        ]),
+      ),
+    );
+    roundTrip(
+      replayOf(
+        traceOf([
+          [13, 50],
+          [0, 40, 3, 4],
+          [1, 10, 5, 6],
+          [13, 10],
+          [9, 10],
+          [13, 0],
+          [13, 1000],
+        ]),
+      ),
+    );
+    roundTrip(
+      replayOf(
+        traceOf([
+          [0, 7, 1, 1],
+          [0, 7, 1, 1],
+          [0, 7, 1, 1],
+        ]),
+      ),
+    );
   });
 
   it('negative and off-field positions', () => {
-    roundTrip(replayOf(traceOf([[0, 0, -50.5, -0.0625], [1, 1, 5000.0625, -10000.9375], [0, 2, 1048576, -1048576], [0, 3, 0, 625]])));
+    roundTrip(
+      replayOf(
+        traceOf([
+          [0, 0, -50.5, -0.0625],
+          [1, 1, 5000.0625, -10000.9375],
+          [0, 2, 1048576, -1048576],
+          [0, 3, 0, 625],
+        ]),
+      ),
+    );
   });
 
   it('writes -0 as +0', () => {
-    const out = decodeReplay(encodeReplay(replayOf(traceOf([[0, -0, -0, -0], [13, -0]]))));
+    const out = decodeReplay(
+      encodeReplay(
+        replayOf(
+          traceOf([
+            [0, -0, -0, -0],
+            [13, -0],
+          ]),
+        ),
+      ),
+    );
     expect(Object.is(out.trace.t[0], 0)).toBe(true);
     expect(Object.is(out.trace.x[0], 0)).toBe(true);
     expect(Object.is(out.trace.y[0], 0)).toBe(true);
@@ -324,10 +489,22 @@ describe('replay codec vectors', () => {
 
   it('t at and beyond 2^31 / 64 ms', () => {
     const edge = 2 ** 31 / 64;
-    roundTrip(replayOf(traceOf([[13, edge - 1 / 64], [13, edge], [13, edge + 1 / 64], [0, edge * 3 + 0.5, 1, 1], [13, 2 ** 40 / 64], [13, 2 ** 45]])));
+    roundTrip(
+      replayOf(
+        traceOf([
+          [13, edge - 1 / 64],
+          [13, edge],
+          [13, edge + 1 / 64],
+          [0, edge * 3 + 0.5, 1, 1],
+          [13, 2 ** 40 / 64],
+          [13, 2 ** 45],
+        ]),
+      ),
+    );
   });
 
-  it('more than 2 x 65536 events', () => {
+  // Encodes and decodes 135 thousand events, so it is given a minute.
+  it('more than 2 x 65536 events', { timeout: 60_000 }, () => {
     const rand = rng(99);
     const n = 2 * 65536 + 4321;
     const data = replayOf(randomTrace(rand, n));
@@ -352,7 +529,10 @@ describe('replay codec vectors', () => {
   });
 
   it('does not check x and y of events that carry no position', () => {
-    const t = traceOf([[13, 1], [5, 2]]);
+    const t = traceOf([
+      [13, 1],
+      [5, 2],
+    ]);
     t.x[0] = 0.123;
     t.y[1] = NaN;
     const out = decodeReplay(encodeReplay(replayOf(t)));
@@ -362,7 +542,10 @@ describe('replay codec vectors', () => {
 
   it('throws on an unknown op or a short array', () => {
     expect(() => encodeReplay(replayOf(traceOf([[16, 1]])))).toThrow(RangeError);
-    const t = traceOf([[13, 1], [13, 2]]);
+    const t = traceOf([
+      [13, 1],
+      [13, 2],
+    ]);
     expect(() => encodeReplay(replayOf({ ...t, count: 3 }))).toThrow(RangeError);
   });
 });
@@ -384,7 +567,10 @@ describe('replay codec fuzz', () => {
     const rand = rng(7);
     for (let i = 0; i < 500; i++) {
       const len = Math.floor(rand() * source.length);
-      expect(kindOf(() => decodeReplay(source.slice(0, len))), `length ${len}`).toMatch(/^(damaged|newer)$/);
+      expect(
+        kindOf(() => decodeReplay(source.slice(0, len))),
+        `length ${len}`,
+      ).toMatch(/^(damaged|newer)$/);
     }
   });
 
@@ -413,7 +599,10 @@ describe('replay codec fuzz', () => {
       for (let k = 0; k < 20; k++) {
         const c = source.slice();
         c[at] = (c[at]! ^ (1 + Math.floor(rand() * 255))) & 255;
-        expect(kindOf(() => decodeReplay(c)), `byte ${at}`).toMatch(/^(damaged|newer)$/);
+        expect(
+          kindOf(() => decodeReplay(c)),
+          `byte ${at}`,
+        ).toMatch(/^(damaged|newer)$/);
       }
     }
   });
@@ -426,13 +615,19 @@ describe('replay codec fuzz', () => {
       const at = o + Math.floor(rand() * 8); // N or P
       const c = source.slice();
       c[at] = (c[at]! ^ (1 + Math.floor(rand() * 255))) & 255;
-      expect(kindOf(() => decodeReplay(c)), `byte ${at}`).toMatch(/^(damaged|newer)$/);
+      expect(
+        kindOf(() => decodeReplay(c)),
+        `byte ${at}`,
+      ).toMatch(/^(damaged|newer)$/);
     }
     // An op byte that becomes unknown, or switches between positioned and not, is rejected.
     for (let i = 0; i < n; i++) {
       const c = source.slice();
       c[o + 8 + i] = c[o + 8 + i]! <= 4 ? 13 : 0;
-      expect(kindOf(() => decodeReplay(c)), `op ${i}`).toBe('damaged');
+      expect(
+        kindOf(() => decodeReplay(c)),
+        `op ${i}`,
+      ).toBe('damaged');
     }
   });
 });

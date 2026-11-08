@@ -20,7 +20,8 @@ import type { CanvasFactory } from './objects';
 import { groupOf, resolveSkin } from './skin';
 import type { Skin } from './skin';
 import { setChangeText, STRINGS } from './strings';
-import { clamp01, COLORS, FONT, hexAlpha } from './theme';
+import { applyCanvasTheme, canvasThemeFor, clamp01, COLORS, FONT } from './theme';
+import type { ThemeId } from '../../shared/theme';
 
 export type OverlayKind = 'none' | 'ready' | 'countdown' | 'needsClick' | 'failing';
 
@@ -86,8 +87,6 @@ const F_HINT = `500 16px ${FONT}`;
 const F_BANNER = `700 44px ${FONT}`;
 const F_BANNER_SUB = `600 19px ${FONT}`;
 
-const TICK_DIM = hexAlpha('#a3adbd', 0.28);
-const SPIN_TIME = hexAlpha('#eef1f6', 0.4);
 const SPEED_SWEEP = TAU * 0.75;
 const SPEED_START = Math.PI * 0.75;
 
@@ -103,7 +102,8 @@ export class Renderer {
   private sprites: SpriteCache;
   private hud = new Hud();
   private settings: Settings | null = null;
-  private skin: Skin = resolveSkin(DEFAULT_SETTINGS);
+  private theme: ThemeId = 'dark';
+  private skin: Skin = resolveSkin(DEFAULT_SETTINGS, 'dark');
   private bg: HTMLCanvasElement | null = null;
   private bgW = 0;
   private bgH = 0;
@@ -162,15 +162,19 @@ export class Renderer {
    * has not seen, so calling it is only needed to do the work ahead of the next frame.
    */
   setSettings(s: Settings): void {
-    if (s === this.settings) return;
-    const next = resolveSkin(s);
+    const theme = canvasThemeFor(s);
+    if (s === this.settings && theme === this.theme) return;
+    applyCanvasTheme(theme);
+    const next = resolveSkin(s, theme);
     if (next.bitmapKey !== this.skin.bitmapKey) {
       this.sprites.clear();
       this.bg = null;
+      this.spotGrad = null;
     }
     if (next.judge[3] !== this.skin.judge[3]) this.vigGrad = null;
     this.skin = next;
     this.settings = s;
+    this.theme = theme;
   }
 
   /** Call after the canvas size or DPR changes. */
@@ -189,7 +193,7 @@ export class Renderer {
   }
 
   render(rs: RenderState): void {
-    if (rs.settings !== this.settings) this.setSettings(rs.settings);
+    if (rs.settings !== this.settings || canvasThemeFor(rs.settings) !== this.theme) this.setSettings(rs.settings);
     const ctx = this.ctx;
     const pf = this.pf;
     const skin = this.skin;
@@ -235,7 +239,15 @@ export class Renderer {
     // 12. Cursor, trail and click ripples.
     if (rs.drawCursor) {
       const input = rs.settings.input;
-      drawCursor(ctx, l, rs.cursorX, rs.cursorY, input.cursorScale, skin.cursorStyle, input.cursorTrail ? { buf: rs.session.cursor, now: rs.now } : null);
+      drawCursor(
+        ctx,
+        l,
+        rs.cursorX,
+        rs.cursorY,
+        input.cursorScale,
+        skin.cursorStyle,
+        input.cursorTrail ? { buf: rs.session.cursor, now: rs.now } : null,
+      );
     }
     rs.fx.drawRipples(ctx, rs.now, l.ox, l.oy, l.scale, COLORS.ink);
 
@@ -427,7 +439,9 @@ export class Renderer {
   /** A double chevron at a reversal point, along the end tangent and pointing the way the ball will go. */
   private drawChevrons(flat: FlatPath, o: SliderObject, x: number, y: number, a: number, pulse: number): void {
     const ctx = this.ctx;
-    const atEnd = Math.hypot(x - (flat.xs[flat.n - 1] as number), y - (flat.ys[flat.n - 1] as number)) < Math.hypot(x - (flat.xs[0] as number), y - (flat.ys[0] as number));
+    const atEnd =
+      Math.hypot(x - (flat.xs[flat.n - 1] as number), y - (flat.ys[flat.n - 1] as number)) <
+      Math.hypot(x - (flat.xs[0] as number), y - (flat.ys[0] as number));
     tangentAt(flat, atEnd ? flat.length : 0, this.tmp);
     const dir = atEnd ? -1 : 1;
     const dx = this.tmp.x * dir;
@@ -523,7 +537,7 @@ export class Renderer {
     const share = clamp01(q);
     ctx.lineCap = 'butt';
     ctx.lineWidth = 3;
-    ctx.strokeStyle = TICK_DIM;
+    ctx.strokeStyle = COLORS.tickDim;
     ctx.beginPath();
     for (let k = 0; k < 24; k++) {
       if (k / 24 < share) continue;
@@ -546,7 +560,7 @@ export class Renderer {
     // Time left, a hairline inside the ticks.
     const left = active ? clamp01((o.endTime - t) / (o.endTime - o.time)) : 1;
     ctx.lineWidth = 2;
-    ctx.strokeStyle = SPIN_TIME;
+    ctx.strokeStyle = COLORS.spinTime;
     ctx.beginPath();
     ctx.arc(cx, cy, R - 46, -Math.PI / 2, -Math.PI / 2 + TAU * left);
     ctx.stroke();
@@ -631,8 +645,8 @@ export class Renderer {
     const key = Math.round(R);
     if (!this.spotGrad || key !== this.spotR) {
       const g = ctx.createRadialGradient(0, 0, R * 0.7, 0, 0, R);
-      g.addColorStop(0, 'rgba(7, 9, 14, 0)');
-      g.addColorStop(1, 'rgba(7, 9, 14, 0.95)');
+      g.addColorStop(0, COLORS.spotClear);
+      g.addColorStop(1, COLORS.spot);
       this.spotGrad = g;
       this.spotR = key;
     }
@@ -758,7 +772,7 @@ export class Renderer {
       return;
     }
     ctx.globalAlpha = rs.overlay === 'failing' ? Math.min(0.7, age / 400) : 0.66;
-    ctx.fillStyle = rs.overlay === 'failing' ? '#2a0a12' : COLORS.bg;
+    ctx.fillStyle = rs.overlay === 'failing' ? COLORS.failing : COLORS.bg;
     ctx.fillRect(l.ox, l.oy, w, h);
     ctx.globalAlpha = 1;
     if (rs.overlay === 'ready') {
@@ -800,7 +814,12 @@ export class Renderer {
   }
 
   /** Banner for the end of a set. */
-  static banner(direction: 'up' | 'down' | 'hold', from: number, to: number, now: number): { title: string; sub: string; t0: number; until: number } {
+  static banner(
+    direction: 'up' | 'down' | 'hold',
+    from: number,
+    to: number,
+    now: number,
+  ): { title: string; sub: string; t0: number; until: number } {
     const t = setChangeText(direction, from, to);
     return { title: t.title, sub: t.sub, t0: now, until: now + 1900 };
   }

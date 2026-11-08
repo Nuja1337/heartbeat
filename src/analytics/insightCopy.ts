@@ -1,30 +1,54 @@
-// Every sentence the insight and drill code shows to players. Follows reference/writing.md.
+// Every sentence the insight and drill code shows to players. Follows reference/writing.md. Each sentence goes through
+// t(), so the insights read in the player's language, with plurals and sides chosen by the dictionary.
 
 import { MODES } from '../shared/catalog';
+import { formatNumber, intlTag, msg, t } from '../shared/i18n';
 import type { DrillEval, RuleId } from '../data/schema';
 import type { ModeId, ModuleOptions } from '../shared/types';
 
 export type Params = Record<string, number | string>;
 
-/** Octants as in ObjectFeatures.direction: 0 is right, then clockwise on screen. */
-export const OCTANT_PHRASE = ['right', 'down and right', 'down', 'down and left', 'left', 'up and left', 'up', 'up and right'];
+/** Octants as in ObjectFeatures.direction: 0 is right, then clockwise on screen. These are translated where shown. */
+export const OCTANT_PHRASE = [
+  msg('right'),
+  msg('down and right'),
+  msg('down'),
+  msg('down and left'),
+  msg('left'),
+  msg('up and left'),
+  msg('up'),
+  msg('up and right'),
+];
+
+const octantPhrase = (o: number): string => {
+  const phrase = OCTANT_PHRASE[o] ?? OCTANT_PHRASE[0]!;
+  return t(phrase);
+};
 
 /**
- * Where clicks land on the screen when they are off the line of movement.
+ * Where clicks land on the screen when they are off the line of movement. The result is English, to translate where shown.
  * Lateral is positive to the right of the movement, which is a clockwise quarter turn on screen
  * (y points down), so moving down and landing to the right of the movement is the left of the screen.
  */
 export function lateralSide(octant: number, sign: 1 | -1): string {
   const screen = (((octant + 2 * sign) % 8) + 8) % 8;
   switch (screen) {
-    case 0: return 'to the right of the line';
-    case 1: return 'down and to the right of the line';
-    case 2: return 'below the line';
-    case 3: return 'down and to the left of the line';
-    case 4: return 'to the left of the line';
-    case 5: return 'up and to the left of the line';
-    case 6: return 'above the line';
-    default: return 'up and to the right of the line';
+    case 0:
+      return msg('to the right of the line');
+    case 1:
+      return msg('down and to the right of the line');
+    case 2:
+      return msg('below the line');
+    case 3:
+      return msg('down and to the left of the line');
+    case 4:
+      return msg('to the left of the line');
+    case 5:
+      return msg('up and to the left of the line');
+    case 6:
+      return msg('above the line');
+    default:
+      return msg('up and to the right of the line');
   }
 }
 
@@ -34,118 +58,196 @@ const num = (p: Params, k: string): number => {
 };
 const str = (p: Params, k: string): string => String(p[k] ?? '');
 
-export const plural = (n: number, one: string, many = `${one}s`): string => `${n} ${n === 1 ? one : many}`;
+export { count as plural } from '../shared/i18n';
 
 /** The sentence an insight shows. */
 export function insightText(ruleId: RuleId, variant: string | null, p: Params): string {
+  const cut = num(p, 'cut');
+  const pct = num(p, 'pct');
+  const ms = num(p, 'ms');
+  const a = num(p, 'a');
+  const b = num(p, 'b');
   switch (ruleId) {
     case 'long-undershoot':
-      return `You stop short on long, fast jumps (over ${num(p, 'cut')} target widths). Your clicks land about ${num(p, 'pct')}% of a target's width before the center.`;
+      return t(
+        "You stop short on long, fast jumps (over {cut} target widths). Your clicks land about {pct}% of a target's width before the center.",
+        { cut, pct },
+      );
     case 'long-overshoot':
-      return `You overshoot long, fast jumps (over ${num(p, 'cut')} target widths). Your clicks land about ${num(p, 'pct')}% of a target's width past the center.`;
+      return t(
+        "You overshoot long, fast jumps (over {cut} target widths). Your clicks land about {pct}% of a target's width past the center.",
+        {
+          cut,
+          pct,
+        },
+      );
     case 'short-overshoot':
-      return `You overshoot short jumps by about ${num(p, 'pct')}% of a target's width.`;
-    case 'direction-drift':
+      return t("You overshoot short jumps by about {pct}% of a target's width.", { pct });
+    case 'direction-drift': {
+      // The direction and the side were marked with msg() where they are chosen, so they translate here.
+      const dir = str(p, 'dir');
+      const side = str(p, 'side');
       if (variant?.endsWith(':spread')) {
-        return `When you move ${str(p, 'dir')}, your clicks scatter across the line by ${num(p, 'pct')}% of a target's width, against ${num(p, 'other')}% on your other jumps.`;
+        return t(
+          "When you move {dir}, your clicks scatter across the line by {pct}% of a target's width, against {other}% on your other jumps.",
+          {
+            dir: t(dir),
+            pct,
+            other: num(p, 'other'),
+          },
+        );
       }
-      return `When you move ${str(p, 'dir')}, your clicks land about ${num(p, 'pct')}% of a target's width ${str(p, 'side')}.`;
+      return t("When you move {dir}, your clicks land about {pct}% of a target's width {side}.", {
+        dir: t(dir),
+        pct,
+        side: t(side),
+      });
+    }
     case 'stream-offset':
       return variant === 'early'
-        ? `You rush fast streams, about ${num(p, 'ms')} ms early on average.`
-        : `You're late on fast streams by about ${num(p, 'ms')} ms on average.`;
+        ? t('You rush fast streams, about {ms} ms early on average.', { ms })
+        : t("You're late on fast streams by about {ms} ms on average.", { ms });
     case 'stream-fade':
-      return `Your timing gets looser after the first five taps of a stream (${num(p, 'a')} ms spread against ${num(p, 'b')} ms).`;
+      return t('Your timing gets looser after the first five taps of a stream ({a} ms spread against {b} ms).', { a, b });
     case 'second-half':
-      return `Your accuracy drops by about ${num(p, 'points')} points in the second half of a play.`;
+      return t('Your accuracy drops by about {points} points in the second half of a play.', { points: num(p, 'points') });
     case 'sharp-wide':
       return variant === 'wide'
-        ? `You miss more on wide, flowing jumps than on sharp back-and-forth ones (${num(p, 'a')}% against ${num(p, 'b')}%).`
-        : `You miss more on sharp back-and-forth jumps than on wide, flowing ones (${num(p, 'a')}% against ${num(p, 'b')}%).`;
+        ? t('You miss more on wide, flowing jumps than on sharp back-and-forth ones ({a}% against {b}%).', { a, b })
+        : t('You miss more on sharp back-and-forth jumps than on wide, flowing ones ({a}% against {b}%).', { a, b });
     case 'slider-lag':
-      return `You trail behind slider balls by about ${num(p, 'pct')}% of a target's width.`;
+      return t("You trail behind slider balls by about {pct}% of a target's width.", { pct });
     case 'slider-curves':
-      return `You lose more sliders on curves than on straight paths (${num(p, 'a')}% kept against ${num(p, 'b')}%).`;
+      return t('You lose more sliders on curves than on straight paths ({a}% kept against {b}%).', { a, b });
     case 'early-release':
-      return `You often let go of sliders shortly before they end. The end counted on ${num(p, 'pct')}% of sliders, while ${num(p, 'ticks')}% of the ticks counted.`;
+      return t(
+        'You often let go of sliders shortly before they end. The end counted on {pct}% of sliders, while {ticks}% of the ticks counted.',
+        {
+          pct,
+          ticks: num(p, 'ticks'),
+        },
+      );
     case 'timing-bias':
-      return `You click about ${num(p, 'ms')} ms ${variant === 'early' ? 'early' : 'late'} on average.`;
+      return t('You click about {ms} ms {side, select, early {early} other {late}} on average.', {
+        ms,
+        side: variant === 'early' ? 'early' : 'late',
+      });
     case 'busy-screen':
-      return `You miss more when ${num(p, 'cut')} or more targets are on screen (${num(p, 'a')}% against ${num(p, 'b')}% on quieter screens).`;
+      return t('You miss more when {cut} or more targets are on screen ({a}% against {b}% on quieter screens).', { cut, a, b });
     case 'off-center':
-      return `You hit almost every target, but your clicks land far from the center. On average a click is ${num(p, 'pct')}% of a target's width off.`;
+      return t(
+        "You hit almost every target, but your clicks land far from the center. On average a click is {pct}% of a target's width off.",
+        {
+          pct,
+        },
+      );
     case 'spinners':
-      return `You finish only ${num(p, 'pct')}% of spinners in time.`;
+      return t('You finish only {pct}% of spinners in time.', { pct });
     case 'late-leave':
-      return `On fast jumps you leave the last target late, after about ${num(p, 'pct')}% of the time to the next one. Leaving sooner gives the move more time.`;
+      return t(
+        'On fast jumps you leave the last target late, after about {pct}% of the time to the next one. Leaving sooner gives the move more time.',
+        { pct },
+      );
     case 'first-motion':
       return variant?.startsWith('over')
-        ? `On long jumps your first motion goes about ${num(p, 'pct')}% of a target's width past the center before you pull back.`
-        : `On long jumps your first motion stops about ${num(p, 'pct')}% of a target's width short, and a second motion makes up the rest.`;
+        ? t("On long jumps your first motion goes about {pct}% of a target's width past the center before you pull back.", { pct })
+        : t("On long jumps your first motion stops about {pct}% of a target's width short, and a second motion makes up the rest.", {
+            pct,
+          });
     case 'corrections':
-      return `You make a second motion on ${num(p, 'pct')}% of your longer jumps. Try for one smooth move that stops on the target.`;
+      return t('You make a second motion on {pct}% of your longer jumps. Try for one smooth move that stops on the target.', { pct });
     case 'same-module':
-      return `You've played ${str(p, 'module')} four times in a row. Try another module next, then come back to it.`;
+      return t("You've played {module} four times in a row. Try another module next, then come back to it.", { module: str(p, 'module') });
     case 'long-session':
-      return `Your accuracy over your last three plays is ${num(p, 'last')}%, against ${num(p, 'avg')}% for this session. A break might help before you go on.`;
+      return t(
+        'Your accuracy over your last three plays is {last}%, against {avg}% for this session. A break might help before you go on.',
+        {
+          last: num(p, 'last'),
+          avg: num(p, 'avg'),
+        },
+      );
   }
 }
 
-export const RULE_NOUN: Record<RuleId, [string, string]> = {
-  'long-undershoot': ['jump', 'jumps'],
-  'long-overshoot': ['jump', 'jumps'],
-  'short-overshoot': ['jump', 'jumps'],
-  'direction-drift': ['jump', 'jumps'],
-  'stream-offset': ['stream note', 'stream notes'],
-  'stream-fade': ['stream note', 'stream notes'],
-  'second-half': ['play', 'plays'],
-  'sharp-wide': ['jump', 'jumps'],
-  'slider-lag': ['slider', 'sliders'],
-  'slider-curves': ['slider', 'sliders'],
-  'early-release': ['slider', 'sliders'],
-  'timing-bias': ['click', 'clicks'],
-  'busy-screen': ['tap', 'taps'],
-  'off-center': ['tap', 'taps'],
-  spinners: ['spinner', 'spinners'],
-  'same-module': ['play', 'plays'],
-  'long-session': ['play', 'plays'],
-  'late-leave': ['jump', 'jumps'],
-  'first-motion': ['jump', 'jumps'],
-  corrections: ['jump', 'jumps'],
+/** The thing a rule counts, as a plural message: "{n, plural, one {# jump} other {# jumps}}". */
+export const RULE_NOUN: Record<RuleId, string> = {
+  'long-undershoot': msg('{n, plural, one {# jump} other {# jumps}}'),
+  'long-overshoot': msg('{n, plural, one {# jump} other {# jumps}}'),
+  'short-overshoot': msg('{n, plural, one {# jump} other {# jumps}}'),
+  'direction-drift': msg('{n, plural, one {# jump} other {# jumps}}'),
+  'stream-offset': msg('{n, plural, one {# stream note} other {# stream notes}}'),
+  'stream-fade': msg('{n, plural, one {# stream note} other {# stream notes}}'),
+  'second-half': msg('{n, plural, one {# play} other {# plays}}'),
+  'sharp-wide': msg('{n, plural, one {# jump} other {# jumps}}'),
+  'slider-lag': msg('{n, plural, one {# slider} other {# sliders}}'),
+  'slider-curves': msg('{n, plural, one {# slider} other {# sliders}}'),
+  'early-release': msg('{n, plural, one {# slider} other {# sliders}}'),
+  'timing-bias': msg('{n, plural, one {# click} other {# clicks}}'),
+  'busy-screen': msg('{n, plural, one {# tap} other {# taps}}'),
+  'off-center': msg('{n, plural, one {# tap} other {# taps}}'),
+  spinners: msg('{n, plural, one {# spinner} other {# spinners}}'),
+  'same-module': msg('{n, plural, one {# play} other {# plays}}'),
+  'long-session': msg('{n, plural, one {# play} other {# plays}}'),
+  'late-leave': msg('{n, plural, one {# jump} other {# jumps}}'),
+  'first-motion': msg('{n, plural, one {# jump} other {# jumps}}'),
+  corrections: msg('{n, plural, one {# jump} other {# jumps}}'),
 };
 
-export function basisText(ruleId: RuleId, n: number, scope: 'window' | 'play'): string {
-  const [one, many] = RULE_NOUN[ruleId];
-  const where = scope === 'window' ? 'from the last 30 days' : 'in this play';
-  return `Based on ${n} ${n === 1 ? one : many} ${where}.`;
+/** "3 jumps", in the player's language. */
+export const nounCount = (ruleId: RuleId, n: number): string => t(RULE_NOUN[ruleId], { n });
+
+export function basisText(ruleId: RuleId, n: number, scope: 'window' | 'play' | 'session'): string {
+  const what = nounCount(ruleId, n);
+  if (scope === 'window') return t('Based on {what} from the last 30 days.', { what });
+  if (scope === 'session') return t('Based on {what} in this session.', { what });
+  return t('Based on {what} in this play.', { what });
 }
 
 /** A short name for lists of drills. */
 export function ruleTitle(ruleId: RuleId, variant: string | null): string {
   switch (ruleId) {
-    case 'long-undershoot': return 'Stopping short on long jumps';
-    case 'long-overshoot': return 'Overshooting long jumps';
-    case 'short-overshoot': return 'Overshooting short jumps';
+    case 'long-undershoot':
+      return t('Stopping short on long jumps');
+    case 'long-overshoot':
+      return t('Overshooting long jumps');
+    case 'short-overshoot':
+      return t('Overshooting short jumps');
     case 'direction-drift': {
       const o = Number(variant?.match(/^o(\d)/)?.[1] ?? 0);
-      return `Aim when moving ${OCTANT_PHRASE[o] ?? 'right'}`;
+      return t('Aim when moving {direction}', { direction: octantPhrase(o) });
     }
-    case 'stream-offset': return 'Timing on fast streams';
-    case 'stream-fade': return 'Timing late in streams';
-    case 'second-half': return 'Accuracy in the second half';
-    case 'sharp-wide': return variant === 'wide' ? 'Wide, flowing jumps' : 'Sharp back-and-forth jumps';
-    case 'slider-lag': return 'Staying with slider balls';
-    case 'slider-curves': return 'Sliders on curves';
-    case 'early-release': return 'Holding sliders to the end';
-    case 'timing-bias': return 'Click timing';
-    case 'busy-screen': return 'Busy screens';
-    case 'off-center': return 'Hitting the center';
-    case 'spinners': return 'Spinners';
-    case 'same-module': return 'Variety';
-    case 'long-session': return 'Rest';
-    case 'late-leave': return 'Leaving the last target sooner';
-    case 'first-motion': return 'Where your first motion stops';
-    case 'corrections': return 'One smooth move per jump';
+    case 'stream-offset':
+      return t('Timing on fast streams');
+    case 'stream-fade':
+      return t('Timing late in streams');
+    case 'second-half':
+      return t('Accuracy in the second half');
+    case 'sharp-wide':
+      return variant === 'wide' ? t('Wide, flowing jumps') : t('Sharp back-and-forth jumps');
+    case 'slider-lag':
+      return t('Staying with slider balls');
+    case 'slider-curves':
+      return t('Sliders on curves');
+    case 'early-release':
+      return t('Holding sliders to the end');
+    case 'timing-bias':
+      return t('Click timing');
+    case 'busy-screen':
+      return t('Busy screens');
+    case 'off-center':
+      return t('Hitting the center');
+    case 'spinners':
+      return t('Spinners');
+    case 'same-module':
+      return t('Variety');
+    case 'long-session':
+      return t('Rest');
+    case 'late-leave':
+      return t('Leaving the last target sooner');
+    case 'first-motion':
+      return t('Where your first motion stops');
+    case 'corrections':
+      return t('One smooth move per jump');
   }
 }
 
@@ -159,45 +261,71 @@ export interface MetricCopy {
 const pctWidth = (radii: number) => Math.round(Math.abs(radii) * 50);
 const pct = (share: number) => Math.round(share * 100);
 
+const shortOrPast = (v: number) =>
+  pctWidth(v) === 0
+    ? t('on the center')
+    : t('{pct}% {side, select, short {short} other {past}}', { pct: pctWidth(v), side: v < 0 ? 'short' : 'past' });
+const earlyOrLate = (v: number) =>
+  Math.round(Math.abs(v)) === 0
+    ? t('on time')
+    : t('{ms} ms {side, select, early {early} other {late}}', { ms: Math.round(Math.abs(v)), side: v < 0 ? 'early' : 'late' });
+const percent = (v: number) => `${formatNumber(pct(v))}%`;
+
 export function metricCopy(ruleId: RuleId, variant: string | null): MetricCopy {
   switch (ruleId) {
     case 'long-undershoot':
     case 'long-overshoot':
-      return { metric: 'your aim on long, fast jumps', format: (v) => (pctWidth(v) === 0 ? 'on the center' : `${pctWidth(v)}% ${v < 0 ? 'short' : 'past'}`) };
+      return { metric: t('your aim on long, fast jumps'), format: shortOrPast };
     case 'short-overshoot':
-      return { metric: 'your aim on short jumps', format: (v) => (pctWidth(v) === 0 ? 'on the center' : `${pctWidth(v)}% ${v < 0 ? 'short' : 'past'}`) };
+      return { metric: t('your aim on short jumps'), format: shortOrPast };
     case 'direction-drift':
       return variant?.endsWith(':spread')
-        ? { metric: 'how widely your clicks scatter across the line', format: (v) => `${pctWidth(v)}%` }
-        : { metric: 'how far your clicks drift off the line', format: (v) => (pctWidth(v) === 0 ? 'on the line' : `${pctWidth(v)}% ${lateralSide(parseOctant(variant), v > 0 ? 1 : -1)}`) };
+        ? { metric: t('how widely your clicks scatter across the line'), format: (v) => `${formatNumber(pctWidth(v))}%` }
+        : {
+            metric: t('how far your clicks drift off the line'),
+            format: (v) => {
+              if (pctWidth(v) === 0) return t('on the line');
+              const side = sideOf(variant, v);
+              return t('{pct}% {side}', { pct: pctWidth(v), side: t(side) });
+            },
+          };
     case 'stream-offset':
-      return { metric: 'your timing on fast streams', format: (v) => (Math.round(Math.abs(v)) === 0 ? 'on time' : `${Math.round(Math.abs(v))} ms ${v < 0 ? 'early' : 'late'}`) };
+      return { metric: t('your timing on fast streams'), format: earlyOrLate };
     case 'stream-fade':
-      return { metric: 'your timing spread late in streams', format: (v) => `${Math.round(v)} ms` };
+      return { metric: t('your timing spread late in streams'), format: (v) => t('{ms} ms', { ms: Math.round(v) }) };
     case 'second-half':
-      return { metric: 'your accuracy drop in the second half', format: (v) => `${Math.round(v * 10) / 10} points` };
+      return {
+        metric: t('your accuracy drop in the second half'),
+        format: (v) => t('{points} points', { points: Math.round(v * 10) / 10 }),
+      };
     case 'sharp-wide':
-      return { metric: variant === 'wide' ? 'your miss rate on wide jumps' : 'your miss rate on sharp jumps', format: (v) => `${pct(v)}%` };
+      return { metric: variant === 'wide' ? t('your miss rate on wide jumps') : t('your miss rate on sharp jumps'), format: percent };
     case 'slider-lag':
-      return { metric: 'how far you trail slider balls', format: (v) => (pctWidth(v) === 0 ? 'level with the ball' : `${pctWidth(v)}% ${v < 0 ? 'behind' : 'ahead'}`) };
+      return {
+        metric: t('how far you trail slider balls'),
+        format: (v) =>
+          pctWidth(v) === 0
+            ? t('level with the ball')
+            : t('{pct}% {side, select, behind {behind} other {ahead}}', { pct: pctWidth(v), side: v < 0 ? 'behind' : 'ahead' }),
+      };
     case 'slider-curves':
-      return { metric: 'how much of curved sliders you keep', format: (v) => `${pct(v)}%` };
+      return { metric: t('how much of curved sliders you keep'), format: percent };
     case 'early-release':
-      return { metric: 'how often you hold sliders to the end', format: (v) => `${pct(v)}%` };
+      return { metric: t('how often you hold sliders to the end'), format: percent };
     case 'timing-bias':
-      return { metric: 'your click timing', format: (v) => (Math.round(Math.abs(v)) === 0 ? 'on time' : `${Math.round(Math.abs(v))} ms ${v < 0 ? 'early' : 'late'}`) };
+      return { metric: t('your click timing'), format: earlyOrLate };
     case 'busy-screen':
-      return { metric: 'your miss rate on busy screens', format: (v) => `${pct(v)}%` };
+      return { metric: t('your miss rate on busy screens'), format: percent };
     case 'off-center':
-      return { metric: 'how far your clicks land from the center', format: (v) => `${pctWidth(v)}% of a width` };
+      return { metric: t('how far your clicks land from the center'), format: (v) => t('{pct}% of a width', { pct: pctWidth(v) }) };
     case 'spinners':
-      return { metric: 'how many spinners you finish in time', format: (v) => `${pct(v)}%` };
+      return { metric: t('how many spinners you finish in time'), format: percent };
     case 'late-leave':
-      return { metric: 'how late you leave the last target', format: (v) => `${pct(v)}% of the gap` };
+      return { metric: t('how late you leave the last target'), format: (v) => t('{pct}% of the gap', { pct: pct(v) }) };
     case 'first-motion':
-      return { metric: 'where your first motion stops on long jumps', format: (v) => (pctWidth(v) === 0 ? 'on the center' : `${pctWidth(v)}% ${v < 0 ? 'short' : 'past'}`) };
+      return { metric: t('where your first motion stops on long jumps'), format: shortOrPast };
     case 'corrections':
-      return { metric: 'how often you make a second motion', format: (v) => `${pct(v)}%` };
+      return { metric: t('how often you make a second motion'), format: percent };
     case 'same-module':
     case 'long-session':
       return { metric: '', format: (v) => String(v) };
@@ -205,11 +333,13 @@ export function metricCopy(ruleId: RuleId, variant: string | null): MetricCopy {
 }
 
 const parseOctant = (variant: string | null): number => Number(variant?.match(/^o(\d)/)?.[1] ?? 0);
+const sideOf = (variant: string | null, v: number): string => lateralSide(parseOctant(variant), v > 0 ? 1 : -1);
 
 const cap = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
 
-const DATE = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' });
-export const shortDate = (t: number): string => DATE.format(new Date(t));
+/** "7 Nov", in the player's language. */
+export const shortDate = (time: number): string =>
+  new Intl.DateTimeFormat(intlTag(), { day: 'numeric', month: 'short' }).format(new Date(time));
 
 export interface DrillTextInput {
   ruleId: RuleId;
@@ -221,48 +351,66 @@ export interface DrillTextInput {
 /** The sentence that says whether a drill is working. */
 export function drillText({ ruleId, variant, createdAt, eval: e }: DrillTextInput): string {
   const m = metricCopy(ruleId, variant);
-  const [one, many] = RULE_NOUN[ruleId];
-  const noun = (n: number) => (n === 1 ? one : many);
   const date = shortDate(createdAt);
   const before = e.before === null ? '' : m.format(e.before);
   const after = e.after === null ? '' : m.format(e.after);
   switch (e.outcome) {
     case 'collecting':
       return e.sessions < e.sessionsNeeded
-        ? `Do ${plural(e.sessionsNeeded - e.sessions, 'more drill session')} to start the comparison.`
-        : `Play ${plural(Math.max(1, e.morePlays), 'more map')} outside the drill to measure it.`;
+        ? t('Do {n, plural, one {# more drill session} other {# more drill sessions}} to start the comparison.', {
+            n: e.sessionsNeeded - e.sessions,
+          })
+        : t('Play {n, plural, one {# more map} other {# more maps}} outside the drill to measure it.', { n: Math.max(1, e.morePlays) });
     case 'better': {
       // Two values that round to the same text are not shown side by side.
-      const change = before === after ? 'improved a little' : `went from ${before} to ${after}`;
-      return `Since you started this drill on ${date}, ${m.metric} ${change}. That's based on ${e.nBefore} ${noun(e.nBefore)} before and ${e.nAfter} after.`;
+      const change = before === after ? t('improved a little') : t('went from {before} to {after}', { before, after });
+      return t("Since you started this drill on {date}, {metric} {change}. That's based on {before} before and {after} after.", {
+        date,
+        metric: m.metric,
+        change,
+        before: nounCount(ruleId, e.nBefore),
+        after: formatNumber(e.nAfter),
+      });
     }
     case 'worse':
-      if (before === after) return `${cap(m.metric)} is a little worse than before this drill.`;
-      return `${cap(m.metric)} is worse than before this drill (${before} then, ${after} now).`;
+      if (before === after) return t('{metric} is a little worse than before this drill.', { metric: cap(m.metric) });
+      return t('{metric} is worse than before this drill ({before} then, {after} now).', { metric: cap(m.metric), before, after });
     case 'unclear':
-      return `No clear change in ${m.metric} yet. ${e.nAfter} ${noun(e.nAfter)} measured since ${date}.`;
+      return t('No clear change in {metric} yet. {count} measured since {date}.', {
+        metric: m.metric,
+        count: nounCount(ruleId, e.nAfter),
+        date,
+      });
   }
 }
 
 export const OUTCOME_LABEL: Record<DrillEval['outcome'], string> = {
-  collecting: 'Collecting data',
-  better: 'Better',
-  unclear: 'No clear change',
-  worse: 'Worse',
+  get collecting() {
+    return t('Collecting data');
+  },
+  get better() {
+    return t('Better');
+  },
+  get unclear() {
+    return t('No clear change');
+  },
+  get worse() {
+    return t('Worse');
+  },
 };
 
 /** Label for the module and options a recommendation opens. */
 export function recommendationLabel(modeId: ModeId, o: ModuleOptions): string {
   const base = MODES[modeId].label;
   let extra = '';
-  if (o.distanceFocus === 'long') extra = 'long distances';
-  else if (o.distanceFocus === 'short') extra = 'short distances';
-  else if (typeof o.directionFocus === 'number') extra = `moving ${OCTANT_PHRASE[o.directionFocus] ?? 'right'}`;
-  else if (o.angleFocus === 'sharp') extra = 'sharp turns';
-  else if (o.angleFocus === 'wide') extra = 'wide turns';
-  else if (o.streamLength === 'short') extra = 'short streams';
-  else if (o.streamLength === 'long') extra = 'long streams';
-  else if (o.sliderFocus === 'curves') extra = 'curved sliders';
-  else if (o.sliderFocus === 'repeats') extra = 'sliders with repeats';
+  if (o.distanceFocus === 'long') extra = t('long distances');
+  else if (o.distanceFocus === 'short') extra = t('short distances');
+  else if (typeof o.directionFocus === 'number') extra = t('moving {direction}', { direction: octantPhrase(o.directionFocus) });
+  else if (o.angleFocus === 'sharp') extra = t('sharp turns');
+  else if (o.angleFocus === 'wide') extra = t('wide turns');
+  else if (o.streamLength === 'short') extra = t('short streams');
+  else if (o.streamLength === 'long') extra = t('long streams');
+  else if (o.sliderFocus === 'curves') extra = t('curved sliders');
+  else if (o.sliderFocus === 'repeats') extra = t('sliders with repeats');
   return extra ? `${base}, ${extra}` : base;
 }

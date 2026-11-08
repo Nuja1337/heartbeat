@@ -1,6 +1,7 @@
 // The browser wrapper. It wires the clock, input, session, renderer and audio together and implements GameHandle.
 
 import { MODES, RETRY_HOLD_MS } from '../../shared/catalog';
+import { t } from '../../shared/i18n';
 import type { CreateGame, GameCallbacks, GameHandle, InputInfo, InputSlot, LaunchRequest, PlayStatus, Settings } from '../../shared/types';
 import { AudioEngine } from '../audio/audio';
 import type { Grid } from '../audio/metronome';
@@ -130,9 +131,9 @@ class Game implements GameHandle, InputSink {
     this.rs.cursorX = x;
     this.rs.cursorY = y;
     if (this.state !== 'playing') return;
-    const t = this.clock.play(ts);
-    if (t < 0) return;
-    this.dec.move(t, x, y);
+    const pt = this.clock.play(ts);
+    if (pt < 0) return;
+    this.dec.move(pt, x, y);
   }
 
   press(slot: InputSlot, ts: number, x: number | null, y: number | null): void {
@@ -149,19 +150,20 @@ class Game implements GameHandle, InputSink {
       return;
     }
     if (this.state !== 'playing') return;
-    const t = this.clock.play(ts);
-    if (t < 0) return;
-    this.dec.press(slot, t, x, y);
+    const pt = this.clock.play(ts);
+    if (pt < 0) return;
+    this.dec.press(slot, pt, x, y);
     const skin = this.settings.skin;
-    if (skin.clickRipple && !this.settings.display.reduceMotion) this.fx.ripple(x ?? this.rs.cursorX, y ?? this.rs.cursorY, performance.now());
+    if (skin.clickRipple && !this.settings.display.reduceMotion)
+      this.fx.ripple(x ?? this.rs.cursorX, y ?? this.rs.cursorY, performance.now());
     this.afterInput(performance.now());
   }
 
   release(slot: InputSlot, ts: number): void {
     if (this.state !== 'playing') return;
-    const t = this.clock.play(ts);
-    if (t < 0) return;
-    this.dec.release(slot, t);
+    const pt = this.clock.play(ts);
+    if (pt < 0) return;
+    this.dec.release(slot, pt);
   }
 
   retry(ts: number, down: boolean): void {
@@ -208,6 +210,7 @@ class Game implements GameHandle, InputSink {
     this.state = 'playing';
     this.clock.start(ts);
     this.startedAt = Date.now();
+    this.callbacks.onStart?.();
     this.audio.resume();
     this.fx.reset();
     this.renderer.reset();
@@ -229,17 +232,17 @@ class Game implements GameHandle, InputSink {
 
   /** Put the latest known cursor position into the play, so a key press before any movement lands in the right place. */
   private syncCursor(ts: number): void {
-    const t = this.clock.play(ts);
-    this.dec.moveNow(Math.max(0, t), this.rs.cursorX, this.rs.cursorY);
+    const pt = this.clock.play(ts);
+    this.dec.moveNow(Math.max(0, pt), this.rs.cursorX, this.rs.cursorY);
   }
 
   private doPause(ts: number): void {
     if (this.state !== 'playing' && this.state !== 'countdown') return;
     if (this.state === 'playing') {
-      const t = this.clock.play(ts);
-      this.dec.advance(t);
+      const pt = this.clock.play(ts);
+      this.dec.advance(pt);
       this.input.releaseAll(ts);
-      this.dec.notePause(t);
+      this.dec.notePause(pt);
       this.clock.pause(ts);
     }
     this.state = 'paused';
@@ -476,13 +479,17 @@ class Game implements GameHandle, InputSink {
 export const createGameImpl: CreateGame = (canvas, launch, settings, callbacks) => {
   const ctx = canvas.getContext('2d', { alpha: false, desynchronized: settings.display.lowLatency });
   if (!ctx) {
-    callbacks.onError('This browser could not start the game canvas.');
+    callbacks.onError(t('This browser could not start the game canvas.'));
     return inertHandle();
   }
   try {
     return new Game(canvas, launch, settings, callbacks, ctx);
   } catch (err) {
-    callbacks.onError(err instanceof Error && err.message ? `The game could not start. ${err.message}` : 'The game could not start.');
+    callbacks.onError(
+      err instanceof Error && err.message
+        ? t('The game could not start. {reason}', { reason: err.message })
+        : t('The game could not start.'),
+    );
     return inertHandle();
   }
 };

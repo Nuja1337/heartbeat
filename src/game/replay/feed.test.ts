@@ -9,7 +9,11 @@ import { launchFor } from '../testing/fixtures';
 import { countMismatches, ReplayController, ReplayRunner, replayDuration, sessionForReplay } from './feed';
 
 const dyn = launchFor(LEVEL_PRESETS[2]!.difficulty, 91, 30);
-const mix: LaunchRequest = { ...launchFor(DEFAULT_DIFFICULTY, 92, 40, [], 'mix'), options: MODES.mix.defaultOptions, levels: { jumps: 4, streams: 4, tracking: 3 } };
+const mix: LaunchRequest = {
+  ...launchFor(DEFAULT_DIFFICULTY, 92, 40, [], 'mix'),
+  options: MODES.mix.defaultOptions,
+  levels: { jumps: 4, streams: 4, tracking: 3 },
+};
 
 function record(launch: LaunchRequest): { replay: ReplayData; live: ReturnType<typeof runHeadless> } {
   const live = runHeadless({ launch, model: NOISY_PLAYER, stepMs: 5 });
@@ -32,7 +36,10 @@ function snapshot(r: ReplayRunner) {
 }
 
 describe('seeking', () => {
-  for (const [name, launch] of [['Dynamic', dyn], ['Mix', mix]] as const) {
+  for (const [name, launch] of [
+    ['Dynamic', dyn],
+    ['Mix', mix],
+  ] as const) {
     it(`${name}: seeking to T and then playing on equals a straight run`, () => {
       const { replay } = record(launch);
       const end = replayDuration(replay);
@@ -91,7 +98,10 @@ describe('seeking', () => {
 });
 
 describe('advance calls', () => {
-  for (const [name, launch] of [['Dynamic', dyn], ['Mix', mix]] as const) {
+  for (const [name, launch] of [
+    ['Dynamic', dyn],
+    ['Mix', mix],
+  ] as const) {
     it(`${name}: advance is called once for each op 13 event fed, and never outside the trace`, () => {
       const { replay } = record(launch);
       const spy = vi.spyOn(GameSession.prototype, 'advance');
@@ -128,7 +138,13 @@ describe('replay duration', () => {
     expect(replayDuration(replay)).toBeGreaterThanOrEqual(replay.endT);
     const late: ReplayData = {
       ...replay,
-      trace: { count: 2, ops: Uint8Array.from([TRACE_OP.move, TRACE_OP.move]), t: Float64Array.from([5, 900]), x: new Float32Array(2), y: new Float32Array(2) },
+      trace: {
+        count: 2,
+        ops: Uint8Array.from([TRACE_OP.move, TRACE_OP.move]),
+        t: Float64Array.from([5, 900]),
+        x: new Float32Array(2),
+        y: new Float32Array(2),
+      },
       endT: 100,
     };
     expect(replayDuration(late)).toBe(900);
@@ -177,7 +193,13 @@ describe('building the session', () => {
     const { replay } = record(mix);
     const run = new ReplayRunner(replay);
     run.feedAll();
-    expect(run.session.finish(replay.status, { startedAt: 0, endedAt: 0, input: { pointer: 'mouse', rawInput: false, unadjusted: false, sensitivity: 1, pointerHz: 1000, displayHz: 240 } }).levels).toEqual(replay.levels);
+    expect(
+      run.session.finish(replay.status, {
+        startedAt: 0,
+        endedAt: 0,
+        input: { pointer: 'mouse', rawInput: false, unadjusted: false, sensitivity: 1, pointerHz: 1000, displayHz: 240 },
+      }).levels,
+    ).toEqual(replay.levels);
   });
 
   it('has every object from the start for a map without sets, and no controller', () => {
@@ -228,7 +250,10 @@ describe('set-end results', () => {
     return i ? `${i.set}:${i.module}:${i.from}->${i.to}:${i.direction}:${i.success}` : '';
   };
 
-  for (const [name, launch, model] of [['placement', placement, PERFECT_PLAYER], ['Mix', { ...mix, lengthSec: 120 }, NOISY_PLAYER]] as const) {
+  for (const [name, launch, model] of [
+    ['placement', placement, PERFECT_PLAYER],
+    ['Mix', { ...mix, lengthSec: 120 }, NOISY_PLAYER],
+  ] as const) {
     it(`${name}: every set-end result in the replay equals the live play's, last set of each module included`, () => {
       const live: string[] = [];
       const run = runHeadless({ launch, model, stepMs: 5, listener: (e) => e.type === 'setEnd' && live.push(key(e)) });

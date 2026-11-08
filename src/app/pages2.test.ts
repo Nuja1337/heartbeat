@@ -53,12 +53,28 @@ describe('share route', () => {
     if (!link.ok) return;
     expect(link.path).toBe('/play');
     expect(link.generatorVersion).toBe(2);
-    expect(link.launch).toMatchObject({ modeId: 'dynamic', presetLevel: 4, seed: 123456789, lengthSec: 90, mods: ['mirror'], levels: {}, drillId: null });
+    expect(link.launch).toMatchObject({
+      modeId: 'dynamic',
+      presetLevel: 4,
+      seed: 123456789,
+      lengthSec: 90,
+      mods: ['mirror'],
+      levels: {},
+      drillId: null,
+    });
     expect(link.launch.difficulty).toEqual(LEVEL_PRESETS[3]!.difficulty);
   });
 
   it('opens the module setup for a module code, with no levels of its own', () => {
-    const jumps = moduleLaunch({ modeId: 'jumps', options: { distanceFocus: 'long', directionFocus: 3 }, mods: [], lengthSec: 120, seed: 77, levels: { jumps: 9 }, drillId: 'd1' });
+    const jumps = moduleLaunch({
+      modeId: 'jumps',
+      options: { distanceFocus: 'long', directionFocus: 3 },
+      mods: [],
+      lengthSec: 120,
+      seed: 77,
+      levels: { jumps: 9 },
+      drillId: 'd1',
+    });
     const link = readShareLink(encodeShare(jumps, 2));
     expect(link.ok && link.path).toBe('/train/jumps');
     if (!link.ok) return;
@@ -118,7 +134,15 @@ describe('skin preview launch', () => {
 describe('placement launch', () => {
   it('has no mods or options, runs 240 seconds and carries the saved levels', () => {
     const l = placementLaunch({ jumps: 5.5, streams: 4 }, 9);
-    expect(l).toMatchObject({ modeId: 'placement', mods: [], options: {}, lengthSec: 240, seed: 9, drillId: null, levels: { jumps: 5.5, streams: 4 } });
+    expect(l).toMatchObject({
+      modeId: 'placement',
+      mods: [],
+      options: {},
+      lengthSec: 240,
+      seed: 9,
+      drillId: null,
+      levels: { jumps: 5.5, streams: 4 },
+    });
     expect(PLACEMENT_LENGTH_SEC).toBe(MODES.placement.defaultLengthSec);
   });
 
@@ -129,7 +153,15 @@ describe('placement launch', () => {
   });
 
   it('is accepted by the module launch builder, which drops every mod', () => {
-    const l = moduleLaunch({ modeId: 'placement', options: {}, mods: ['fast', 'mirror'], lengthSec: 240, seed: 1, levels: {}, drillId: null });
+    const l = moduleLaunch({
+      modeId: 'placement',
+      options: {},
+      mods: ['fast', 'mirror'],
+      lengthSec: 240,
+      seed: 1,
+      levels: {},
+      drillId: null,
+    });
     expect(l.mods).toEqual([]);
   });
 });
@@ -183,7 +215,14 @@ describe('map panel', () => {
   });
 
   it('breaks the line where a bin has no objects and draws a band for each role', () => {
-    const bin = (i: number, overall: number | null) => ({ start: i * 2000, end: (i + 1) * 2000, aim: overall, speed: overall, overall, n: overall === null ? 0 : 3 });
+    const bin = (i: number, overall: number | null) => ({
+      start: i * 2000,
+      end: (i + 1) * 2000,
+      aim: overall,
+      speed: overall,
+      overall,
+      n: overall === null ? 0 : 3,
+    });
     const timeline = {
       binMs: 2000,
       bins: [bin(0, 2), bin(1, 3), bin(2, null), bin(3, 4)],

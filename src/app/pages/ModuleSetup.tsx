@@ -3,8 +3,9 @@ import { Navigate, useLocation, useNavigate, useParams } from 'react-router';
 import { OCTANT_PHRASE } from '../../analytics/insightCopy';
 import { DEFAULT_MODULE_LEVEL, MODES, MODS, MODULE_IDS, SKILLS } from '../../shared/catalog';
 import type { LaunchRequest, ModId, ModeId, ModuleId, ModuleOptions } from '../../shared/types';
-import { Button, Card, Field, LinkButton, Notice, PageHeader, Segmented, SectionTitle, Toggle } from '../components/ui';
-import { level } from '../format';
+import { Button, Card, Field, LinkButton, Notice, PageHeader, Segmented, SectionTitle, StickyStart, Toggle } from '../components/ui';
+import { andList, level, lowerLabel } from '../format';
+import { t } from '../i18n';
 import { useAnalysis } from '../state/analysis';
 import { useCurrentLevels } from '../state/levels';
 import { cleanMods, moduleLaunch, randomSeed, sharedFrom, startPlay } from '../state/launch';
@@ -12,6 +13,9 @@ import { getAppState, updatePrefs } from '../state/store';
 import { SharedBanner } from './Share';
 
 const cap = (s: string) => s[0]!.toUpperCase() + s.slice(1);
+
+/** A length in seconds, or in minutes from two minutes up. */
+const lengthText = (sec: number): string => (sec >= 120 ? t('{n} min', { n: sec / 60 }) : `${sec} s`);
 
 export function ModuleSetup() {
   const { mode } = useParams();
@@ -44,7 +48,15 @@ function Setup({ modeId }: { modeId: ModeId }) {
   const start = () => {
     if (!levels) return;
     updatePrefs((p) => ({ ...p, fullscreen, modules: { ...p.modules, [modeId]: { options, mods, lengthSec } } }));
-    const launch = moduleLaunch({ modeId, options, mods, lengthSec, seed: drill?.seed ?? randomSeed(), levels, drillId: drill?.drillId ?? null });
+    const launch = moduleLaunch({
+      modeId,
+      options,
+      mods,
+      lengthSec,
+      seed: drill?.seed ?? randomSeed(),
+      levels,
+      drillId: drill?.drillId ?? null,
+    });
     startPlay(navigate, launch, `/train/${modeId}`, fullscreen);
   };
 
@@ -61,7 +73,11 @@ function Setup({ modeId }: { modeId: ModeId }) {
       <PageHeader
         title={info.label}
         intro={info.description}
-        actions={<LinkButton to="/train" variant="ghost">All modules</LinkButton>}
+        actions={
+          <LinkButton to="/train" variant="ghost">
+            {t('All modules')}
+          </LinkButton>
+        }
       />
       {shared && (
         <div className="mb-6">
@@ -72,55 +88,89 @@ function Setup({ modeId }: { modeId: ModeId }) {
         <div className="space-y-6">
           {drill?.drillId && (
             <Card>
-              <p>
-                This drill was set up from an insight. Your results will be compared with how you played before.
-              </p>
+              <p>{t('This drill was set up from an insight. Your results will be compared with how you played before.')}</p>
             </Card>
           )}
 
           {info.options.length > 0 && (
             <Card>
-              <SectionTitle>Options</SectionTitle>
+              <SectionTitle>{t('Options')}</SectionTitle>
               {info.options.includes('distanceFocus') && (
-                <Field label="Jump distance">
-                  <Segmented legend="Jump distance" value={options.distanceFocus ?? 'mixed'} onChange={(v) => set({ distanceFocus: v })}
-                    options={[{ value: 'mixed', label: 'Mixed' }, { value: 'short', label: 'Short' }, { value: 'long', label: 'Long' }]} />
+                <Field label={t('Jump distance')}>
+                  <Segmented
+                    legend={t('Jump distance')}
+                    value={options.distanceFocus ?? 'mixed'}
+                    onChange={(v) => set({ distanceFocus: v })}
+                    options={[
+                      { value: 'mixed', label: t('Mixed') },
+                      { value: 'short', label: t('Short') },
+                      { value: 'long', label: t('Long') },
+                    ]}
+                  />
                 </Field>
               )}
               {info.options.includes('directionFocus') && (
-                <Field label="Direction" help="Most jumps will move this way.">
+                <Field label={t('Direction')} help={t('Most jumps will move this way.')}>
                   <select
-                    aria-label="Direction"
+                    aria-label={t('Direction')}
                     value={options.directionFocus ?? ''}
                     onChange={(e) => set({ directionFocus: e.target.value === '' ? null : Number(e.target.value) })}
                   >
-                    <option value="">Any direction</option>
+                    <option value="">{t('Any direction')}</option>
                     {OCTANT_PHRASE.map((name, i) => (
-                      <option key={name} value={i}>{cap(name)}</option>
+                      <option key={name} value={i}>
+                        {cap(t(name))}
+                      </option>
                     ))}
                   </select>
                 </Field>
               )}
               {info.options.includes('angleFocus') && (
-                <Field label="Turns">
-                  <Segmented legend="Turns" value={options.angleFocus ?? 'mixed'} onChange={(v) => set({ angleFocus: v })}
-                    options={[{ value: 'mixed', label: 'Mixed' }, { value: 'sharp', label: 'Sharp' }, { value: 'wide', label: 'Wide' }]} />
+                <Field label={t('Turns')}>
+                  <Segmented
+                    legend={t('Turns')}
+                    value={options.angleFocus ?? 'mixed'}
+                    onChange={(v) => set({ angleFocus: v })}
+                    options={[
+                      { value: 'mixed', label: t('Mixed') },
+                      { value: 'sharp', label: t('Sharp') },
+                      // The mod of the same name makes targets bigger, so this one needs its own context.
+                      { value: 'wide', label: t('Wide', undefined, 'turn angle') },
+                    ]}
+                  />
                 </Field>
               )}
               {info.options.includes('streamLength') && (
-                <Field label="Stream length" help="Short is 3 to 5 taps, medium 6 to 12 and long 13 to 24.">
-                  <Segmented legend="Stream length" value={options.streamLength ?? 'medium'} onChange={(v) => set({ streamLength: v })}
-                    options={[{ value: 'short', label: 'Short' }, { value: 'medium', label: 'Medium' }, { value: 'long', label: 'Long' }]} />
+                <Field label={t('Stream length')} help={t('Short is 3 to 5 taps, medium 6 to 12 and long 13 to 24.')}>
+                  <Segmented
+                    legend={t('Stream length')}
+                    value={options.streamLength ?? 'medium'}
+                    onChange={(v) => set({ streamLength: v })}
+                    options={[
+                      { value: 'short', label: t('Short') },
+                      { value: 'medium', label: t('Medium') },
+                      { value: 'long', label: t('Long') },
+                    ]}
+                  />
                 </Field>
               )}
               {info.options.includes('sliderFocus') && (
-                <Field label="Sliders">
-                  <Segmented legend="Sliders" value={options.sliderFocus ?? 'mixed'} onChange={(v) => set({ sliderFocus: v })}
-                    options={[{ value: 'mixed', label: 'Mixed' }, { value: 'straight', label: 'Straight' }, { value: 'curves', label: 'Curves' }, { value: 'repeats', label: 'Repeats' }]} />
+                <Field label={t('Sliders')}>
+                  <Segmented
+                    legend={t('Sliders')}
+                    value={options.sliderFocus ?? 'mixed'}
+                    onChange={(v) => set({ sliderFocus: v })}
+                    options={[
+                      { value: 'mixed', label: t('Mixed') },
+                      { value: 'straight', label: t('Straight') },
+                      { value: 'curves', label: t('Curves') },
+                      { value: 'repeats', label: t('Repeats') },
+                    ]}
+                  />
                 </Field>
               )}
               {info.options.includes('mixModules') && (
-                <Field label="Modules in this mix" help="Pick 2 to 4. They play in the order you pick them, one set each.">
+                <Field label={t('Modules in this mix')} help={t('Pick 2 to 4. They play in the order you pick them, one set each.')}>
                   <ul className="grid gap-1 sm:grid-cols-2">
                     {MODULE_IDS.map((id) => {
                       const on = mix.includes(id);
@@ -128,7 +178,13 @@ function Setup({ modeId }: { modeId: ModeId }) {
                       return (
                         <li key={id}>
                           <label className={`flex items-center gap-2 py-1 ${full ? 'opacity-40' : 'cursor-pointer'}`}>
-                            <input type="checkbox" className="accent-[var(--color-accent)]" checked={on} disabled={full} onChange={(e) => toggleMix(id, e.target.checked)} />
+                            <input
+                              type="checkbox"
+                              className="accent-[var(--color-accent)]"
+                              checked={on}
+                              disabled={full}
+                              onChange={(e) => toggleMix(id, e.target.checked)}
+                            />
                             <span>{MODES[id].label}</span>
                             {on && <span className="text-sm text-ink-2">{mix.indexOf(id) + 1}</span>}
                           </label>
@@ -136,7 +192,11 @@ function Setup({ modeId }: { modeId: ModeId }) {
                       );
                     })}
                   </ul>
-                  {!mixValid && <p role="status" className="text-sm text-warn">Pick at least 2 modules.</p>}
+                  {!mixValid && (
+                    <p role="status" className="text-sm text-warn">
+                      {t('Pick at least 2 modules.')}
+                    </p>
+                  )}
                 </Field>
               )}
             </Card>
@@ -144,7 +204,7 @@ function Setup({ modeId }: { modeId: ModeId }) {
 
           {info.allowedMods.length > 0 && (
             <Card>
-              <SectionTitle>Mods</SectionTitle>
+              <SectionTitle>{t('Mods')}</SectionTitle>
               {info.allowedMods.map((id) => (
                 <Toggle
                   key={id}
@@ -154,7 +214,9 @@ function Setup({ modeId }: { modeId: ModeId }) {
                   onChange={(on) => setMods((cur) => (on ? cleanMods([...cur, id], modeId) : cur.filter((m) => m !== id)))}
                 />
               ))}
-              <p className="mt-2 text-sm text-ink-2">Levels change only after plays with no mods, or with Mirror alone.</p>
+              <p className="mt-2 text-sm text-ink-2">
+                {t('Levels change only after plays with no mods, or with {mirror} alone.', { mirror: MODS.mirror.label })}
+              </p>
             </Card>
           )}
         </div>
@@ -162,41 +224,61 @@ function Setup({ modeId }: { modeId: ModeId }) {
         <aside className="space-y-6">
           {shownLevels.length > 0 && (
             <Card>
-              <SectionTitle>Your level</SectionTitle>
+              <SectionTitle>{t('Your level')}</SectionTitle>
               <ul className="space-y-1">
                 {shownLevels.map((id) => {
                   const row = data?.progress[id];
                   return (
                     <li key={id} className="flex justify-between">
                       <span>{MODES[id].label}</span>
-                      <span className="text-ink-2">{row ? level(row.level) : `${DEFAULT_MODULE_LEVEL}.0, not played yet`}</span>
+                      <span className="text-ink-2">
+                        {row ? level(row.level) : t('{level}, not played yet', { level: level(DEFAULT_MODULE_LEVEL) })}
+                      </span>
                     </li>
                   );
                 })}
               </ul>
-              {info.adaptive && <p className="mt-2 text-sm text-ink-2">The level moves after every set to keep about 70% to 86% of targets a success.</p>}
+              {info.adaptive && (
+                <p className="mt-2 text-sm text-ink-2">
+                  {t('The level moves after every set to keep about 70% to 86% of targets a success.')}
+                </p>
+              )}
             </Card>
           )}
           {shownLevels.length === 0 && info.skills.length > 0 && (
             <Card>
-              <p className="text-sm text-ink-2">Trains {info.skills.map((s) => SKILLS[s].label.toLowerCase()).join(' and ')} at a fixed level taken from your module levels.</p>
+              <p className="text-sm text-ink-2">
+                {t('Trains {skills} at a fixed level taken from your module levels.', {
+                  skills: andList(info.skills.map((s) => lowerLabel(SKILLS[s].label))),
+                })}
+              </p>
             </Card>
           )}
           <Card>
-            <SectionTitle>Length</SectionTitle>
-            <Segmented legend="Length" value={lengthSec} options={info.lengthOptions.map((n) => ({ value: n, label: n >= 120 ? `${n / 60} min` : `${n} s` }))} onChange={setLengthSec} />
-            <Toggle label="Full screen" checked={fullscreen} onChange={setFullscreen} />
-            <Button variant="primary" size="lg" className="mt-3 w-full" disabled={!mixValid || !levels} onClick={start}>
-              {drill?.drillId ? 'Start drill' : 'Start'}
+            <SectionTitle>{t('Length')}</SectionTitle>
+            <Segmented
+              legend={t('Length')}
+              value={lengthSec}
+              options={info.lengthOptions.map((n) => ({ value: n, label: lengthText(n) }))}
+              onChange={setLengthSec}
+            />
+            <Toggle label={t('Full screen')} checked={fullscreen} onChange={setFullscreen} />
+            <Button variant="primary" size="lg" className="mt-3 w-full max-lg:hidden" disabled={!mixValid || !levels} onClick={start}>
+              {drill?.drillId ? t('Start drill') : t('Start')}
             </Button>
             {levelsError && (
               <div className="mt-3">
-                <Notice tone="bad">{levelsError} Reload the page to try again.</Notice>
+                <Notice tone="bad">{t('{error} Reload the page to try again.', { error: levelsError })}</Notice>
               </div>
             )}
           </Card>
         </aside>
       </div>
+      <StickyStart summary={t('{mode}, {length}', { mode: info.label, length: lengthText(lengthSec) })}>
+        <Button variant="primary" size="lg" className="px-8" disabled={!mixValid || !levels} onClick={start}>
+          {drill?.drillId ? t('Start drill') : t('Start')}
+        </Button>
+      </StickyStart>
     </>
   );
 }

@@ -4,6 +4,7 @@ import { SKILLS } from '../../shared/catalog';
 import type { SkillId } from '../../shared/types';
 import { SKILL_EXPLAIN } from '../copy';
 import { level } from '../format';
+import { t } from '../i18n';
 import { Badge } from './ui';
 
 /** Seven skill ratings. `compact` shows a bar per skill and no explanations. */
@@ -20,19 +21,29 @@ export function Ratings({ ratings, compact = false }: { ratings: Record<SkillId,
               {r ? (
                 <span className="flex items-baseline gap-2">
                   <span className="text-lg font-semibold">{level(r.rating)}</span>
-                  <Badge tone={r.provisional ? 'neutral' : 'accent'}>Tier {r.tier}</Badge>
+                  <Badge tone={r.provisional ? 'neutral' : 'accent'}>{t('Tier {tier}', { tier: r.tier })}</Badge>
                 </span>
               ) : (
-                <span className="text-sm text-ink-2">No rating yet</span>
+                <span className="text-sm text-ink-2">{t('No rating yet')}</span>
               )}
             </div>
-            <div className="mt-1.5 h-1 rounded-full bg-line" role="img" aria-label={r ? `${SKILLS[skill].label} rating ${level(r.rating)} of 8` : 'No rating'}>
+            <div
+              className="mt-1.5 h-1 rounded-full bg-line"
+              role="img"
+              aria-label={r ? t('{skill} rating {rating} of 8', { skill: SKILLS[skill].label, rating: level(r.rating) }) : t('No rating')}
+            >
               <div className="hb-grow h-1 rounded-full bg-accent" style={{ width: `${fill * 100}%` }} />
             </div>
             {!compact && (
               <p className="mt-1.5 text-sm text-ink-2">
-                {r ? `${r.plays} ${r.plays === 1 ? 'play' : 'plays'} in the last 60 days${r.provisional ? ', provisional' : ''}. ` : ''}
-                {SKILLS[skill].description}.
+                {r
+                  ? `${
+                      r.provisional
+                        ? t('{n, plural, one {# play} other {# plays}} in the last 60 days, provisional.', { n: r.plays })
+                        : t('{n, plural, one {# play} other {# plays}} in the last 60 days.', { n: r.plays })
+                    } `
+                  : ''}
+                {t('{description}.', { description: SKILLS[skill].description })}
               </p>
             )}
           </li>

@@ -1,28 +1,37 @@
 // Text on the calibration screens. It follows reference/writing.md: plain sentences, no colons joining clauses.
+// Each entry translates when it is read.
 
+import { t } from '../../shared/i18n';
 import type { CalibrationKind } from '../../shared/types';
 
 export const CALIBRATION_STRINGS = {
-  title: { visual: 'Visual calibration', audio: 'Audio calibration' } as Record<CalibrationKind, string>,
-  ready: {
-    visual: 'Press a hit key or click each time the ring closes on the target.',
-    audio: 'Press a hit key or click on every click you hear.',
-  } as Record<CalibrationKind, string>,
-  start: 'Press a hit key or click to start.',
-  leadIn: {
-    visual: 'Watch the ring. Your taps count after four beats.',
-    audio: 'Listen to the beat. Your taps count after four beats.',
-  } as Record<CalibrationKind, string>,
-  tapping: {
-    visual: 'Tap as the ring closes.',
-    audio: 'Tap with the clicks.',
-  } as Record<CalibrationKind, string>,
-  tooFar: 'That tap was too far from a beat and did not count.',
-  paused: 'The page lost focus. Press a hit key or click to start again.',
-  done: 'Done',
-  doneSub: (offsetMs: number): string => `Your offset is ${Math.round(offsetMs)} ms.`,
-  progress: (taps: number, needed: number): string => `${taps} of ${needed}`,
-  beat: (n: number, total: number): string => `Beat ${n} of ${total}`,
-  noCanvas: 'This browser could not start the calibration canvas.',
-  noSound: "Sound couldn't start in this browser, so the audio calibration can't run.",
+  title: (kind: CalibrationKind): string => (kind === 'visual' ? t('Visual calibration') : t('Audio calibration')),
+  ready: (kind: CalibrationKind): string =>
+    kind === 'visual'
+      ? t('Press a hit key or click each time the ring closes on the target.')
+      : t('Press a hit key or click on every click you hear.'),
+  get start() {
+    return t('Press a hit key or click to start.');
+  },
+  leadIn: (kind: CalibrationKind): string =>
+    kind === 'visual' ? t('Watch the ring. Your taps count after four beats.') : t('Listen to the beat. Your taps count after four beats.'),
+  tapping: (kind: CalibrationKind): string => (kind === 'visual' ? t('Tap as the ring closes.') : t('Tap with the clicks.')),
+  get tooFar() {
+    return t('That tap was too far from a beat and did not count.');
+  },
+  get paused() {
+    return t('The page lost focus. Press a hit key or click to start again.');
+  },
+  get done() {
+    return t('Done');
+  },
+  doneSub: (offsetMs: number): string => t('Your offset is {ms} ms.', { ms: Math.round(offsetMs) }),
+  progress: (taps: number, needed: number): string => t('{taps} of {needed}', { taps, needed }),
+  beat: (n: number, total: number): string => t('Beat {n} of {total}', { n, total }),
+  get noCanvas() {
+    return t('This browser could not start the calibration canvas.');
+  },
+  get noSound() {
+    return t("Sound couldn't start in this browser, so the audio calibration can't run.");
+  },
 };

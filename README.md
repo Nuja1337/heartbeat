@@ -22,16 +22,16 @@ Each click is judged Crisp, Solid, Rough or Miss. The windows depend on the timi
 
 **Training modules** play short sets and change their difficulty after every set so that about 70% to 86% of targets count as a success.
 
-| Module | What it trains |
-|---|---|
-| Jumps | Distance and where you stop |
-| Angles | Sharp and wide turns between jumps |
-| Streams | Tapping speed and even timing |
-| Tracking | Staying on sliders |
-| Spinning | Spinner speed |
-| Precision | Landing near the center |
-| Reading | Short approach times and busy screens |
-| Timing | Narrow hit windows |
+| Module    | What it trains                        |
+| --------- | ------------------------------------- |
+| Jumps     | Distance and where you stop           |
+| Angles    | Sharp and wide turns between jumps    |
+| Streams   | Tapping speed and even timing         |
+| Tracking  | Staying on sliders                    |
+| Spinning  | Spinner speed                         |
+| Precision | Landing near the center               |
+| Reading   | Short approach times and busy screens |
+| Timing    | Narrow hit windows                    |
 
 Mix plays two to four modules in turn. Warm-up starts a session a little below your level. Stamina plays long runs at a steady level and shows when your accuracy drops. Placement plays two short sets of jumps, streams, tracking, precision and timing in turn and sets your starting level in each.
 
@@ -82,6 +82,10 @@ Displays and speakers delay what you see and hear. The calibration page (Setting
 - Taps more than 200 ms from a beat are dropped. The result is the median of your taps, with their spread. Above 30 ms of spread, the page asks you to try again.
 - Apply saves the rounded median as the visual offset (-50 to 150 ms) or the audio offset (-100 to 300 ms). The visual offset draws targets earlier, and the audio offset plays the metronome earlier. Hit sounds always play at once.
 
+## Guide and help
+
+The Guide page at `/guide` explains the modes, the hit windows, the controls, the stats and what happens to your data. Numbers that have a constant in the catalog are read from it, and the rest are copied from the code. The footer links to it from every page, and Settings links to it under App.
+
 ## Offline and install
 
 In a production build, a service worker caches the app, so it loads without a connection after the first visit. When a new version is ready, a banner offers a reload. Browsers that support it offer Install in Settings, under App.
@@ -107,6 +111,20 @@ Everything is stored in this browser with IndexedDB. There is no account and not
 - Raw input locks the pointer and reads mouse movement directly. It needs a click to lock again after a pause, which is why Resume is a button.
 - Menus work with the keyboard. Tab moves between controls and the arrow keys change options in a group.
 
+## Look, language and accessibility
+
+Settings has a Look section and an Accessibility section.
+
+- The theme is dark, light or whatever the operating system uses, and the default follows the system. The playfield follows the theme. On the light theme every palette color is darkened until it reads at 4.5:1 on white, so targets and judgments stay visible and stay apart.
+- The language can be English, Spanish, Portuguese (Brazil), French, German, Russian, Japanese, Korean or Simplified Chinese. Automatic picks from the browser's languages. English is the source text and the rest are translations.
+- Text size has three steps for the text on every page. The playfield keeps its size, because target size is part of the difficulty.
+- High contrast gives stronger text, lines and focus rings. It also turns on when the operating system asks for more contrast.
+- Reduce motion turns off page animations, sparks, shakes and miss flashes. On the first visit it follows the operating system.
+- The Clear view palette uses colors that stay apart with red-green color blindness. Judgments are also shown as words and played as sounds.
+- Every control can be reached with Tab, a skip link leads to the content, and focus moves to the new page after a link. Pages have landmarks and headings for screen readers, and a play says when it starts, pauses and ends.
+
+The theme, text size and contrast are also kept in `localStorage`, where a small inline script in `index.html` reads them before the first paint so the page never flashes the wrong theme. The script is allowed by hash in the Content Security Policy, and `src/app/csp.test.ts` fails when the two drift apart.
+
 ## Browser notes
 
 - Chrome and Firefox are the main targets. Safari works with a few differences.
@@ -119,12 +137,25 @@ Everything is stored in this browser with IndexedDB. There is no account and not
 
 ```
 npm install
-npm run dev       # start the dev server
-npm run check     # type check and run all tests
-npm run deploy    # build and publish with Wrangler
+npm run dev           # start the dev server
+npm run check         # type check, lint, format check and all tests
+npm run lint          # oxlint
+npm run format        # prettier --write
+npm run i18n          # collect translatable text into src/i18n/keys.json
+npm run deploy        # build and publish with Wrangler
 ```
 
+Prettier formats the code (`.prettierrc`) and oxlint checks it (`.oxlintrc.json`). oxlint was chosen over ESLint because typescript-eslint does not yet support the TypeScript 7 compiler this project uses. The GitHub Actions workflow in `.github/workflows/check.yml` runs the same checks and a production build on every push to main and on every pull request.
+
+The version in `package.json` is shown in the footer and in Settings. Vite passes it to the app as `__APP_VERSION__`.
+
 `npm run dev` also serves `/dev.html`, a test page for the game engine.
+
+### Translations
+
+English sentences are the dictionary keys. Text goes through `t()` from `src/shared/i18n.ts` (or `tx()` from `src/app/i18n.tsx` when a sentence has an element inside it), with ICU-style placeholders, plurals and selects: `t('{n, plural, one {# play} other {# plays}}', { n })`. Text defined at module level is marked with `msg()` and translated where it is shown. The catalog's labels and descriptions are getters, so they translate on read.
+
+`npm run i18n` scans the source and writes `src/i18n/keys.json`. The dictionaries live in `src/i18n/locales/<locale>.json`, one flat object from English to the translation. `src/i18n/i18n.test.ts` fails when keys.json is out of date, when a dictionary is missing a key or has a stale one, or when a translation drops a placeholder. To add a language: add it to `src/shared/locales.ts`, add its loader in `src/app/i18n.tsx`, and write the dictionary. Each dictionary is its own chunk, and the service worker does not precache them, so a player downloads only the one in use.
 
 Open the app with `?fake=1` in a dev build to replace the game engine with a stand-in. A play then ends after 3 seconds with a made-up result, which is enough to click through setup, results, stats and insights.
 
@@ -136,6 +167,8 @@ Folders:
 - `docs/PLAN.md` holds the 1.0 design and `docs/PLAN-2.md` the 2.0 design.
 
 The site is a static Worker deployed with Wrangler. See `wrangler.jsonc`.
+
+`public/_headers` sets the response headers. Scripts may come only from the site itself (plus the one inline boot script, by hash), the page can't be framed, hashed files under `/assets/` are cached for a year, the icons and the preview image for a day, and everything else is checked on every visit. `public/robots.txt` and `public/sitemap.xml` list the pages worth indexing, and `public/og.png` is the preview image for shared links.
 
 ### Retiring the service worker
 

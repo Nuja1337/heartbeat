@@ -1,22 +1,32 @@
 // IndexedDB access: open, migrate, and small promise helpers.
 
+import { msg, t } from '../shared/i18n';
+
 export const DB_NAME = 'heartbeat';
 export const DB_VERSION = 2;
 
 export type StoreName = 'meta' | 'settings' | 'plays' | 'playDetails' | 'progress' | 'drills' | 'tombstones' | 'replays' | 'replayBytes';
 export const STORE_NAMES: StoreName[] = [
-  'meta', 'settings', 'plays', 'playDetails', 'progress', 'drills', 'tombstones', 'replays', 'replayBytes',
+  'meta',
+  'settings',
+  'plays',
+  'playDetails',
+  'progress',
+  'drills',
+  'tombstones',
+  'replays',
+  'replayBytes',
 ];
 
 /** Shown while another tab holds the old database open. */
-export const DB_BLOCKED_MESSAGE = 'Close other Heartbeat tabs to finish the update.';
+export const DB_BLOCKED_MESSAGE = msg('Close other Heartbeat tabs to finish the update.');
 /** Shown when this browser's data was written by a newer Heartbeat than the running code. */
-export const DB_NEWER_MESSAGE = 'This browser has data from a newer Heartbeat. Reload to update.';
+export const DB_NEWER_MESSAGE = msg('This browser has data from a newer Heartbeat. Reload to update.');
 
 /** The open failed because the stored database is newer than this code. The message can be shown as is. */
 export class DbNewerError extends Error {
   constructor() {
-    super(DB_NEWER_MESSAGE);
+    super(t(DB_NEWER_MESSAGE));
     this.name = 'DbNewerError';
   }
 }
@@ -75,7 +85,7 @@ export function openDb(): Promise<IDBDatabase> {
   if (dbPromise) return dbPromise;
   dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
     if (typeof indexedDB === 'undefined') {
-      reject(new Error('This browser has no IndexedDB, so Heartbeat cannot save anything.'));
+      reject(new Error(t('This browser has no IndexedDB, so Heartbeat cannot save anything.')));
       return;
     }
     const open = indexedDB.open(DB_NAME, DB_VERSION);
@@ -95,7 +105,7 @@ export function openDb(): Promise<IDBDatabase> {
     };
     open.onerror = () => {
       const error = open.error;
-      reject(error?.name === 'VersionError' ? new DbNewerError() : (error ?? new Error('Could not open the database.')));
+      reject(error?.name === 'VersionError' ? new DbNewerError() : (error ?? new Error(t('Could not open the database.'))));
     };
     open.onblocked = () => blockedListeners.forEach((fn) => fn());
   });
@@ -137,7 +147,7 @@ function txDone(tx: IDBTransaction): Promise<void> {
   return new Promise((resolve, reject) => {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error ?? new Error('Transaction aborted.'));
+    tx.onabort = () => reject(tx.error ?? new Error(t('Transaction aborted.')));
   });
 }
 

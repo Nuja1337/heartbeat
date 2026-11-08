@@ -1,23 +1,28 @@
 // Packs HitRecords into typed-array columns for storage, and back. Enums are stored as indexes into
 // the append-only arrays below. Null is NaN for floats and 255 for small ints.
 
-import type {
-  HitRecord,
-  InputSlot,
-  Judgment,
-  MissReason,
-  ObjectKind,
-  PatternTag,
-  SliderStats,
-  SpinnerStats,
-} from '../shared/types';
+import type { HitRecord, InputSlot, Judgment, MissReason, ObjectKind, PatternTag, SliderStats, SpinnerStats } from '../shared/types';
 import type { ColumnArray, ColumnTable } from './schema';
 
 /* Append-only. Never reorder or remove. */
 export const KINDS: ObjectKind[] = ['circle', 'slider', 'spinner'];
 export const PATTERNS: PatternTag[] = [
-  'single', 'jump', 'backforth', 'triangle', 'square', 'star', 'flow', 'stream', 'burst', 'doubles', 'slider', 'spinner',
-  'stack', 'cutstream', 'spacedstream', 'polygon',
+  'single',
+  'jump',
+  'backforth',
+  'triangle',
+  'square',
+  'star',
+  'flow',
+  'stream',
+  'burst',
+  'doubles',
+  'slider',
+  'spinner',
+  'stack',
+  'cutstream',
+  'spacedstream',
+  'polygon',
 ];
 export const JUDGMENT_ORDER: Judgment[] = ['crisp', 'solid', 'rough', 'miss'];
 export const MISS_REASONS: MissReason[] = ['none', 'aim', 'early', 'skipped', 'tracking', 'spin'];
@@ -28,25 +33,77 @@ export type ColType = 'f32' | 'u8' | 'u16' | 'i16';
 const NULL_U8 = 255;
 
 export const OBJECT_COLUMNS = {
-  index: 'u16', kind: 'u8', pattern: 'u8', set: 'i16', judgment: 'u8', headJudgment: 'u8', missReason: 'u8',
-  input: 'u8', comboBefore: 'u16', afterPause: 'u8',
-  time: 'f32', endTime: 'f32', x: 'f32', y: 'f32', radius: 'f32', approachMs: 'f32', crispMs: 'f32',
-  timingError: 'f32', hitX: 'f32', hitY: 'f32', along: 'f32', lateral: 'f32', radial: 'f32',
-  distance: 'f32', gapMs: 'f32', velocity: 'f32', spacing: 'f32', turnAngle: 'f32', direction: 'f32', progress: 'f32',
-  runIndex: 'u16', runLength: 'u16', visibleCount: 'u8',
-  arriveMs: 'f32', efficiency: 'f32', peakSpeed: 'f32', corrections: 'u8',
-  leaveMs: 'f32', primaryAlong: 'f32', primaryLateral: 'f32', primaryEndMs: 'f32', correctionPath: 'f32',
+  index: 'u16',
+  kind: 'u8',
+  pattern: 'u8',
+  set: 'i16',
+  judgment: 'u8',
+  headJudgment: 'u8',
+  missReason: 'u8',
+  input: 'u8',
+  comboBefore: 'u16',
+  afterPause: 'u8',
+  time: 'f32',
+  endTime: 'f32',
+  x: 'f32',
+  y: 'f32',
+  radius: 'f32',
+  approachMs: 'f32',
+  crispMs: 'f32',
+  timingError: 'f32',
+  hitX: 'f32',
+  hitY: 'f32',
+  along: 'f32',
+  lateral: 'f32',
+  radial: 'f32',
+  distance: 'f32',
+  gapMs: 'f32',
+  velocity: 'f32',
+  spacing: 'f32',
+  turnAngle: 'f32',
+  direction: 'f32',
+  progress: 'f32',
+  runIndex: 'u16',
+  runLength: 'u16',
+  visibleCount: 'u8',
+  arriveMs: 'f32',
+  efficiency: 'f32',
+  peakSpeed: 'f32',
+  corrections: 'u8',
+  leaveMs: 'f32',
+  primaryAlong: 'f32',
+  primaryLateral: 'f32',
+  primaryEndMs: 'f32',
+  correctionPath: 'f32',
 } as const satisfies Record<string, ColType>;
 
 export const SLIDER_COLUMNS = {
-  row: 'u16', ticksHit: 'u16', ticksTotal: 'u16', endHit: 'u8', trackedFraction: 'f32', meanDistance: 'f32',
-  meanLag: 'f32', lateralRms: 'f32', breaks: 'u16', firstLossAt: 'f32', shape: 'u8', length: 'f32',
-  velocity: 'f32', repeats: 'u8', followRadius: 'f32',
+  row: 'u16',
+  ticksHit: 'u16',
+  ticksTotal: 'u16',
+  endHit: 'u8',
+  trackedFraction: 'f32',
+  meanDistance: 'f32',
+  meanLag: 'f32',
+  lateralRms: 'f32',
+  breaks: 'u16',
+  firstLossAt: 'f32',
+  shape: 'u8',
+  length: 'f32',
+  velocity: 'f32',
+  repeats: 'u8',
+  followRadius: 'f32',
 } as const satisfies Record<string, ColType>;
 
 export const SPINNER_COLUMNS = {
-  row: 'u16', rotations: 'f32', rotationsRequired: 'f32', meanRpm: 'f32', peakRpm: 'f32', rpmSd: 'f32',
-  heldMs: 'f32', durationMs: 'f32',
+  row: 'u16',
+  rotations: 'f32',
+  rotationsRequired: 'f32',
+  meanRpm: 'f32',
+  peakRpm: 'f32',
+  rpmSd: 'f32',
+  heldMs: 'f32',
+  durationMs: 'f32',
 } as const satisfies Record<string, ColType>;
 
 export type ColumnSpec = Record<string, ColType>;
@@ -63,10 +120,14 @@ export function missingValue(name: string, type: ColType): number {
 
 export function makeArray(type: ColType, count: number): ColumnArray {
   switch (type) {
-    case 'f32': return new Float32Array(count);
-    case 'u8': return new Uint8Array(count);
-    case 'u16': return new Uint16Array(count);
-    case 'i16': return new Int16Array(count);
+    case 'f32':
+      return new Float32Array(count);
+    case 'u8':
+      return new Uint8Array(count);
+    case 'u16':
+      return new Uint16Array(count);
+    case 'i16':
+      return new Int16Array(count);
   }
 }
 
@@ -191,11 +252,7 @@ function reader(table: ColumnTable, spec: ColumnSpec): (name: string, i: number)
   };
 }
 
-export function unpackRecords(detail: {
-  objects: ColumnTable;
-  sliders: ColumnTable;
-  spinners: ColumnTable;
-}): HitRecord[] {
+export function unpackRecords(detail: { objects: ColumnTable; sliders: ColumnTable; spinners: ColumnTable }): HitRecord[] {
   const o = reader(detail.objects, OBJECT_COLUMNS);
   const sl = reader(detail.sliders, SLIDER_COLUMNS);
   const sp = reader(detail.spinners, SPINNER_COLUMNS);

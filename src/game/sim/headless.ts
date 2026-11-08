@@ -41,7 +41,13 @@ const INPUT: InputInfo = { pointer: 'mouse', rawInput: false, unadjusted: false,
 export function runHeadless(opts: HeadlessOptions): HeadlessRun {
   const { launch, model } = opts;
   const setup = setupPlay(launch);
-  const session = new GameSession({ map: setup.map, launch, controller: setup.controller, progressMs: setup.progressMs, record: opts.record });
+  const session = new GameSession({
+    map: setup.map,
+    launch,
+    controller: setup.controller,
+    progressMs: setup.progressMs,
+    record: opts.record,
+  });
   if (opts.listener) session.on(opts.listener);
   const player = new AutoPlayer(model, createRng(opts.playerSeed ?? hash32(launch.seed, 'player')));
   const pos: Vec2 = { x: 0, y: 0 };
@@ -64,7 +70,8 @@ export function runHeadless(opts: HeadlessOptions): HeadlessRun {
     session.advance(t);
     if (nextPause < pauses.length && t >= (pauses[nextPause] as number)) {
       nextPause++;
-      for (let i = 0; i < INPUT_SLOT_ORDER.length; i++) if (session.mask & (1 << i)) session.release(INPUT_SLOT_ORDER[i] as (typeof INPUT_SLOT_ORDER)[number], t);
+      for (let i = 0; i < INPUT_SLOT_ORDER.length; i++)
+        if (session.mask & (1 << i)) session.release(INPUT_SLOT_ORDER[i] as (typeof INPUT_SLOT_ORDER)[number], t);
       session.notePause(t);
       session.noteResume(t);
       session.move(t, pos);

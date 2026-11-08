@@ -34,7 +34,11 @@ function rerun(replay: ReplayData): { result: PlayResult; judgments: string } {
 }
 
 describe('a pause at a set boundary', () => {
-  const launch: LaunchRequest = { ...launchFor(DEFAULT_DIFFICULTY, 31, 40, [], 'jumps'), options: MODES.jumps.defaultOptions, levels: { jumps: 4 } };
+  const launch: LaunchRequest = {
+    ...launchFor(DEFAULT_DIFFICULTY, 31, 40, [], 'jumps'),
+    options: MODES.jumps.defaultOptions,
+    levels: { jumps: 4 },
+  };
 
   it('marks the same objects afterPause in the replay as in the live play', () => {
     const { session, player } = open(launch);

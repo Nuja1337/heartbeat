@@ -184,7 +184,7 @@ const FOCI: SectionFocus[] = ['jumps', 'flow', 'streams', 'sliders', 'mixed'];
 export function spinnerShape(p: GenParams, k: 2 | 3): { durationMs: number; rotations: number } {
   const dur0 = clamp(k * 4 * p.beatMs, 1500, 4500);
   const rpm = 1.1 * p.bpm;
-  const rotations = Math.max(0.5, Math.round((dur0 / 1000) * rpm * 2 / 60) / 2);
+  const rotations = Math.max(0.5, Math.round(((dur0 / 1000) * rpm * 2) / 60) / 2);
   // The duration follows the turns, so the demand is the rpm to within the clamp.
   const durationMs = round1(clamp((rotations * 60000) / rpm, 1500, 4500));
   return { durationMs, rotations };
@@ -264,7 +264,8 @@ function planSpinners(input: StructureInput, rng: Rng, sections: SectionPlan[], 
   const cands: { section: number; startBeat: number; prob: number }[] = [];
   const lastIdx = sections.length - 1;
   for (const s of sections) {
-    if (s.role === 'rest' && s.index < lastIdx) cands.push({ section: s.index, startBeat: s.startBeat + lead, prob: Math.min(1, 0.15 * p.spinners) });
+    if (s.role === 'rest' && s.index < lastIdx)
+      cands.push({ section: s.index, startBeat: s.startBeat + lead, prob: Math.min(1, 0.15 * p.spinners) });
   }
   // The start of the last build before the final peak.
   let finalPeak = -1;

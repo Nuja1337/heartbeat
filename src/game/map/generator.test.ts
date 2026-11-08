@@ -9,9 +9,45 @@ import { generateDynamic } from './generator';
 import { rateFor } from './mods';
 
 const EXTREMES: DifficultySettings[] = [
-  { radius: 30, approachMs: 300, bpm: 260, density: 10, spacing: 10, complexity: 10, streams: 10, streamMaxLength: 32, sliders: 10, spinners: 10, timing: 10 },
-  { radius: 70, approachMs: 1800, bpm: 90, density: 1, spacing: 1, complexity: 1, streams: 0, streamMaxLength: 3, sliders: 0, spinners: 0, timing: 0 },
-  { radius: 50, approachMs: 1800, bpm: 240, density: 10, spacing: 6, complexity: 8, streams: 6, streamMaxLength: 20, sliders: 6, spinners: 4, timing: 5 },
+  {
+    radius: 30,
+    approachMs: 300,
+    bpm: 260,
+    density: 10,
+    spacing: 10,
+    complexity: 10,
+    streams: 10,
+    streamMaxLength: 32,
+    sliders: 10,
+    spinners: 10,
+    timing: 10,
+  },
+  {
+    radius: 70,
+    approachMs: 1800,
+    bpm: 90,
+    density: 1,
+    spacing: 1,
+    complexity: 1,
+    streams: 0,
+    streamMaxLength: 3,
+    sliders: 0,
+    spinners: 0,
+    timing: 0,
+  },
+  {
+    radius: 50,
+    approachMs: 1800,
+    bpm: 240,
+    density: 10,
+    spacing: 6,
+    complexity: 8,
+    streams: 6,
+    streamMaxLength: 20,
+    sliders: 6,
+    spinners: 4,
+    timing: 5,
+  },
 ];
 
 describe('generator determinism', () => {

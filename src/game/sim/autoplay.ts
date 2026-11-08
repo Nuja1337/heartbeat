@@ -191,7 +191,10 @@ export class AutoPlayer {
       // speed stays the higher of the two, so it is the one the movement metrics call the main motion.
       const span = arrive - start;
       const first = 0.9 / (1 + (1.5 * short) / (1 - short));
-      const mid = { x: this.lastPos.x + (target.x - this.lastPos.x) * (1 - short), y: this.lastPos.y + (target.y - this.lastPos.y) * (1 - short) };
+      const mid = {
+        x: this.lastPos.x + (target.x - this.lastPos.x) * (1 - short),
+        y: this.lastPos.y + (target.y - this.lastPos.y) * (1 - short),
+      };
       this.move(start, start + first * span, mid);
       this.lastPos = mid;
       this.hold(start + first * span, start + (first + 0.1) * span, mid);

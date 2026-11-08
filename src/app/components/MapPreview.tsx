@@ -9,6 +9,7 @@ import { itemsFromMap, mapDemand, PREVIEW_MIN_N } from '../../analytics/demand';
 import type { SkillDemand } from '../../analytics/demand';
 import type { LaunchRequest, PlaybackHandle, SkillId } from '../../shared/types';
 import { duration } from '../format';
+import { count, t } from '../i18n';
 import type { GameModule } from '../state/engine';
 import { useGame } from '../state/engine';
 import { mapStats } from '../state/launch';
@@ -43,8 +44,15 @@ export function buildPreview(game: Pick<GameModule, 'previewLaunch'>, launch: La
  * The preview of a launch, built after the launch has stopped changing. The first one is built at once.
  * The last result stays while the next one is pending.
  */
-export function useMapPreview(launch: LaunchRequest, game: GameModule | null): { data: MapPreviewData | null; pending: boolean; failed: boolean } {
-  const [state, setState] = useState<{ data: MapPreviewData | null; failed: boolean; done: LaunchRequest | null }>({ data: null, failed: false, done: null });
+export function useMapPreview(
+  launch: LaunchRequest,
+  game: GameModule | null,
+): { data: MapPreviewData | null; pending: boolean; failed: boolean } {
+  const [state, setState] = useState<{ data: MapPreviewData | null; failed: boolean; done: LaunchRequest | null }>({
+    data: null,
+    failed: false,
+    done: null,
+  });
   const first = useRef(true);
 
   useEffect(() => {
@@ -75,33 +83,43 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function MapPreview({ launch, data, pending, failed }: { launch: LaunchRequest; data: MapPreviewData | null; pending: boolean; failed: boolean }) {
+export function MapPreview({
+  launch,
+  data,
+  pending,
+  failed,
+}: {
+  launch: LaunchRequest;
+  data: MapPreviewData | null;
+  pending: boolean;
+  failed: boolean;
+}) {
   const [watching, setWatching] = useState(false);
   const s = data?.stats;
   return (
-    <section className="hb-panel p-4 sm:p-6" aria-label="Map">
-      <SectionTitle aside={pending && data ? 'Updating' : undefined}>Map</SectionTitle>
+    <section className="hb-panel p-4 sm:p-6" aria-label={t('Map')}>
+      <SectionTitle aside={pending && data ? t('Updating') : undefined}>{t('Map')}</SectionTitle>
       <div className={`transition-opacity ${pending && data ? 'opacity-60' : ''}`} aria-busy={pending}>
         {data ? (
           <DifficultyGraph timeline={data.timeline} />
         ) : failed ? (
-          <Notice>The map could not be built for these settings.</Notice>
+          <Notice>{t('The map could not be built for these settings.')}</Notice>
         ) : (
           <div className="grid h-40 place-items-center rounded-md border border-line bg-bg-2">
-            <span className="hb-kicker">Building the map.</span>
+            <span className="hb-kicker">{t('Building the map.')}</span>
           </div>
         )}
         <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-5">
-          <Stat label="Objects a minute" value={s ? String(s.perMinute) : DASH} />
-          <Stat label="Longest stream" value={s ? (s.longestStream > 0 ? `${s.longestStream} taps` : 'None') : DASH} />
-          <Stat label="Objects" value={s ? String(s.objects) : DASH} />
-          <Stat label="Sliders" value={s ? String(s.sliders) : DASH} />
-          <Stat label="Spinners" value={s ? String(s.spinners) : DASH} />
+          <Stat label={t('Objects a minute')} value={s ? String(s.perMinute) : DASH} />
+          <Stat label={t('Longest stream')} value={s ? (s.longestStream > 0 ? count(s.longestStream, 'tap') : t('None')) : DASH} />
+          <Stat label={t('Objects')} value={s ? String(s.objects) : DASH} />
+          <Stat label={t('Sliders')} value={s ? String(s.sliders) : DASH} />
+          <Stat label={t('Spinners')} value={s ? String(s.spinners) : DASH} />
         </dl>
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
         <Button onClick={() => setWatching(true)} disabled={!data}>
-          Watch this map
+          {t('Watch this map')}
         </Button>
         <ShareButton launch={launch} />
       </div>
@@ -145,7 +163,7 @@ export function WatchMap({ launch, onClose }: { launch: LaunchRequest; onClose()
           live.current.playing = true;
           setPlaying(true);
         },
-        onTime: (t) => alive && setTime(t),
+        onTime: (ms) => alive && setTime(ms),
         onEnd: () => {
           if (!alive) return;
           live.current.playing = false;
@@ -155,7 +173,7 @@ export function WatchMap({ launch, onClose }: { launch: LaunchRequest; onClose()
       });
       handle.current = h;
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'The map could not be played.');
+      setError(e instanceof Error ? e.message : t('The map could not be played.'));
     }
     return () => {
       alive = false;
@@ -164,9 +182,9 @@ export function WatchMap({ launch, onClose }: { launch: LaunchRequest; onClose()
     };
   }, [game, launch]);
 
-  const seek = (t: number) => {
-    handle.current?.seek(t);
-    setTime(t);
+  const seek = (ms: number) => {
+    handle.current?.seek(ms);
+    setTime(ms);
   };
   const toggle = () => {
     const h = handle.current;
@@ -185,12 +203,12 @@ export function WatchMap({ launch, onClose }: { launch: LaunchRequest; onClose()
 
   const total = info ?? 0;
   const fill = total > 0 ? Math.min(100, (time / total) * 100) : 0;
-  const message = loadFailed ? 'The game could not load.' : error;
+  const message = loadFailed ? t('The game could not load.') : error;
 
   return (
     <dialog
       ref={dialog}
-      aria-label="Watch this map"
+      aria-label={t('Watch this map')}
       className="m-auto w-[min(56rem,calc(100vw-1.5rem))] max-w-none rounded-lg border border-line-2 bg-surface p-4 text-ink backdrop:bg-black/70 sm:p-5"
       onClose={onClose}
       onClick={(e) => {
@@ -198,16 +216,21 @@ export function WatchMap({ launch, onClose }: { launch: LaunchRequest; onClose()
       }}
     >
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="hb-kicker">Watch this map</h2>
+        <h2 className="hb-kicker">{t('Watch this map')}</h2>
         <Button size="sm" variant="ghost" onClick={() => dialog.current?.close()}>
-          Close
+          {t('Close')}
         </Button>
       </div>
       <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg border border-line bg-bg-2">
-        <canvas ref={canvas} className="block size-full cursor-pointer select-none" aria-label="The map played by a simulated player" onClick={toggle} />
+        <canvas
+          ref={canvas}
+          className="block size-full cursor-pointer select-none"
+          aria-label={t('The map played by a simulated player')}
+          onClick={toggle}
+        />
         {!info && !message && (
           <div role="status" className="absolute inset-0 grid place-items-center bg-bg-2">
-            <span className="hb-kicker">Loading the map.</span>
+            <span className="hb-kicker">{t('Loading the map.')}</span>
           </div>
         )}
       </div>
@@ -218,7 +241,7 @@ export function WatchMap({ launch, onClose }: { launch: LaunchRequest; onClose()
       )}
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <Button variant="primary" onClick={toggle} disabled={!info} className="w-24">
-          {playing ? 'Pause' : 'Play'}
+          {playing ? t('Pause', undefined, 'playback') : t('Play', undefined, 'playback')}
         </Button>
         <span className="font-display tabular-nums">
           {duration(time)} <span className="text-ink-3">/ {duration(total)}</span>
@@ -227,8 +250,8 @@ export function WatchMap({ launch, onClose }: { launch: LaunchRequest; onClose()
       <input
         type="range"
         className="mt-2"
-        aria-label="Position in the map"
-        aria-valuetext={`${duration(time)} of ${duration(total)}`}
+        aria-label={t('Position in the map')}
+        aria-valuetext={t('{time} of {total}', { time: duration(time), total: duration(total) })}
         min={0}
         max={Math.max(1, Math.round(total))}
         step={1}

@@ -3,6 +3,7 @@ import type { SkillDemand } from '../../analytics/demand';
 import { SKILLS } from '../../shared/catalog';
 import type { SkillId } from '../../shared/types';
 import { level } from '../format';
+import { t } from '../i18n';
 
 /** How demanding a map is for each skill, on the same scale as the Level 1 to 8 presets. */
 export function DemandBars({ demand }: { demand: Partial<Record<SkillId, Pick<SkillDemand, 'level'>>> }) {
@@ -13,10 +14,18 @@ export function DemandBars({ demand }: { demand: Partial<Record<SkillId, Pick<Sk
         return (
           <li key={skill} className="grid grid-cols-[6rem_1fr_4.5rem] items-center gap-3 text-sm">
             <span className="text-ink-2">{SKILLS[skill].label}</span>
-            <span className="h-1.5 rounded-full bg-line" role="img" aria-label={d ? `${SKILLS[skill].label} demand, level ${level(d.level)}` : `${SKILLS[skill].label}: not in this map`}>
+            <span
+              className="h-1.5 rounded-full bg-line"
+              role="img"
+              aria-label={
+                d
+                  ? t('{skill} demand, level {level}', { skill: SKILLS[skill].label, level: level(d.level) })
+                  : t('{skill}: not in this map', { skill: SKILLS[skill].label })
+              }
+            >
               {d && <span className="block h-1.5 rounded-full bg-accent" style={{ width: `${Math.min(100, (d.level / 10) * 100)}%` }} />}
             </span>
-            <span className="text-right">{d ? `Level ${level(d.level)}` : 'none'}</span>
+            <span className="text-right">{d ? t('Level {level}', { level: level(d.level) }) : t('none')}</span>
           </li>
         );
       })}

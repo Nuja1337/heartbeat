@@ -21,14 +21,7 @@ const DOWNBEAT_GAIN = 1.4125;
  * are not part of the grid. `bar` keeps only every fourth beat and `off` none. The result goes into `out` (cleared
  * first), so a caller that runs every frame allocates nothing.
  */
-export function beatsInWindow(
-  beatMs: number,
-  offset: number,
-  from: number,
-  to: number,
-  mode: MetronomeMode,
-  out: number[] = [],
-): number[] {
+export function beatsInWindow(beatMs: number, offset: number, from: number, to: number, mode: MetronomeMode, out: number[] = []): number[] {
   out.length = 0;
   if (mode === 'off' || !(beatMs > 0) || !(to > from)) return out;
   const stride = mode === 'bar' ? BEATS_PER_BAR : 1;

@@ -36,7 +36,7 @@ describe('movementMetrics', () => {
     const m = movementMetrics(buf, 1000, 1330, { x: 400, y: 100 }, 40, 1350);
     expect(m.efficiency!).toBeGreaterThan(0.99);
     expect(m.corrections).toBe(0);
-    expect(m.peakSpeed!).toBeGreaterThan(1.5 * 300 / 300 * 0.9);
+    expect(m.peakSpeed!).toBeGreaterThan(((1.5 * 300) / 300) * 0.9);
     // The cursor was inside the target (radius 40) from about 15 ms before 1330, and the object is at 1350.
     expect(m.arriveMs!).toBeLessThan(0);
   });
@@ -48,12 +48,16 @@ describe('movementMetrics', () => {
   });
 
   it('counts a second speed peak as a correction', () => {
-    const buf = trace((t) => {
-      if (t < 1000) return [100, 100];
-      if (t < 1300) return [100 + 250 * mj((t - 1000) / 300), 100];
-      if (t < 1360) return [350, 100];
-      return [350 + 50 * mj(Math.min(1, (t - 1360) / 120)), 100];
-    }, 900, 1600);
+    const buf = trace(
+      (t) => {
+        if (t < 1000) return [100, 100];
+        if (t < 1300) return [100 + 250 * mj((t - 1000) / 300), 100];
+        if (t < 1360) return [350, 100];
+        return [350 + 50 * mj(Math.min(1, (t - 1360) / 120)), 100];
+      },
+      900,
+      1600,
+    );
     const m = movementMetrics(buf, 1000, 1500, { x: 400, y: 100 }, 20, 1500);
     expect(m.corrections!).toBeGreaterThanOrEqual(1);
   });
@@ -63,8 +67,15 @@ describe('movementMetrics', () => {
     for (let t = 0; t <= 200; t++) buf.push(t, 100 + t, 100);
     const m = movementMetrics(buf, 10, 190, { x: 290, y: 100 }, 40, 190);
     expect(m).toEqual({
-      arriveMs: null, efficiency: null, corrections: null, peakSpeed: null,
-      leaveMs: null, primaryAlong: null, primaryLateral: null, primaryEndMs: null, correctionPath: null,
+      arriveMs: null,
+      efficiency: null,
+      corrections: null,
+      peakSpeed: null,
+      leaveMs: null,
+      primaryAlong: null,
+      primaryLateral: null,
+      primaryEndMs: null,
+      correctionPath: null,
     });
     // A window inside what was kept still works.
     expect(movementMetrics(buf, 160, 190, { x: 290, y: 100 }, 40, 190).efficiency).not.toBeNull();
@@ -125,7 +136,15 @@ describe('movement metrics from 2.0', () => {
 
   it('fixture 2: a move that stops at 70% and then corrects', () => {
     // 300 units away. The first motion stops at 310, 90 units short.
-    const { buf, end } = path(1000, [{ span: 300, to: 310 }, { span: 60, to: 310 }, { span: 250, to: 400 }], 20);
+    const { buf, end } = path(
+      1000,
+      [
+        { span: 300, to: 310 },
+        { span: 60, to: 310 },
+        { span: 250, to: 400 },
+      ],
+      20,
+    );
     const m = movementMetrics(buf, 1000, end, TARGET, R, end, 0);
     const d = 300;
     expect(m.primaryAlong!).toBeGreaterThan(-0.3 * d * 1.05);
@@ -166,13 +185,28 @@ describe('movement metrics from 2.0', () => {
 
   it('gives a positive lateral when the first motion ends right of the path', () => {
     // Moving right (0 degrees), so down the screen is the right-hand side.
-    const { buf, end } = path(1000, [{ span: 300, to: 400, y: 130 }, { span: 100, to: 400, y: 100 }], 20);
+    const { buf, end } = path(
+      1000,
+      [
+        { span: 300, to: 400, y: 130 },
+        { span: 100, to: 400, y: 100 },
+      ],
+      20,
+    );
     const m = movementMetrics(buf, 1000, end, TARGET, R, end, 0);
     expect(m.primaryLateral!).toBeGreaterThan(15);
   });
 
   it('keeps along and lateral null without a direction, and the rest of the metrics', () => {
-    const { buf, end } = path(1000, [{ span: 300, to: 310 }, { span: 60, to: 310 }, { span: 250, to: 400 }], 20);
+    const { buf, end } = path(
+      1000,
+      [
+        { span: 300, to: 310 },
+        { span: 60, to: 310 },
+        { span: 250, to: 400 },
+      ],
+      20,
+    );
     const m = movementMetrics(buf, 1000, end, TARGET, R, end, null);
     expect(m.primaryAlong).toBeNull();
     expect(m.primaryLateral).toBeNull();

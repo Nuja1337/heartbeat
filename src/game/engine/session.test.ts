@@ -7,7 +7,16 @@ import type { FeedbackEvent } from './session';
 
 function sessionFor(objects: HitObject[], opts: { health?: boolean; mods?: ('nofail' | 'onelife')[]; drain?: number } = {}) {
   const mods = opts.mods ?? [];
-  const base = makeMap(objects, { health: opts.health ? { ...healthRulesFor(5, mods), drainPerSec: opts.drain ?? healthRulesFor(5, mods).drainPerSec, canFail: !mods.includes('nofail'), failOnFirstMiss: mods.includes('onelife') } : null });
+  const base = makeMap(objects, {
+    health: opts.health
+      ? {
+          ...healthRulesFor(5, mods),
+          drainPerSec: opts.drain ?? healthRulesFor(5, mods).drainPerSec,
+          canFail: !mods.includes('nofail'),
+          failOnFirstMiss: mods.includes('onelife'),
+        }
+      : null,
+  });
   const map: PlayableMap = { ...base, mods: [], rate: 1 };
   const s = new GameSession({ map, launch: launchFor() });
   const events: FeedbackEvent[] = [];
@@ -38,7 +47,11 @@ describe('circles', () => {
     expect(hit.value).toBe(30);
     expect(s.scoring.combo).toBe(1);
     run(s, 1031, 2200, 100, 100);
-    const r = s.finish('completed', { startedAt: 0, endedAt: 0, input: { pointer: null, rawInput: false, unadjusted: false, sensitivity: 1, pointerHz: null, displayHz: null } });
+    const r = s.finish('completed', {
+      startedAt: 0,
+      endedAt: 0,
+      input: { pointer: null, rawInput: false, unadjusted: false, sensitivity: 1, pointerHz: null, displayHz: null },
+    });
     expect(r.records).toHaveLength(1);
     expect(r.records[0]!.timingError).toBe(30);
     expect(r.records[0]!.judgment).toBe('crisp');
@@ -309,7 +322,11 @@ describe('pauses', () => {
 });
 
 describe('recording', () => {
-  const INFO = { startedAt: 0, endedAt: 0, input: { pointer: null, rawInput: false, unadjusted: false, sensitivity: 1, pointerHz: null, displayHz: null } };
+  const INFO = {
+    startedAt: 0,
+    endedAt: 0,
+    input: { pointer: null, rawInput: false, unadjusted: false, sensitivity: 1, pointerHz: null, displayHz: null },
+  };
 
   function recorded(act: (s: GameSession) => void) {
     const { s } = sessionFor([makeCircle(0, 1000, 100, 100)]);
@@ -369,7 +386,10 @@ describe('recording', () => {
       s.advance(10.001);
       s.advance(11);
     });
-    expect(log).toEqual([[13, 10, 0, 0], [13, 11, 0, 0]]);
+    expect(log).toEqual([
+      [13, 10, 0, 0],
+      [13, 11, 0, 0],
+    ]);
   });
 
   it('does not log the advance a press or a release makes inside', () => {

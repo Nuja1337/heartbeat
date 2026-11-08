@@ -31,9 +31,29 @@ type Uuid = `${string}-${string}-${string}-${string}-${string}`;
 function launch(modeId: ModeId, seed: number, lengthSec: number, options: ModuleOptions = {}): LaunchRequest {
   if (modeId === 'dynamic') {
     const preset = LEVEL_PRESETS[2]!; // Level 3
-    return { modeId, difficulty: preset.difficulty, presetLevel: preset.level, options, mods: [], seed, lengthSec, levels: {}, drillId: null };
+    return {
+      modeId,
+      difficulty: preset.difficulty,
+      presetLevel: preset.level,
+      options,
+      mods: [],
+      seed,
+      lengthSec,
+      levels: {},
+      drillId: null,
+    };
   }
-  return { modeId, difficulty: { ...DEFAULT_DIFFICULTY }, presetLevel: null, options, mods: [], seed, lengthSec, levels: {}, drillId: null };
+  return {
+    modeId,
+    difficulty: { ...DEFAULT_DIFFICULTY },
+    presetLevel: null,
+    options,
+    mods: [],
+    seed,
+    lengthSec,
+    levels: {},
+    drillId: null,
+  };
 }
 
 describe.skipIf(!process.env.MAKE_FIXTURE)('make the 1.0 fixture', () => {
@@ -123,12 +143,14 @@ describe.skipIf(!process.env.MAKE_FIXTURE)('make the 1.0 fixture', () => {
     mkdirSync(dirname(FIXTURE), { recursive: true });
     writeFileSync(FIXTURE, json);
 
-    console.log(JSON.stringify({
-      bytes: json.length,
-      plays: summaries.map((s) => ({ id: s.id, mode: s.modeId, status: s.status, objects: s.objectCount, startedAt: s.startedAt })),
-      progress: Object.values(progress).map((r) => r && { moduleId: r.moduleId, level: r.level, sessions: r.sessions }),
-      tiers: file.meta.tiers,
-    }));
+    console.log(
+      JSON.stringify({
+        bytes: json.length,
+        plays: summaries.map((s) => ({ id: s.id, mode: s.modeId, status: s.status, objects: s.objectCount, startedAt: s.startedAt })),
+        progress: Object.values(progress).map((r) => r && { moduleId: r.moduleId, level: r.level, sessions: r.sessions }),
+        tiers: file.meta.tiers,
+      }),
+    );
   });
 });
 

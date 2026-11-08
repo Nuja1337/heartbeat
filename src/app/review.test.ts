@@ -39,7 +39,15 @@ describe('drills are measured on all their data', () => {
     await saveDrill(drill);
     // Three drill sessions in the first week, then 70 plays outside the drill.
     for (const [k, daysAgo] of [30.5, 30.3, 30.1].entries()) {
-      const fx = makeFixture({ seed: 900 + k, modeId: 'jumps', objects: 60, jumpsOnly: true, drillId: 'd1', longAlong: -0.05, startedAt: now - daysAgo * DAY });
+      const fx = makeFixture({
+        seed: 900 + k,
+        modeId: 'jumps',
+        objects: 60,
+        jumpsOnly: true,
+        drillId: 'd1',
+        longAlong: -0.05,
+        startedAt: now - daysAgo * DAY,
+      });
       await savePlay(fx.result, now);
     }
     for (let i = 0; i < 70; i++) {
@@ -87,7 +95,10 @@ describe('launches use the levels in the store', () => {
 
 describe('restarting a launch', () => {
   const NOW = new Date(2026, 5, 10, 12).getTime();
-  const base = (source: LaunchRequest['source']): LaunchRequest => ({ ...moduleLaunch({ modeId: 'jumps', options: {}, mods: [], lengthSec: 90, seed: 4242, levels: {}, drillId: null }), source });
+  const base = (source: LaunchRequest['source']): LaunchRequest => ({
+    ...moduleLaunch({ modeId: 'jumps', options: {}, mods: [], lengthSec: 90, seed: 4242, levels: {}, drillId: null }),
+    source,
+  });
   const daily = { kind: 'daily', date: '2026-06-10' } as const;
 
   it('New map drops the source, so it is not a daily', () => {

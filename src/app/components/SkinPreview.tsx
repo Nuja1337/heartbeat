@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PlaybackHandle, Settings } from '../../shared/types';
+import { t } from '../i18n';
 import { motionReduced } from '../state/appearance';
 import { useGame } from '../state/engine';
 import { skinPreviewLaunch } from '../state/launch';
@@ -62,7 +63,7 @@ export function SkinPreview({ settings }: { settings: Settings }) {
       });
       handle.current = h;
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'The preview could not start.');
+      setError(e instanceof Error ? e.message : t('The preview could not start.'));
     }
     return () => {
       alive = false;
@@ -90,11 +91,18 @@ export function SkinPreview({ settings }: { settings: Settings }) {
 
   useEffect(sync, [running, sync]);
 
-  const message = failed ? 'The preview could not load.' : error;
+  const message = failed ? t('The preview could not load.') : error;
   return (
     <div className="w-full max-w-[480px]">
       <div className="relative aspect-[8/5] w-full overflow-hidden rounded-md border border-line bg-bg-2">
-        <canvas ref={canvas} className="block size-full" width={480} height={300} role="img" aria-label="A preview of the map with your look settings" />
+        <canvas
+          ref={canvas}
+          className="block size-full"
+          width={480}
+          height={300}
+          role="img"
+          aria-label={t('A preview of the map with your look settings')}
+        />
         {message ? (
           <p role="status" className="absolute inset-0 grid place-items-center p-4 text-center text-sm text-ink-2">
             {message}
@@ -102,13 +110,13 @@ export function SkinPreview({ settings }: { settings: Settings }) {
         ) : (
           loading && (
             <span role="status" className="hb-kicker absolute inset-0 grid place-items-center bg-bg-2">
-              Loading the preview.
+              {t('Loading the preview.')}
             </span>
           )
         )}
       </div>
       <Button size="sm" variant="ghost" className="mt-2" disabled={!game || Boolean(message)} onClick={() => setUserRun(!running)}>
-        {running ? 'Pause the preview' : 'Play the preview'}
+        {running ? t('Pause the preview') : t('Play the preview')}
       </Button>
     </div>
   );

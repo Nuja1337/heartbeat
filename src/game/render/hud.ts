@@ -56,7 +56,6 @@ const F_GRAPH = `600 11px ${FONT}`;
 export const GRAPH = { w: 120, h: 40, margin: 8, textEveryMs: 500 } as const;
 /** The quick retry bar: 160 px wide at the top centre of the field. */
 export const RETRY_BAR = { w: 160, h: 4, top: 22 } as const;
-const PANEL = 'rgba(7, 9, 14, 0.78)';
 
 export class Hud {
   private shake = { x: 0, y: 0 };
@@ -251,7 +250,7 @@ export class Hud {
     const cx = layout.cssW / 2;
     const w = RETRY_BAR.w;
     const y = layout.oy + RETRY_BAR.top;
-    ctx.fillStyle = PANEL;
+    ctx.fillStyle = COLORS.panel;
     ctx.fillRect(cx - w / 2 - 8, y - 8, w + 16, RETRY_BAR.h + 34);
     ctx.fillStyle = COLORS.fieldEdge;
     ctx.fillRect(cx - w / 2, y, w, RETRY_BAR.h);
@@ -268,7 +267,7 @@ export class Hud {
   private drawGraph(ctx: CanvasRenderingContext2D, layout: FieldLayout, frames: FrameStats, budget: number | null, now: number): void {
     const x = GRAPH.margin;
     const y = layout.cssH - GRAPH.margin - GRAPH.h;
-    ctx.fillStyle = PANEL;
+    ctx.fillStyle = COLORS.panel;
     ctx.fillRect(x, y, GRAPH.w, GRAPH.h);
     ctx.strokeStyle = COLORS.fieldEdge;
     ctx.lineWidth = 1;

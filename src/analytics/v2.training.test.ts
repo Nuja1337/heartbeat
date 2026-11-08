@@ -19,7 +19,14 @@ import { isSnoozed, snoozeUntil } from './snooze';
 import { summarizePlay } from './summary';
 import { dayIndex, dayStartMs } from './trends';
 import {
-  buildDailyPlan, dailyStreak, isPlanStepDone, planStepsDone, playStreak, SKILL_MODULE, suggestedDynamicLevel, weeklyGoal,
+  buildDailyPlan,
+  dailyStreak,
+  isPlanStepDone,
+  planStepsDone,
+  playStreak,
+  SKILL_MODULE,
+  suggestedDynamicLevel,
+  weeklyGoal,
 } from './training';
 
 const MIN = 60_000;
@@ -112,7 +119,8 @@ describe('grades', () => {
   });
 
   it('cover every accuracy from 0 to 1', () => {
-    for (let a = 0; a <= 1; a += 0.001) for (const misses of [0, 1]) expect(GRADES.map((g) => g.id)).toContain(gradeFor(a, misses, 'completed'));
+    for (let a = 0; a <= 1; a += 0.001)
+      for (const misses of [0, 1]) expect(GRADES.map((g) => g.id)).toContain(gradeFor(a, misses, 'completed'));
   });
 });
 
@@ -122,14 +130,49 @@ describe('play streak', () => {
   it('counts consecutive local days across a spring-forward and a fall-back change', () => {
     inZones(() => {
       for (const hour of [0, 23]) {
-        const spring = run([[2026, 3, 5], [2026, 3, 6], [2026, 3, 7], [2026, 3, 8], [2026, 3, 9], [2026, 3, 10], [2026, 3, 11]], hour);
+        const spring = run(
+          [
+            [2026, 3, 5],
+            [2026, 3, 6],
+            [2026, 3, 7],
+            [2026, 3, 8],
+            [2026, 3, 9],
+            [2026, 3, 10],
+            [2026, 3, 11],
+          ],
+          hour,
+        );
         expect(playStreak(spring, at(2026, 3, 11, 23, 50)).current).toBe(7);
-        const fall = run([[2026, 10, 30], [2026, 10, 31], [2026, 11, 1], [2026, 11, 2], [2026, 11, 3]], hour);
+        const fall = run(
+          [
+            [2026, 10, 30],
+            [2026, 10, 31],
+            [2026, 11, 1],
+            [2026, 11, 2],
+            [2026, 11, 3],
+          ],
+          hour,
+        );
         expect(playStreak(fall, at(2026, 11, 3, 23, 50)).current).toBe(5);
         // Southern hemisphere changes, and Lord Howe's half-hour change, fall on other dates.
-        const south = run([[2026, 4, 3], [2026, 4, 4], [2026, 4, 5], [2026, 4, 6]], hour);
+        const south = run(
+          [
+            [2026, 4, 3],
+            [2026, 4, 4],
+            [2026, 4, 5],
+            [2026, 4, 6],
+          ],
+          hour,
+        );
         expect(playStreak(south, at(2026, 4, 6, 23, 50)).current).toBe(4);
-        const oct = run([[2026, 10, 3], [2026, 10, 4], [2026, 10, 5]], hour);
+        const oct = run(
+          [
+            [2026, 10, 3],
+            [2026, 10, 4],
+            [2026, 10, 5],
+          ],
+          hour,
+        );
         expect(playStreak(oct, at(2026, 10, 5, 23, 50)).current).toBe(3);
       }
     });
@@ -137,17 +180,82 @@ describe('play streak', () => {
 
   it('counts across month ends, a leap day and a year end', () => {
     inZones(() => {
-      expect(playStreak(run([[2027, 1, 30], [2027, 1, 31], [2027, 2, 1]], 12), at(2027, 2, 1, 20)).current).toBe(3);
-      expect(playStreak(run([[2027, 2, 28], [2027, 3, 1]], 12), at(2027, 3, 1, 20)).current).toBe(2);
-      expect(playStreak(run([[2028, 2, 28], [2028, 2, 29], [2028, 3, 1]], 12), at(2028, 3, 1, 20)).current).toBe(3);
-      expect(playStreak(run([[2028, 2, 28], [2028, 3, 1]], 12), at(2028, 3, 1, 20)).current).toBe(1);
-      expect(playStreak(run([[2026, 12, 30], [2026, 12, 31], [2027, 1, 1]], 12), at(2027, 1, 1, 20)).current).toBe(3);
+      expect(
+        playStreak(
+          run(
+            [
+              [2027, 1, 30],
+              [2027, 1, 31],
+              [2027, 2, 1],
+            ],
+            12,
+          ),
+          at(2027, 2, 1, 20),
+        ).current,
+      ).toBe(3);
+      expect(
+        playStreak(
+          run(
+            [
+              [2027, 2, 28],
+              [2027, 3, 1],
+            ],
+            12,
+          ),
+          at(2027, 3, 1, 20),
+        ).current,
+      ).toBe(2);
+      expect(
+        playStreak(
+          run(
+            [
+              [2028, 2, 28],
+              [2028, 2, 29],
+              [2028, 3, 1],
+            ],
+            12,
+          ),
+          at(2028, 3, 1, 20),
+        ).current,
+      ).toBe(3);
+      expect(
+        playStreak(
+          run(
+            [
+              [2028, 2, 28],
+              [2028, 3, 1],
+            ],
+            12,
+          ),
+          at(2028, 3, 1, 20),
+        ).current,
+      ).toBe(1);
+      expect(
+        playStreak(
+          run(
+            [
+              [2026, 12, 30],
+              [2026, 12, 31],
+              [2027, 1, 1],
+            ],
+            12,
+          ),
+          at(2027, 1, 1, 20),
+        ).current,
+      ).toBe(3);
     });
   });
 
   it('keeps the streak alive through today, then lets it end', () => {
     inZones(() => {
-      const plays = run([[2026, 5, 1], [2026, 5, 2], [2026, 5, 3]], 20);
+      const plays = run(
+        [
+          [2026, 5, 1],
+          [2026, 5, 2],
+          [2026, 5, 3],
+        ],
+        20,
+      );
       const today = playStreak(plays, at(2026, 5, 3, 21));
       expect(today).toMatchObject({ current: 3, doneToday: true, atRisk: false });
       const morning = playStreak(plays, at(2026, 5, 4, 8));
@@ -157,16 +265,33 @@ describe('play streak', () => {
   });
 
   it('counts a completed 60 s play whose played time ends just under 60 s', () => {
-    const plays = [play(at(2026, 5, 7, 12), { status: 'completed', playedMs: 56_064 }), play(at(2026, 5, 6, 12), { status: 'quit', playedMs: 56_064 })];
+    const plays = [
+      play(at(2026, 5, 7, 12), { status: 'completed', playedMs: 56_064 }),
+      play(at(2026, 5, 6, 12), { status: 'quit', playedMs: 56_064 }),
+    ];
     expect(playStreak(plays, at(2026, 5, 7, 22))).toMatchObject({ current: 1, longest: 1 });
   });
 
   it('only counts plays that completed or ran 60 s, and reports the longest run', () => {
     inZones(() => {
       const plays = [
-        ...run([[2026, 5, 1], [2026, 5, 2], [2026, 5, 3], [2026, 5, 4]], 12),
+        ...run(
+          [
+            [2026, 5, 1],
+            [2026, 5, 2],
+            [2026, 5, 3],
+            [2026, 5, 4],
+          ],
+          12,
+        ),
         play(at(2026, 5, 5, 12), { playedMs: 59_999, status: 'quit' }),
-        ...run([[2026, 5, 6], [2026, 5, 7]], 12),
+        ...run(
+          [
+            [2026, 5, 6],
+            [2026, 5, 7],
+          ],
+          12,
+        ),
         play(at(2026, 5, 7, 18), { playedMs: 60_000 }),
       ];
       expect(playStreak(plays, at(2026, 5, 7, 22))).toMatchObject({ current: 2, longest: 4 });
@@ -255,11 +380,19 @@ describe('weekly goal', () => {
 describe('milestones', () => {
   const NOW = at(2026, 6, 10, 15);
   const base = (over: Partial<PlaySummary> = {}) => play(NOW, { status: 'completed', accuracy: 0.5, ...over });
-  const check = (history: Parameters<typeof newMilestones>[0], s: PlaySummary, others: PlaySummary[] = []) => newMilestones(history, s, [...others, s]);
+  const check = (history: Parameters<typeof newMilestones>[0], s: PlaySummary, others: PlaySummary[] = []) =>
+    newMilestones(history, s, [...others, s]);
 
   it('names only catalog milestones', () => {
     const everything = [
-      base({ maxCombo: 600, counts: { crisp: 50, solid: 0, rough: 0, miss: 0 }, presetLevel: 2, accuracy: 0.95, modeId: 'dynamic', playedMs: 90_000 }),
+      base({
+        maxCombo: 600,
+        counts: { crisp: 50, solid: 0, rough: 0, miss: 0 },
+        presetLevel: 2,
+        accuracy: 0.95,
+        modeId: 'dynamic',
+        playedMs: 90_000,
+      }),
     ];
     for (const s of everything) for (const id of check({}, s)) expect(MILESTONES[id]).toBeDefined();
   });
@@ -271,7 +404,8 @@ describe('milestones', () => {
   });
 
   it('plays-50 and plays-250 count completed plays', () => {
-    const others = (n: number, over: Partial<PlaySummary> = {}) => Array.from({ length: n }, (_, i) => play(NOW - (i + 1) * HOUR, { status: 'completed', ...over }));
+    const others = (n: number, over: Partial<PlaySummary> = {}) =>
+      Array.from({ length: n }, (_, i) => play(NOW - (i + 1) * HOUR, { status: 'completed', ...over }));
     expect(check({}, base(), others(48))).not.toContain('plays-50');
     expect(check({}, base(), others(49))).toContain('plays-50');
     expect(check({}, base(), others(49, { status: 'failed' }))).not.toContain('plays-50');
@@ -310,7 +444,12 @@ describe('milestones', () => {
   });
 
   it('no-miss needs a Dynamic play of a minute or more that finished without a miss', () => {
-    const clean = { modeId: 'dynamic' as const, counts: { crisp: 40, solid: 5, rough: 2, miss: 0 }, playedMs: 56_064, launch: { ...play(0).launch, lengthSec: 60 } };
+    const clean = {
+      modeId: 'dynamic' as const,
+      counts: { crisp: 40, solid: 5, rough: 2, miss: 0 },
+      playedMs: 56_064,
+      launch: { ...play(0).launch, lengthSec: 60 },
+    };
     expect(check({}, base(clean))).toContain('no-miss');
     expect(check({}, base({ ...clean, counts: { ...clean.counts, miss: 1 } }))).not.toContain('no-miss');
     expect(check({}, base({ ...clean, launch: { ...clean.launch, lengthSec: 45 } }))).not.toContain('no-miss');
@@ -319,14 +458,19 @@ describe('milestones', () => {
   });
 
   it('daily-7 counts different dates of completed daily maps', () => {
-    const dates = (n: number) => Array.from({ length: n }, (_, i) => daily(NOW - (i + 1) * DAY, dayNumberKey(localDayNumber(NOW) - (i + 1))));
+    const dates = (n: number) =>
+      Array.from({ length: n }, (_, i) => daily(NOW - (i + 1) * DAY, dayNumberKey(localDayNumber(NOW) - (i + 1))));
     const today = daily(NOW, dayNumberKey(localDayNumber(NOW)));
     expect(check({}, today, dates(6))).toContain('daily-7');
     expect(check({}, today, dates(5))).not.toContain('daily-7');
     // The same date twice is one map.
     expect(check({}, today, [...dates(5), daily(NOW - 3 * HOUR, dayNumberKey(localDayNumber(NOW)))])).not.toContain('daily-7');
     // A new map started from a daily has another seed and does not count.
-    const fresh = (i: number) => play(NOW - (i + 1) * DAY, { status: 'completed', launch: { ...play(0).launch, seed: 12345, source: { kind: 'daily', date: dayNumberKey(localDayNumber(NOW) - (i + 1)) } } });
+    const fresh = (i: number) =>
+      play(NOW - (i + 1) * DAY, {
+        status: 'completed',
+        launch: { ...play(0).launch, seed: 12345, source: { kind: 'daily', date: dayNumberKey(localDayNumber(NOW) - (i + 1)) } },
+      });
     expect(check({}, today, [...dates(5), fresh(5)])).not.toContain('daily-7');
     // Only a daily play can reach it.
     expect(check({}, base(), dates(8))).not.toContain('daily-7');
@@ -415,23 +559,53 @@ describe('daily plan', () => {
   const rating = (skill: SkillId, v: number): RatingInfo => ({ skill, rating: v, plays: 9, provisional: false, tier: Math.floor(v) });
   const ratings = (o: Partial<Record<SkillId, number>>): Partial<Record<SkillId, RatingInfo>> =>
     Object.fromEntries(Object.entries(o).map(([k, v]) => [k, rating(k as SkillId, v!)]));
-  const progress = (over: Partial<{ playCount: number; drills: Drill[]; dynamicLevel: number }> = {}) => ({ playCount: 20, drills: [], dynamicLevel: 4, ...over });
+  const progress = (over: Partial<{ playCount: number; drills: Drill[]; dynamicLevel: number }> = {}) => ({
+    playCount: 20,
+    drills: [],
+    dynamicLevel: 4,
+    ...over,
+  });
 
   const insight = (key: string, modeId: 'jumps' | 'streams' | 'timing' | 'tracking', over: Partial<Insight> = {}): Insight => {
     const [ruleId, variant] = key.split('|') as [Insight['ruleId'], string | undefined];
     return {
-      key: variant ? `${ruleId}:${variant}` : ruleId, ruleId, variant: variant ?? null, severity: 2, n: 100, title: `Title of ${key}`, text: '', basis: '',
-      recommendation: { modeId, options: { ...MODES[modeId].defaultOptions }, label: MODES[modeId].label }, baseline: null, ...over,
+      key: variant ? `${ruleId}:${variant}` : ruleId,
+      ruleId,
+      variant: variant ?? null,
+      severity: 2,
+      n: 100,
+      title: `Title of ${key}`,
+      text: '',
+      basis: '',
+      recommendation: { modeId, options: { ...MODES[modeId].defaultOptions }, label: MODES[modeId].label },
+      baseline: null,
+      ...over,
     };
   };
   const drill = (id: string, ruleId: Drill['ruleId'], variant: string | null, status: Drill['status'] = 'active'): Drill => ({
-    id, ruleId, variant, modeId: 'jumps', options: {}, title: 't', createdAt: NOW, baseline: { kind: 'mean', mean: 0, sd: 1, n: 50 }, status, final: null,
+    id,
+    ruleId,
+    variant,
+    modeId: 'jumps',
+    options: {},
+    title: 't',
+    createdAt: NOW,
+    baseline: { kind: 'mean', mean: 0, sd: 1, n: 50 },
+    status,
+    final: null,
   });
 
   const modules = (plan: ReturnType<typeof buildDailyPlan>) => plan.steps.map((s) => s.launch.modeId);
 
   it('is a warm-up, two drills and a Dynamic play, with the lengths of the plan', () => {
-    const plan = buildDailyPlan(DATE, [insight('long-undershoot', 'jumps')], ratings({ aim: 3, speed: 2, timing: 5 }), progress(), levels, NOW);
+    const plan = buildDailyPlan(
+      DATE,
+      [insight('long-undershoot', 'jumps')],
+      ratings({ aim: 3, speed: 2, timing: 5 }),
+      progress(),
+      levels,
+      NOW,
+    );
     expect(plan.date).toBe(DATE);
     expect(plan.createdAt).toBe(NOW);
     expect(plan.steps.map((s) => s.kind)).toEqual(['warmup', 'drill', 'drill', 'dynamic']);
@@ -455,11 +629,11 @@ describe('daily plan', () => {
     const seeds = a.steps.map((s) => s.launch.seed);
     expect(new Set(seeds).size).toBe(4);
     seeds.forEach((v) => expect(Number.isInteger(v) && v >= 0 && v <= 0xffffffff).toBe(true));
-    const other = buildDailyPlan('2026-06-11', ...args.slice(1) as [Insight[], never, never, never, number]);
+    const other = buildDailyPlan('2026-06-11', ...(args.slice(1) as [Insight[], never, never, never, number]));
     expect(other.steps.map((s) => s.launch.seed)).not.toEqual(seeds);
   });
 
-  it('runs Dynamic at the suggested level with that level\'s preset', () => {
+  it("runs Dynamic at the suggested level with that level's preset", () => {
     for (const level of [1, 4, 8]) {
       const last = buildDailyPlan(DATE, [], {}, progress({ dynamicLevel: level }), levels, NOW).steps[3]!;
       expect(last.launch).toMatchObject({ modeId: 'dynamic', presetLevel: level, lengthSec: 120, mods: [], drillId: null });
@@ -489,7 +663,9 @@ describe('daily plan', () => {
   });
 
   it('with one insight drills it first, then the lowest-rated skill on another module', () => {
-    const one = insight('long-undershoot|s4v1', 'jumps', { recommendation: { modeId: 'jumps', options: { distanceFocus: 'long', directionFocus: null }, label: 'Jumps, long distances' } });
+    const one = insight('long-undershoot|s4v1', 'jumps', {
+      recommendation: { modeId: 'jumps', options: { distanceFocus: 'long', directionFocus: null }, label: 'Jumps, long distances' },
+    });
     const plan = buildDailyPlan(DATE, [one], ratings({ aim: 2, speed: 3, tracking: 5 }), progress(), levels, NOW);
     const [, a, b] = plan.steps;
     expect(a!.launch.modeId).toBe('jumps');
@@ -503,7 +679,10 @@ describe('daily plan', () => {
 
   it('with two insights on the same module takes the second from another source', () => {
     const list = [insight('long-undershoot', 'jumps'), insight('short-overshoot', 'jumps'), insight('timing-bias|late', 'timing')];
-    expect(modules(buildDailyPlan(DATE, list, ratings({ aim: 1, tracking: 2 }), progress(), {}, NOW)).slice(1, 3)).toEqual(['jumps', 'timing']);
+    expect(modules(buildDailyPlan(DATE, list, ratings({ aim: 1, tracking: 2 }), progress(), {}, NOW)).slice(1, 3)).toEqual([
+      'jumps',
+      'timing',
+    ]);
     // Without a third insight on another module, the lowest-rated skill steps in.
     const two = buildDailyPlan(DATE, list.slice(0, 2), ratings({ aim: 1, tracking: 2, speed: 4 }), progress(), {}, NOW);
     expect(modules(two).slice(1, 3)).toEqual(['jumps', 'tracking']);
@@ -514,7 +693,18 @@ describe('daily plan', () => {
   it('uses an active drill when its rule and variant match', () => {
     const list = [insight('direction-drift|o2:bias', 'jumps'), insight('timing-bias|late', 'timing')];
     const plan = buildDailyPlan(
-      DATE, list, {}, progress({ drills: [drill('d1', 'direction-drift', 'o2:bias'), drill('d2', 'timing-bias', 'early'), drill('d3', 'timing-bias', 'late', 'archived')] }), {}, NOW,
+      DATE,
+      list,
+      {},
+      progress({
+        drills: [
+          drill('d1', 'direction-drift', 'o2:bias'),
+          drill('d2', 'timing-bias', 'early'),
+          drill('d3', 'timing-bias', 'late', 'archived'),
+        ],
+      }),
+      {},
+      NOW,
     );
     expect(plan.steps[1]!.launch.drillId).toBe('d1');
     expect(plan.steps[2]!.launch.drillId).toBeNull();
@@ -530,7 +720,15 @@ describe('daily plan', () => {
   });
 
   it('maps every skill to its module', () => {
-    expect(SKILL_MODULE).toEqual({ aim: 'jumps', speed: 'streams', tracking: 'tracking', precision: 'precision', timing: 'timing', reading: 'reading', spin: 'spinning' });
+    expect(SKILL_MODULE).toEqual({
+      aim: 'jumps',
+      speed: 'streams',
+      tracking: 'tracking',
+      precision: 'precision',
+      timing: 'timing',
+      reading: 'reading',
+      spin: 'spinning',
+    });
   });
 
   it('counts a step as done when a play from it completed or ran 60 s', () => {
@@ -543,7 +741,12 @@ describe('daily plan', () => {
     expect(isPlanStepDone([from(2, { status: 'completed' }, '2026-06-09')], DATE, 2)).toBe(false);
     expect(isPlanStepDone([from(2, { status: 'completed' })], DATE, 3)).toBe(false);
     expect(isPlanStepDone([play(NOW, { status: 'completed' })], DATE, 0)).toBe(false);
-    expect(planStepsDone(plan, [from(0, { status: 'completed' }), from(3, { status: 'quit', playedMs: 70_000 })])).toEqual([true, false, false, true]);
+    expect(planStepsDone(plan, [from(0, { status: 'completed' }), from(3, { status: 'quit', playedMs: 70_000 })])).toEqual([
+      true,
+      false,
+      false,
+      true,
+    ]);
   });
 });
 
@@ -606,7 +809,10 @@ describe('milestones in savePlay', () => {
 
   it('counts the plays already stored, so the 50th completed play earns plays-50', async () => {
     for (let i = 0; i < 49; i++) {
-      await savePlay(result(i + 1, NOW - (60 - i) * HOUR, { status: 'completed', accuracy: 0.5, maxCombo: 5 }), NOW - (60 - i) * HOUR + 1000);
+      await savePlay(
+        result(i + 1, NOW - (60 - i) * HOUR, { status: 'completed', accuracy: 0.5, maxCombo: 5 }),
+        NOW - (60 - i) * HOUR + 1000,
+      );
     }
     expect(Object.keys(await getMilestones())).not.toContain('plays-50');
     const fiftieth = await savePlay(result(99, NOW - HOUR, { status: 'completed', accuracy: 0.5, maxCombo: 5 }), NOW);

@@ -1,6 +1,7 @@
 // Saving and loading plays. A play is one summary row plus one detail row of typed-array columns.
 
 import { pbFlags } from '../analytics/bests';
+import { msg, t } from '../shared/i18n';
 import { newMilestones, recordMilestones } from '../analytics/milestones';
 import { allRatings, newTierEvents, recordTierEvents } from '../analytics/ratings';
 import { summarizePlay } from '../analytics/summary';
@@ -36,21 +37,21 @@ export const SUMMARY_UPGRADES: Record<number, (raw: Record<string, unknown>) => 
 const DETAIL_UPGRADES: Record<number, (raw: Record<string, unknown>) => Record<string, unknown>> = {};
 
 function lift<T>(raw: unknown, target: number, steps: typeof SUMMARY_UPGRADES, what: string): T {
-  if (!raw || typeof raw !== 'object') throw new Error(`A ${what} in the data is not an object.`);
+  if (!raw || typeof raw !== 'object') throw new Error(t('A {what} in the data is not an object.', { what: t(what) }));
   let cur = raw as Record<string, unknown>;
   let v = typeof cur.v === 'number' ? cur.v : 1;
   while (v < target) {
     const step = steps[v];
-    if (!step) throw new Error(`No upgrade from ${what} version ${v}.`);
+    if (!step) throw new Error(t('No upgrade from {what} version {version}.', { what: t(what), version: v }));
     cur = { ...step(cur), v: v + 1 };
     v++;
   }
-  if (v > target) throw new Error(`This ${what} was written by a newer Heartbeat (version ${v}).`);
+  if (v > target) throw new Error(t('This {what} was written by a newer Heartbeat (version {version}).', { what: t(what), version: v }));
   return cur as T;
 }
 
-export const upgradeSummary = (raw: unknown): PlaySummary => lift<PlaySummary>(raw, SUMMARY_VERSION, SUMMARY_UPGRADES, 'play summary');
-export const upgradeDetail = (raw: unknown): PlayDetail => lift<PlayDetail>(raw, DETAIL_VERSION, DETAIL_UPGRADES, 'play detail');
+export const upgradeSummary = (raw: unknown): PlaySummary => lift<PlaySummary>(raw, SUMMARY_VERSION, SUMMARY_UPGRADES, msg('play summary'));
+export const upgradeDetail = (raw: unknown): PlayDetail => lift<PlayDetail>(raw, DETAIL_VERSION, DETAIL_UPGRADES, msg('play detail'));
 
 export interface SaveOutcome {
   summary: PlaySummary;
@@ -108,7 +109,10 @@ export async function savePlay(result: PlayResult, now = Date.now()): Promise<Sa
       tx.objectStore('meta').put({ key: 'tiers', value: recordTierEvents(history, summary.tiers, now) } satisfies MetaRow);
     }
     if (summary.milestones.length > 0) {
-      tx.objectStore('meta').put({ key: 'milestones', value: recordMilestones(milestones, summary.milestones, now, summary.id) } satisfies MetaRow);
+      tx.objectStore('meta').put({
+        key: 'milestones',
+        value: recordMilestones(milestones, summary.milestones, now, summary.id),
+      } satisfies MetaRow);
     }
   });
   if (prepared) {
@@ -140,9 +144,7 @@ export async function listSummaries(): Promise<PlaySummary[]> {
 
 /** Plays that started at or after `since`, newest first. */
 export async function listSummariesSince(since: number): Promise<PlaySummary[]> {
-  const rows = await withTx('plays', 'readonly', (tx) =>
-    getAll<PlaySummary>(tx, 'plays', IDBKeyRange.lowerBound(since), 'startedAt'),
-  );
+  const rows = await withTx('plays', 'readonly', (tx) => getAll<PlaySummary>(tx, 'plays', IDBKeyRange.lowerBound(since), 'startedAt'));
   return rows.map(upgradeSummary).reverse();
 }
 

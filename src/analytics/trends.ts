@@ -1,5 +1,6 @@
 // Daily series and change detection for the Trends tab.
 
+import { msg, t } from '../shared/i18n';
 import type { PlaySummary } from '../data/schema';
 import { SKILLS } from '../shared/catalog';
 import type { SkillId } from '../shared/types';
@@ -10,15 +11,7 @@ import { aggOf, ewma, weightedMean, welch } from './stats';
 
 const DAY = 86_400_000;
 
-export type TrendId =
-  | 'accuracy'
-  | 'timingSd'
-  | 'timingMean'
-  | 'radial'
-  | 'along'
-  | 'plays'
-  | 'minutes'
-  | `skill:${SkillId}`;
+export type TrendId = 'accuracy' | 'timingSd' | 'timingMean' | 'radial' | 'along' | 'plays' | 'minutes' | `skill:${SkillId}`;
 
 export interface TrendMetric {
   id: TrendId;
@@ -39,33 +32,100 @@ const PCT_WIDTH = 50;
 
 export const TREND_METRICS: TrendMetric[] = [
   {
-    id: 'accuracy', label: 'Accuracy', unit: '%', decimals: 1, kind: 'play', better: 'up',
-    value: (s) => s.accuracy * 100, weight: (s) => s.objectCount,
+    id: 'accuracy',
+    get label() {
+      return t('Accuracy');
+    },
+    unit: '%',
+    decimals: 1,
+    kind: 'play',
+    better: 'up',
+    value: (s) => s.accuracy * 100,
+    weight: (s) => s.objectCount,
   },
   {
-    id: 'timingSd', label: 'Timing spread', unit: 'ms', decimals: 1, kind: 'play', better: 'down',
-    value: (s) => (s.timing.n >= 20 ? s.timing.sd : null), weight: (s) => s.timing.n,
+    id: 'timingSd',
+    get label() {
+      return t('Timing spread');
+    },
+    unit: 'ms',
+    decimals: 1,
+    kind: 'play',
+    better: 'down',
+    value: (s) => (s.timing.n >= 20 ? s.timing.sd : null),
+    weight: (s) => s.timing.n,
   },
   {
-    id: 'timingMean', label: 'Timing offset', unit: 'ms', decimals: 1, kind: 'play', better: null,
-    value: (s) => (s.timing.n >= 20 ? s.timing.mean : null), weight: (s) => s.timing.n,
+    id: 'timingMean',
+    get label() {
+      return t('Timing offset');
+    },
+    unit: 'ms',
+    decimals: 1,
+    kind: 'play',
+    better: null,
+    value: (s) => (s.timing.n >= 20 ? s.timing.mean : null),
+    weight: (s) => s.timing.n,
   },
   {
-    id: 'radial', label: 'Distance from center', unit: '% of a width', decimals: 1, kind: 'play', better: 'down',
-    value: (s) => (s.aim.n >= 20 ? s.aim.radialMean * PCT_WIDTH : null), weight: (s) => s.aim.n,
+    id: 'radial',
+    get label() {
+      return t('Distance from center');
+    },
+    unit: '% of a width',
+    decimals: 1,
+    kind: 'play',
+    better: 'down',
+    value: (s) => (s.aim.n >= 20 ? s.aim.radialMean * PCT_WIDTH : null),
+    weight: (s) => s.aim.n,
   },
   {
-    id: 'along', label: 'Overshoot or undershoot', unit: '% of a width', decimals: 1, kind: 'play', better: null,
-    value: (s) => (s.aim.n >= 20 ? s.aim.alongMean * PCT_WIDTH : null), weight: (s) => s.aim.n,
+    id: 'along',
+    get label() {
+      return t('Overshoot or undershoot');
+    },
+    unit: '% of a width',
+    decimals: 1,
+    kind: 'play',
+    better: null,
+    value: (s) => (s.aim.n >= 20 ? s.aim.alongMean * PCT_WIDTH : null),
+    weight: (s) => s.aim.n,
   },
-  ...SKILL_ORDER.map(
-    (skill): TrendMetric => ({
-      id: `skill:${skill}`, label: `${SKILLS[skill].label} score`, unit: 'level', decimals: 2, kind: 'play', better: 'up',
-      value: (s) => { const sc = s.skills[skill]; return sc ? skillScoreOf(skill, sc) : null; }, weight: (s) => s.skills[skill]?.n ?? 1,
-    }),
-  ),
-  { id: 'plays', label: 'Plays per day', unit: 'plays', decimals: 0, kind: 'daily', better: null },
-  { id: 'minutes', label: 'Minutes per day', unit: 'min', decimals: 1, kind: 'daily', better: null },
+  ...SKILL_ORDER.map((skill): TrendMetric => ({
+    id: `skill:${skill}`,
+    get label() {
+      return t('{skill} score', { skill: SKILLS[skill].label });
+    },
+    unit: 'level',
+    decimals: 2,
+    kind: 'play',
+    better: 'up',
+    value: (s) => {
+      const sc = s.skills[skill];
+      return sc ? skillScoreOf(skill, sc) : null;
+    },
+    weight: (s) => s.skills[skill]?.n ?? 1,
+  })),
+  {
+    id: 'plays',
+    get label() {
+      return t('Plays per day');
+    },
+    unit: 'plays',
+    decimals: 0,
+    kind: 'daily',
+    better: null,
+  },
+  {
+    id: 'minutes',
+    get label() {
+      return t('Minutes per day');
+    },
+    unit: 'min',
+    decimals: 1,
+    kind: 'daily',
+    better: null,
+  },
 ];
 
 export function trendMetric(id: TrendId): TrendMetric {
@@ -73,16 +133,16 @@ export function trendMetric(id: TrendId): TrendMetric {
 }
 
 export const TREND_RANGES = [
-  { id: '7', label: '7 days', days: 7 },
-  { id: '30', label: '30 days', days: 30 },
-  { id: '90', label: '90 days', days: 90 },
-  { id: 'all', label: 'All', days: null },
+  { id: '7', label: msg('7 days'), days: 7 },
+  { id: '30', label: msg('30 days'), days: 30 },
+  { id: '90', label: msg('90 days'), days: 90 },
+  { id: 'all', label: msg('All'), days: null },
 ] as const;
 export type TrendRangeId = (typeof TREND_RANGES)[number]['id'];
 
 /** Whole days since 1970 in the viewer's time zone. */
-export function dayIndex(t: number): number {
-  return localDayNumber(t);
+export function dayIndex(time: number): number {
+  return localDayNumber(time);
 }
 /** Local midnight at the start of a day from dayIndex. Built from calendar parts, so it holds across clock changes. */
 export function dayStartMs(day: number): number {

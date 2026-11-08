@@ -3,15 +3,16 @@
 import { useId, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router';
+import { t } from '../i18n';
 
 /**
  * The value typed into the number box, or null while it isn't a number yet ("", "-", "1e", words). A number
  * is rounded to the step and clamped to the range. A true minus sign or the typographic one both count.
  */
 export function parseOffsetText(text: string, min: number, max: number, step = 1): number | null {
-  const t = text.trim().replace('\u2212', '-');
-  if (!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(t)) return null;
-  const v = Number(t);
+  const s = text.trim().replace('\u2212', '-');
+  if (!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(s)) return null;
+  const v = Number(s);
   if (!Number.isFinite(v)) return null;
   return Math.min(max, Math.max(min, Math.round(v / step) * step)) || 0;
 }
@@ -59,7 +60,7 @@ export function OffsetField({
             type="text"
             autoComplete="off"
             spellCheck={false}
-            aria-label={`${label}, in milliseconds`}
+            aria-label={t('{label}, in milliseconds', { label })}
             className="w-20 text-right"
             value={draft ?? String(value)}
             onFocus={(e) => e.currentTarget.select()}
@@ -96,7 +97,7 @@ export function OffsetField({
           </p>
         )}
         <Link to={`/calibrate?kind=${calibrate}`} className="shrink-0 text-sm text-accent underline-offset-4 hover:underline">
-          Calibrate
+          {t('Calibrate')}
         </Link>
       </div>
     </div>

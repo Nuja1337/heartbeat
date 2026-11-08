@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { CHART, contrast, divergingColor, sequentialColor } from './scale';
+import { t } from '../i18n';
+import { contrast, divergingColor, sequentialColor, useChartColors } from './scale';
 
 export interface HeatCell {
   /** The metric. null when no taps fall in the cell. */
@@ -35,14 +36,13 @@ export function HeatGrid({
   colTitle: string;
   describe(row: string, col: string, c: HeatCell): string;
 }) {
+  const C = useChartColors();
   const [hover, setHover] = useState<string | null>(null);
   return (
     <figure className="m-0">
       <div className="overflow-x-auto">
         <table className="w-full border-separate border-spacing-1 text-sm">
-          <caption className="sr-only">
-            {rowTitle} by {colTitle}
-          </caption>
+          <caption className="sr-only">{t('{rowTitle} by {colTitle}', { rowTitle, colTitle })}</caption>
           <thead>
             <tr>
               <th className="text-left text-xs font-normal text-ink-2">{rowTitle}</th>
@@ -63,12 +63,12 @@ export function HeatGrid({
                   const h = cell(r.key, c.key);
                   const enough = h.value !== null && h.n >= minN;
                   const bg = !enough
-                    ? CHART.bg
+                    ? C.bg
                     : scale === 'sequential'
-                      ? sequentialColor(Math.min(1, Math.max(0, h.value! / max)))
-                      : divergingColor(Math.max(-1, Math.min(1, h.value! / max)));
+                      ? sequentialColor(Math.min(1, Math.max(0, h.value! / max)), C)
+                      : divergingColor(Math.max(-1, Math.min(1, h.value! / max)), C);
                   // Ink or the page background, whichever reads better on the cell.
-                  const dark = enough && contrast(bg, CHART.bg) > contrast(bg, CHART.ink);
+                  const dark = enough && contrast(bg, C.bg) > contrast(bg, C.ink);
                   const id = `${r.key}/${c.key}`;
                   return (
                     <td
@@ -82,11 +82,11 @@ export function HeatGrid({
                       className="h-10 min-w-14 rounded text-center"
                       style={{
                         background: bg,
-                        color: dark ? CHART.bg : enough ? CHART.ink : '#4a5568',
-                        outline: hover === id ? `2px solid ${CHART.ink}` : undefined,
+                        color: dark ? C.bg : enough ? C.ink : C.neutral,
+                        outline: hover === id ? `2px solid ${C.ink}` : undefined,
                       }}
                     >
-                      {enough ? h.text : h.n > 0 ? `n ${h.n}` : ''}
+                      {enough ? h.text : h.n > 0 ? t('n {n}', { n: h.n }) : ''}
                     </td>
                   );
                 })}
@@ -101,7 +101,7 @@ export function HeatGrid({
               const [r, c] = hover.split('/') as [string, string];
               return describe(r, c, cell(r, c));
             })()
-          : `Cells with fewer than ${minN} taps are grayed out.`}
+          : t('Cells with fewer than {min} taps are grayed out.', { min: minN })}
       </figcaption>
     </figure>
   );

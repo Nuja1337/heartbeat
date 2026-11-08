@@ -22,7 +22,10 @@ function play(modeId: ModeId, mods: ModId[], model = PERFECT_PLAYER, overlay: Ov
   const log: CallLog = { calls: 0, names: new Map() };
   const renderer = setup(log);
   const fx = new Effects();
-  const base = { ...launchFor(modeId === 'dynamic' ? LEVEL_PRESETS[5]!.difficulty : DEFAULT_DIFFICULTY, 77, lengthSec, mods, modeId), options: MODES[modeId].defaultOptions };
+  const base = {
+    ...launchFor(modeId === 'dynamic' ? LEVEL_PRESETS[5]!.difficulty : DEFAULT_DIFFICULTY, 77, lengthSec, mods, modeId),
+    options: MODES[modeId].defaultOptions,
+  };
   let frames = 0;
   let rs: RenderState | null = null;
   const flags = { earlyLate: true, crispPopups: true, reduceMotion: false };
@@ -35,7 +38,11 @@ function play(modeId: ModeId, mods: ModId[], model = PERFECT_PLAYER, overlay: Ov
         rs = {
           session,
           fx,
-          settings: { ...DEFAULT_SETTINGS, input: { ...DEFAULT_SETTINGS.input, cursor: 'drawn', cursorTrail: true }, display: { ...DEFAULT_SETTINGS.display, showFps: true } },
+          settings: {
+            ...DEFAULT_SETTINGS,
+            input: { ...DEFAULT_SETTINGS.input, cursor: 'drawn', cursorTrail: true },
+            display: { ...DEFAULT_SETTINGS.display, showFps: true },
+          },
           playT: 0,
           now: 0,
           cursorX: 500,
@@ -107,8 +114,23 @@ describe('Renderer', () => {
       onFrame: (t, session) => {
         sliders = session.map.objects.length;
         renderer.render({
-          session, fx, settings: DEFAULT_SETTINGS, playT: t, now: t, cursorX: 500, cursorY: 300, drawCursor: false, overlay: 'none',
-          overlayT0: 0, startLabel: 'Z', raw: false, fps: null, showScore: false, level: 3, set: 0, lengthMs: 60000,
+          session,
+          fx,
+          settings: DEFAULT_SETTINGS,
+          playT: t,
+          now: t,
+          cursorX: 500,
+          cursorY: 300,
+          drawCursor: false,
+          overlay: 'none',
+          overlayT0: 0,
+          startLabel: 'Z',
+          raw: false,
+          fps: null,
+          showScore: false,
+          level: 3,
+          set: 0,
+          lengthMs: 60000,
         });
         most = Math.max(most, renderer.bodyCount);
       },

@@ -42,7 +42,9 @@ describe('insight rules', () => {
     const i = find(found, 'long-undershoot')!;
     expect(i).toBeDefined();
     expect(found[0]!.ruleId).toBe('long-undershoot');
-    expect(i.text).toMatch(/^You stop short on long, fast jumps \(over [\d.]+ target widths\)\. Your clicks land about \d+% of a target's width before the center\.$/);
+    expect(i.text).toMatch(
+      /^You stop short on long, fast jumps \(over [\d.]+ target widths\)\. Your clicks land about \d+% of a target's width before the center\.$/,
+    );
     expect(Number(i.text.match(/about (\d+)%/)![1])).toBeGreaterThanOrEqual(18);
     expect(Number(i.text.match(/about (\d+)%/)![1])).toBeLessThanOrEqual(26);
     expect(i.basis).toMatch(/^Based on \d+ jumps from the last 30 days\.$/);
@@ -72,11 +74,17 @@ describe('insight rules', () => {
   });
 
   it('stream-offset says late or early', () => {
-    const late = find(detectInsights(history({ jumpsOnly: false, streamShare: 3, sliderShare: 0, spinnerShare: 0, streamOffsetMs: 22 }), NOW), 'stream-offset')!;
+    const late = find(
+      detectInsights(history({ jumpsOnly: false, streamShare: 3, sliderShare: 0, spinnerShare: 0, streamOffsetMs: 22 }), NOW),
+      'stream-offset',
+    )!;
     expect(late.text).toMatch(/^You're late on fast streams by about \d+ ms on average\.$/);
     expect(late.recommendation?.modeId).toBe('streams');
     expect(late.recommendation?.options.streamLength).toBe('short');
-    const early = find(detectInsights(history({ jumpsOnly: false, streamShare: 3, sliderShare: 0, spinnerShare: 0, streamOffsetMs: -22 }), NOW), 'stream-offset')!;
+    const early = find(
+      detectInsights(history({ jumpsOnly: false, streamShare: 3, sliderShare: 0, spinnerShare: 0, streamOffsetMs: -22 }), NOW),
+      'stream-offset',
+    )!;
     expect(early.text).toMatch(/^You rush fast streams, about \d+ ms early on average\.$/);
   });
 
@@ -115,7 +123,9 @@ describe('insight rules', () => {
     expect(curves.text).toMatch(/\(\d+% kept against \d+%\)/);
     expect(curves.recommendation?.options.sliderFocus).toBe('curves');
     const release = find(detectInsights(history({ ...slidersOnly, endDrop: 0.35 }), NOW), 'early-release')!;
-    expect(release.text).toMatch(/^You often let go of sliders shortly before they end\. The end counted on \d+% of sliders, while \d+% of the ticks counted\.$/);
+    expect(release.text).toMatch(
+      /^You often let go of sliders shortly before they end\. The end counted on \d+% of sliders, while \d+% of the ticks counted\.$/,
+    );
     expect(release.recommendation?.options.sliderFocus).toBe('repeats');
   });
 
@@ -135,21 +145,24 @@ describe('insight rules', () => {
 
   it('off-center needs a high hit rate and clicks far from the center', () => {
     const i = find(detectInsights(history({ offCenter: true, baseMiss: 0.01 }), NOW), 'off-center')!;
-    expect(i.text).toMatch(/^You hit almost every target, but your clicks land far from the center\. On average a click is \d+% of a target's width off\./);
+    expect(i.text).toMatch(
+      /^You hit almost every target, but your clicks land far from the center\. On average a click is \d+% of a target's width off\./,
+    );
     expect(i.recommendation?.modeId).toBe('precision');
     expect(find(detectInsights(history({ offCenter: true, baseMiss: 0.2 }), NOW), 'off-center')).toBeUndefined();
   });
 
   it('spinners', () => {
-    const i = find(detectInsights(history({ jumpsOnly: false, spinnerShare: 0.25, streamShare: 0, sliderShare: 0, spinnerFail: 0.7 }), NOW), 'spinners')!;
+    const i = find(
+      detectInsights(history({ jumpsOnly: false, spinnerShare: 0.25, streamShare: 0, sliderShare: 0, spinnerFail: 0.7 }), NOW),
+      'spinners',
+    )!;
     expect(i.text).toMatch(/^You finish only \d+% of spinners in time\.$/);
     expect(i.recommendation?.modeId).toBe('spinning');
   });
 
   it('same-module points at the next insight module', () => {
-    const plays = [
-      ...history({ longAlong: -0.45 }, 4).map((p) => ({ ...p, summary: { ...p.summary, modeId: 'streams' as const } })),
-    ];
+    const plays = [...history({ longAlong: -0.45 }, 4).map((p) => ({ ...p, summary: { ...p.summary, modeId: 'streams' as const } }))];
     const found = detectInsights(plays, NOW);
     const i = find(found, 'same-module')!;
     expect(i.text).toBe("You've played Streams four times in a row. Try another module next, then come back to it.");
@@ -159,11 +172,15 @@ describe('insight rules', () => {
   });
 
   it('long-session fires for a recent long session that ends with a drop', () => {
-    const list = makeHistory(7, { objects: 120, jumpsOnly: true }, {
-      endAt: NOW - 2 * 60_000,
-      spacingMs: 6 * 60_000,
-      vary: (i) => ({ baseMiss: i < 4 ? 0.02 : 0.2 }),
-    }).map((fx) => ({ summary: summarizePlay(fx.result), records: fx.records }));
+    const list = makeHistory(
+      7,
+      { objects: 120, jumpsOnly: true },
+      {
+        endAt: NOW - 2 * 60_000,
+        spacingMs: 6 * 60_000,
+        vary: (i) => ({ baseMiss: i < 4 ? 0.02 : 0.2 }),
+      },
+    ).map((fx) => ({ summary: summarizePlay(fx.result), records: fx.records }));
     const i = find(detectInsights(list, NOW), 'long-session')!;
     expect(i).toBeDefined();
     expect(i.text).toMatch(/^Your accuracy over your last three plays is \d+%, against \d+% for this session\./);
@@ -208,7 +225,13 @@ describe('drill launch', () => {
     const i = find(detectInsights(history({ longAlong: -0.45 }), NOW), 'long-undershoot')!;
     const launch = drillLaunch(i.recommendation!, { jumps: 4.5 }, 'drill-1', 1234);
     expect(launch).toMatchObject({
-      modeId: 'jumps', presetLevel: null, mods: [], seed: 1234, lengthSec: 90, drillId: 'drill-1', levels: { jumps: 4.5 },
+      modeId: 'jumps',
+      presetLevel: null,
+      mods: [],
+      seed: 1234,
+      lengthSec: 90,
+      drillId: 'drill-1',
+      levels: { jumps: 4.5 },
     });
     expect(launch.options.distanceFocus).toBe('long');
     expect(MODES.stamina.lengthOptions.includes(90)).toBe(false);
@@ -232,7 +255,9 @@ describe('drill evaluation', () => {
   }
 
   const afterPlays = (o: FixtureOptions, count = 6) =>
-    Array.from({ length: count }, (_, k) => play({ seed: 500 + k, objects: 200, jumpsOnly: true, startedAt: NOW + DAY + k * 3_600_000, ...o }));
+    Array.from({ length: count }, (_, k) =>
+      play({ seed: 500 + k, objects: 200, jumpsOnly: true, startedAt: NOW + DAY + k * 3_600_000, ...o }),
+    );
 
   it('creates a drill only from an insight with a module and a baseline', () => {
     const { drill } = setup();
@@ -275,7 +300,9 @@ describe('drill evaluation', () => {
     expect(ev.outcome).toBe('better');
     expect(Math.abs(ev.after!)).toBeLessThan(Math.abs(ev.before!));
     const text = drillText({ ruleId: drill.ruleId, variant: drill.variant, createdAt: drill.createdAt, eval: ev });
-    expect(text).toMatch(/^Since you started this drill on \d{1,2} \w{3}, your aim on long, fast jumps went from \d+% short to (\d+% (short|past)|on the center)\. That's based on \d+ jumps before and \d+ after\.$/);
+    expect(text).toMatch(
+      /^Since you started this drill on \d{1,2} \w{3}, your aim on long, fast jumps went from \d+% short to (\d+% (short|past)|on the center)\. That's based on \d+ jumps before and \d+ after\.$/,
+    );
   });
 
   it('reports no clear change when nothing moved', () => {

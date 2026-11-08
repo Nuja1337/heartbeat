@@ -8,6 +8,7 @@ import type { HitRecord, MissReason, PlaybackHandle, ReplayData } from '../../sh
 import { Badge, Button, GradeBadge, LinkButton, Notice, PageHeader, Panel, Segmented, SectionTitle, Toggle } from '../components/ui';
 import { INTRO } from '../copy';
 import { dateTime, duration, modList, playTitle } from '../format';
+import { msg, t } from '../i18n';
 import { useGame } from '../state/engine';
 import type { GameModule } from '../state/engine';
 import { FRAME_STEP_MS, SEEK_STEP_MS, clampTime, nextMissTarget, replayMarkers, seekTarget } from '../state/replayMarkers';
@@ -18,17 +19,19 @@ import { usePlay } from '../state/usePlay';
 const SPEEDS = [0.25, 0.5, 1, 1.5, 2] as const;
 const SPEED_OPTIONS = SPEEDS.map((v) => ({ value: v, label: `${v}x` }));
 
+// Both tables are shown in the middle of a line, so the words start in lower case.
 const REASON: Record<MissReason, string> = {
-  none: 'Missed',
-  aim: 'Missed the target',
-  early: 'Pressed too early',
-  skipped: 'No press',
-  tracking: 'Lost the slider',
-  spin: 'Did not finish the spinner',
+  none: msg('missed'),
+  aim: msg('missed the target'),
+  early: msg('pressed too early'),
+  skipped: msg('no press'),
+  tracking: msg('lost the slider'),
+  spin: msg('did not finish the spinner'),
 };
-const KIND_LABEL = { circle: 'Circle', slider: 'Slider', spinner: 'Spinner' } as const;
+const KIND_LABEL = { circle: msg('circle'), slider: msg('slider'), spinner: msg('spinner') } as const;
 
-const nearestSpeed = (v: number): number => SPEEDS.reduce((best, s) => (Math.abs(s - v) < Math.abs(best - v) ? s : best), SPEEDS[2] as number);
+const nearestSpeed = (v: number): number =>
+  SPEEDS.reduce((best, s) => (Math.abs(s - v) < Math.abs(best - v) ? s : best), SPEEDS[2] as number);
 
 type Loaded =
   | { status: 'loading' }
@@ -49,7 +52,11 @@ function useReplay(id: string | undefined): Loaded {
       } catch (e) {
         if (!alive) return;
         if (e instanceof ReplayFormatError) setState({ id, value: { status: 'error', kind: e.kind, message: e.message } });
-        else setState({ id, value: { status: 'error', kind: 'read', message: e instanceof Error ? e.message : 'Could not read this replay.' } });
+        else
+          setState({
+            id,
+            value: { status: 'error', kind: 'read', message: e instanceof Error ? e.message : t('Could not read this replay.') },
+          });
       }
     })();
     return () => {
@@ -65,36 +72,57 @@ export function Replay() {
   const { play, missing, error } = usePlay(id);
   const loaded = useReplay(id);
   const { game, failed } = useGame();
-  const t = Number(search.get('t'));
-  const startAt = Number.isFinite(t) && t > 0 ? t : 0;
+  const from = Number(search.get('t'));
+  const startAt = Number.isFinite(from) && from > 0 ? from : 0;
 
-  const back = id ? <LinkButton to={`/results/${id}`} variant="ghost">Results</LinkButton> : null;
-  const intro = play ? `${dateTime(play.summary.startedAt)}. ${modList(play.summary.mods)}.` : INTRO.replay;
+  const back = id ? (
+    <LinkButton to={`/results/${id}`} variant="ghost">
+      {t('Results')}
+    </LinkButton>
+  ) : null;
+  const intro = play ? t('{date}. {mods}.', { date: dateTime(play.summary.startedAt), mods: modList(play.summary.mods) }) : INTRO.replay;
 
   let body;
   if (error) body = <Notice tone="bad">{error}</Notice>;
-  else if (missing) body = <Notice>This play isn't saved on this device, so its replay is gone too.</Notice>;
+  else if (missing) body = <Notice>{t("This play isn't saved on this device, so its replay is gone too.")}</Notice>;
   else if (loaded.status === 'error')
     body = (
       <Notice tone={loaded.kind === 'read' ? 'bad' : 'warn'}>
-        {loaded.kind === 'damaged' ? 'This replay is damaged and cannot be played.' : loaded.message}
+        {loaded.kind === 'damaged' ? t('This replay is damaged and cannot be played.') : loaded.message}
       </Notice>
     );
-  else if (loaded.status === 'none') body = <Notice>This play has no replay. Heartbeat keeps replays of your newest plays and your bests, plus any you chose to keep.</Notice>;
-  else if (failed) body = <Notice tone="bad">The game could not load, so the replay cannot play.</Notice>;
+  else if (loaded.status === 'none')
+    body = (
+      <Notice>
+        {t('This play has no replay. Heartbeat keeps replays of your newest plays and your bests, plus any you chose to keep.')}
+      </Notice>
+    );
+  else if (failed) body = <Notice tone="bad">{t('The game could not load, so the replay cannot play.')}</Notice>;
   else if (loaded.status === 'loading' || !play || !game)
     body = (
       <div role="status" aria-busy="true" className="grid gap-6 lg:grid-cols-3">
         <div className="hb-skeleton aspect-[16/10] lg:col-span-2" />
         <div className="hb-skeleton h-64" />
-        <span className="sr-only">Loading.</span>
+        <span className="sr-only">{t('Loading.')}</span>
       </div>
     );
-  else body = <Viewer key={id} id={id!} replay={loaded.replay} keep={loaded.keep} summary={play.summary} records={play.records} startAt={startAt} game={game} />;
+  else
+    body = (
+      <Viewer
+        key={id}
+        id={id!}
+        replay={loaded.replay}
+        keep={loaded.keep}
+        summary={play.summary}
+        records={play.records}
+        startAt={startAt}
+        game={game}
+      />
+    );
 
   return (
     <>
-      <PageHeader title={play ? `Replay, ${playTitle(play.summary)}` : 'Replay'} intro={intro} actions={back} />
+      <PageHeader title={play ? t('Replay, {title}', { title: playTitle(play.summary) }) : t('Replay')} intro={intro} actions={back} />
       {body}
     </>
   );
@@ -159,10 +187,10 @@ function Viewer({
           live.current.playing = true;
           setPlaying(true);
         },
-        onTime: (t) => {
+        onTime: (now) => {
           if (!alive) return;
-          live.current.time = t;
-          setTime(t);
+          live.current.time = now;
+          setTime(now);
         },
         onEnd: () => {
           if (!alive) return;
@@ -173,7 +201,7 @@ function Viewer({
       });
       handle.current = h;
     } catch (e) {
-      setFailure(e instanceof Error ? e.message : 'The replay could not start.');
+      setFailure(e instanceof Error ? e.message : t('The replay could not start.'));
     }
     return () => {
       alive = false;
@@ -187,8 +215,8 @@ function Viewer({
     handle.current?.setSettings(settings);
   }, [settings]);
 
-  const seekTo = useCallback((t: number) => {
-    const to = clampTime(t, live.current.durationMs);
+  const seekTo = useCallback((ms: number) => {
+    const to = clampTime(ms, live.current.durationMs);
     handle.current?.seek(to);
     live.current.time = to;
     setTime(to);
@@ -220,8 +248,8 @@ function Viewer({
 
   /** Starts playing from a moment, for the Watch buttons and the markers. */
   const watch = useCallback(
-    (t: number) => {
-      seekTo(t);
+    (ms: number) => {
+      seekTo(ms);
       resume();
     },
     [seekTo, resume],
@@ -283,7 +311,7 @@ function Viewer({
     setKeepError(null);
     setReplayKeep(id, next).catch((e: unknown) => {
       setKeep(!next);
-      setKeepError(e instanceof Error ? e.message : 'Could not change this.');
+      setKeepError(e instanceof Error ? e.message : t('Could not change this.'));
     });
   };
 
@@ -294,29 +322,38 @@ function Viewer({
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="min-w-0 space-y-4 lg:col-span-2">
         <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg border border-line bg-bg-2">
-          <canvas ref={canvas} className="block size-full cursor-pointer select-none" aria-label="Replay of the play" onClick={toggle} />
+          <canvas
+            ref={canvas}
+            className="block size-full cursor-pointer select-none"
+            aria-label={t('Replay of the play')}
+            onClick={toggle}
+          />
           {!info && !failure && (
             <div role="status" className="absolute inset-0 grid place-items-center bg-bg-2">
-              <span className="hb-kicker">Loading the replay.</span>
+              <span className="hb-kicker">{t('Loading the replay.')}</span>
             </div>
           )}
         </div>
 
         {failure && <Notice tone="warn">{failure}</Notice>}
         {info && info.mismatches > 0 && (
-          <Notice>This replay runs a little differently from the saved result on {info.mismatches} {info.mismatches === 1 ? 'object' : 'objects'}.</Notice>
+          <Notice>
+            {t('This replay runs a little differently from the saved result on {n, plural, one {# object} other {# objects}}.', {
+              n: info.mismatches,
+            })}
+          </Notice>
         )}
 
         <Panel className="space-y-3 p-4 sm:p-4">
           <div className="flex flex-wrap items-center gap-3">
             <Button variant="primary" onClick={toggle} disabled={!info} aria-keyshortcuts="Space" className="w-24">
-              {playing ? 'Pause' : 'Play'}
+              {playing ? t('Pause', undefined, 'playback') : t('Play', undefined, 'playback')}
             </Button>
             <span className="font-display tabular-nums text-ink" aria-live="off">
               {duration(time)} <span className="text-ink-3">/ {duration(duration_)}</span>
             </span>
             <div className="ml-auto">
-              <Segmented legend="Speed" value={speed} options={SPEED_OPTIONS} onChange={setSpeed} />
+              <Segmented legend={t('Speed')} value={speed} options={SPEED_OPTIONS} onChange={setSpeed} />
             </div>
           </div>
 
@@ -324,21 +361,23 @@ function Viewer({
 
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-ink-2">
             <span className="flex items-center gap-1.5">
-              <span aria-hidden className="h-3 w-0.5" style={{ background: 'var(--color-miss)' }} /> Miss
+              <span aria-hidden className="h-3 w-0.5" style={{ background: 'var(--color-miss)' }} /> {t('Miss')}
             </span>
             <span className="flex items-center gap-1.5">
-              <span aria-hidden className="h-3 w-0.5" style={{ background: 'var(--color-rough)' }} /> Slider break
+              <span aria-hidden className="h-3 w-0.5" style={{ background: 'var(--color-rough)' }} /> {t('Slider break')}
             </span>
             <span className="text-ink-3">
-              Space plays and pauses. The left and right arrow keys move 2 seconds, comma and period step one frame, [ and ] change the speed, and M goes to the next miss.
+              {t(
+                'Space plays and pauses. The left and right arrow keys move 2 seconds, comma and period step one frame, [ and ] change the speed, and M goes to the next miss.',
+              )}
             </span>
           </div>
         </Panel>
 
         <Panel className="p-4 sm:p-4">
           <Toggle
-            label="Keep this replay"
-            help="A kept replay is never removed to make room for newer ones."
+            label={t('Keep this replay')}
+            help={t('A kept replay is never removed to make room for newer ones.')}
             checked={keep}
             onChange={changeKeep}
           />
@@ -347,11 +386,16 @@ function Viewer({
       </div>
 
       <Panel className="min-w-0 lg:self-start">
-        <SectionTitle aside={grade ? <GradeBadge grade={grade} size="chip" /> : undefined}>Misses</SectionTitle>
+        <SectionTitle aside={grade ? <GradeBadge grade={grade} size="chip" /> : undefined}>{t('Misses')}</SectionTitle>
         <p className="mb-3 text-sm text-ink-2">
           {markers.length === 0
-            ? 'There are no misses in this play.'
-            : `${misses} ${misses === 1 ? 'miss' : 'misses'}${breaks > 0 ? ` and ${breaks} slider ${breaks === 1 ? 'break' : 'breaks'}` : ''}. Watch starts 1.5 seconds before each one.`}
+            ? t('There are no misses in this play.')
+            : breaks > 0
+              ? t(
+                  '{misses, plural, one {# miss} other {# misses}} and {breaks, plural, one {# slider break} other {# slider breaks}}. Watch starts 1.5 seconds before each one.',
+                  { misses, breaks },
+                )
+              : t('{misses, plural, one {# miss} other {# misses}}. Watch starts 1.5 seconds before each one.', { misses })}
         </p>
         {markers.length > 0 && (
           <ul className="max-h-[28rem] divide-y divide-line overflow-y-auto pr-1">
@@ -369,17 +413,18 @@ function MissRow({ m, onWatch }: { m: ReplayMarker; onWatch(): void }) {
   return (
     <li className="flex items-center gap-3 py-2">
       <span className="min-w-0 flex-1">
-        <span className="block truncate">
-          Object {m.index + 1}, {KIND_LABEL[m.objectKind].toLowerCase()}
-        </span>
+        <span className="block truncate">{t('Object {n}, {kind}', { n: m.index + 1, kind: t(KIND_LABEL[m.objectKind]) })}</span>
         <span className="block text-sm text-ink-3">
-          {duration(m.time)}
-          {m.kind === 'break' ? ', slider break' : m.reason ? `, ${REASON[m.reason].toLowerCase()}` : ''}
+          {m.kind === 'break'
+            ? t('{time}, slider break', { time: duration(m.time) })
+            : m.reason
+              ? t('{time}, {reason}', { time: duration(m.time), reason: t(REASON[m.reason]) })
+              : duration(m.time)}
         </span>
       </span>
-      {m.kind === 'break' && <Badge tone="warn">Break</Badge>}
-      <Button size="sm" onClick={onWatch} aria-label={`Watch object ${m.index + 1} at ${duration(m.time)}`}>
-        Watch
+      {m.kind === 'break' && <Badge tone="warn">{t('Break')}</Badge>}
+      <Button size="sm" onClick={onWatch} aria-label={t('Watch object {n} at {time}', { n: m.index + 1, time: duration(m.time) })}>
+        {t('Watch')}
       </Button>
     </li>
   );
@@ -406,8 +451,8 @@ function Scrubber({
     <div>
       <input
         type="range"
-        aria-label="Position in the replay"
-        aria-valuetext={`${duration(time)} of ${duration(durationMs)}`}
+        aria-label={t('Position in the replay')}
+        aria-valuetext={t('{time} of {total}', { time: duration(time), total: duration(durationMs) })}
         min={0}
         max={Math.max(1, Math.round(durationMs))}
         step={1}
@@ -416,15 +461,18 @@ function Scrubber({
         style={{ '--fill': `${fill}%` } as CSSProperties}
         onChange={(e) => onSeek(Number(e.target.value))}
       />
-      <div className="relative mx-[7px] h-4" aria-label="Misses and slider breaks">
+      <div className="relative mx-[7px] h-4" aria-label={t('Misses and slider breaks')}>
         {durationMs > 0 &&
           markers.map((m) => (
             <button
               key={`${m.kind}-${m.index}-${m.time}`}
               type="button"
               tabIndex={-1}
-              title={`${m.kind === 'miss' ? 'Miss' : 'Slider break'} at ${duration(m.time)}`}
-              aria-label={`${m.kind === 'miss' ? 'Miss' : 'Slider break'} at ${duration(m.time)}, watch`}
+              title={t('{kind, select, miss {Miss at {time}} other {Slider break at {time}}}', { kind: m.kind, time: duration(m.time) })}
+              aria-label={t('{kind, select, miss {Miss at {time}, watch} other {Slider break at {time}, watch}}', {
+                kind: m.kind,
+                time: duration(m.time),
+              })}
               onClick={() => onWatch(seekTarget(m.time))}
               className="group absolute top-0 h-4 w-3 -translate-x-1/2 cursor-pointer"
               style={{ left: `${Math.min(100, (m.time / durationMs) * 100)}%` }}

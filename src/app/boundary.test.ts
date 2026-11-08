@@ -24,28 +24,45 @@ function importsOf(file: string): string[] {
 function internal(file: string): { spec: string; target: string }[] {
   return importsOf(file)
     .filter((s) => s.startsWith('.'))
-    .map((spec) => ({ spec, target: relative(SRC, resolve(join(file, '..'), spec)).split(sep).join('/') }));
+    .map((spec) => ({
+      spec,
+      target: relative(SRC, resolve(join(file, '..'), spec))
+        .split(sep)
+        .join('/'),
+    }));
 }
 
 describe('module boundaries', () => {
   const mine = ['app', 'data', 'analytics'].flatMap((d) => files(join(SRC, d)).map((f) => ({ f, area: d })));
 
   it('app, data and analytics reach src/game only through src/game/index', () => {
-    const bad = mine.flatMap(({ f }) => internal(f).filter((i) => i.target.startsWith('game') && i.target !== 'game/index' && i.target !== 'game').map((i) => `${relative(SRC, f)} imports ${i.spec}`));
+    const bad = mine.flatMap(({ f }) =>
+      internal(f)
+        .filter((i) => i.target.startsWith('game') && i.target !== 'game/index' && i.target !== 'game')
+        .map((i) => `${relative(SRC, f)} imports ${i.spec}`),
+    );
     expect(bad).toEqual([]);
   });
 
   it('data and analytics do not import from app', () => {
     const bad = mine
       .filter(({ area }) => area !== 'app')
-      .flatMap(({ f }) => internal(f).filter((i) => i.target.startsWith('app')).map((i) => `${relative(SRC, f)} imports ${i.spec}`));
+      .flatMap(({ f }) =>
+        internal(f)
+          .filter((i) => i.target.startsWith('app'))
+          .map((i) => `${relative(SRC, f)} imports ${i.spec}`),
+      );
     expect(bad).toEqual([]);
   });
 
   it('analytics imports data only for types, the schema and the clock-free helpers', () => {
     const bad = mine
       .filter(({ area, f }) => area === 'analytics' && !/\.test\.ts$/.test(f))
-      .flatMap(({ f }) => internal(f).filter((i) => i.target.startsWith('data/') && i.target !== 'data/schema').map((i) => `${relative(SRC, f)} imports ${i.spec}`));
+      .flatMap(({ f }) =>
+        internal(f)
+          .filter((i) => i.target.startsWith('data/') && i.target !== 'data/schema')
+          .map((i) => `${relative(SRC, f)} imports ${i.spec}`),
+      );
     expect(bad).toEqual([]);
   });
 

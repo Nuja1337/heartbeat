@@ -2,6 +2,8 @@
 // out-of-range field never reaches the game.
 
 import { DEFAULT_SETTINGS, PALETTES, REPLAY_LIMIT_CHOICES, SETTING_RANGES, SOUND_SETS } from '../shared/catalog';
+import { isLocale } from '../shared/locales';
+import { TEXT_SIZES, THEME_CHOICES } from '../shared/theme';
 import type { ApproachStyle, CursorStyle, MetronomeMode, PaletteId, Settings, SoundSetId } from '../shared/types';
 import { req, withTx } from './db';
 
@@ -47,24 +49,28 @@ export function cloneSettings(s: Settings): Settings {
 
 export function sanitizeSettings(raw: unknown): Settings {
   const d = DEFAULT_SETTINGS;
-  const r = (raw ?? {}) as Partial<Record<keyof Settings, Record<string, unknown>>>;
+  const r = (raw ?? {}) as Partial<Record<keyof Settings, Record<string, unknown>>> & { language?: unknown };
   const i = r.input ?? {};
   const a = r.audio ?? {};
   const p = r.display ?? {};
   const sk = r.skin ?? {};
   const g = r.goals ?? {};
   const dt = r.data ?? {};
-  const keys = Array.isArray(i.keys) && i.keys.length === 2 && i.keys.every((k) => typeof k === 'string' && k.length > 0)
-    ? ([i.keys[0], i.keys[1]] as [string, string])
-    : ([...d.input.keys] as [string, string]);
+  const keys =
+    Array.isArray(i.keys) && i.keys.length === 2 && i.keys.every((k) => typeof k === 'string' && k.length > 0)
+      ? ([i.keys[0], i.keys[1]] as [string, string])
+      : ([...d.input.keys] as [string, string]);
   const retention = dt.detailRetentionDays;
   // A missing retry key takes the default. A stored one that is empty, Escape or a hit key turns the key off.
   const retryRaw = i.retryKey === undefined ? d.input.retryKey : i.retryKey;
   const retryKey =
-    typeof retryRaw === 'string' && retryRaw !== '' && retryRaw !== 'Escape' && retryRaw !== keys[0] && retryRaw !== keys[1] ? retryRaw : '';
+    typeof retryRaw === 'string' && retryRaw !== '' && retryRaw !== 'Escape' && retryRaw !== keys[0] && retryRaw !== keys[1]
+      ? retryRaw
+      : '';
   const replayLimit = (REPLAY_LIMIT_CHOICES as readonly unknown[]).includes(dt.replayLimit) ? (dt.replayLimit as number | null) : 100;
   return {
     v: 1,
+    language: isLocale(r.language) ? r.language : 'auto',
     input: {
       rawInput: bool(i.rawInput, d.input.rawInput),
       sensitivity: clamp(i.sensitivity, 0.1, 5, d.input.sensitivity),
@@ -96,6 +102,9 @@ export function sanitizeSettings(raw: unknown): Settings {
       showFps: bool(p.showFps, d.display.showFps),
       visualOffsetMs: stepped(p.visualOffsetMs, SETTING_RANGES.visualOffsetMs, d.display.visualOffsetMs),
       frameGraph: bool(p.frameGraph, d.display.frameGraph),
+      theme: oneOf(p.theme, THEME_CHOICES, d.display.theme),
+      textSize: oneOf(p.textSize, TEXT_SIZES, d.display.textSize),
+      highContrast: bool(p.highContrast, d.display.highContrast),
     },
     skin: {
       palette: oneOf(sk.palette, PALETTE_IDS, d.skin.palette),

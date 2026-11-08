@@ -16,7 +16,8 @@ export const qp = (v: number): number => Math.round(v * TRACE.posSteps) / TRACE.
 const SLOT_INDEX = Object.fromEntries(INPUT_SLOT_ORDER.map((s, i) => [s, i])) as Record<InputSlot, number>;
 
 /** Op code for a press, with or without a position. */
-export const pressOp = (slot: InputSlot, positioned: boolean): number => (positioned ? TRACE_OP.pressAt : TRACE_OP.press) + SLOT_INDEX[slot];
+export const pressOp = (slot: InputSlot, positioned: boolean): number =>
+  (positioned ? TRACE_OP.pressAt : TRACE_OP.press) + SLOT_INDEX[slot];
 /** Op code for a release. */
 export const releaseOp = (slot: InputSlot): number => TRACE_OP.release + SLOT_INDEX[slot];
 

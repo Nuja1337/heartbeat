@@ -17,7 +17,12 @@ const round1 = (x: number) => Math.round(x * 10) / 10;
  * 50 ms, and Reading stops once the approach time reaches 250 ms, so a staircase gains nothing past that.
  */
 export function maxLevelFor(module: ModuleId): number {
-  const cap = module === 'streams' ? levelForDemand('speed', 1000 / 50) : module === 'reading' ? levelForDemand('reading', 1000 / 250) : LEVEL_LIMITS.max;
+  const cap =
+    module === 'streams'
+      ? levelForDemand('speed', 1000 / 50)
+      : module === 'reading'
+        ? levelForDemand('reading', 1000 / 250)
+        : LEVEL_LIMITS.max;
   return Math.min(LEVEL_LIMITS.max, Math.floor(cap * 20) / 20);
 }
 
@@ -102,8 +107,7 @@ const single = (dist: number, turn: number): Motif => ({ tag: 'jump', steps: [{ 
 /** Turn that points the next move along an absolute heading. */
 function turnToward(b: MapBuilder, heading: number): number {
   const base =
-    b.dirIn ??
-    (b.prevEnd ? (Math.atan2(PLAYFIELD_CENTER.y - b.prevEnd.y, PLAYFIELD_CENTER.x - b.prevEnd.x) * 180) / Math.PI : 0);
+    b.dirIn ?? (b.prevEnd ? (Math.atan2(PLAYFIELD_CENTER.y - b.prevEnd.y, PLAYFIELD_CENTER.x - b.prevEnd.x) * 180) / Math.PI : 0);
   return angleDiff(base, heading);
 }
 
@@ -233,7 +237,11 @@ function buildStreams(spec: SetSpec, rng: Rng, p: ModuleParams): BuiltSet {
     // A long stream has to curve to stay inside the field.
     let turn = rng.sign() * rng.range(0, 8);
     if ((n - 1) * s > 450) turn = rng.sign() * Math.min(330 / n, Math.max(8, (2 * Math.asin(s / 420) * 180) / Math.PI));
-    const steps = Array.from({ length: n }, (_, k) => ({ off: k * gap, dist: k === 0 ? 8 * r : s, turn: k === 0 ? rng.sign() * rng.range(0, 180) : turn }));
+    const steps = Array.from({ length: n }, (_, k) => ({
+      off: k * gap,
+      dist: k === 0 ? 8 * r : s,
+      turn: k === 0 ? rng.sign() * rng.range(0, 180) : turn,
+    }));
     const m: Motif = { tag: 'stream', steps, beats: 1, stream: true, spacing: s, minDist: 0.6 * r };
     let start = placed === 0 ? t : t + Math.max(350, 4 * gap);
     let res = b.addMotif(m, start, { exact: true });
@@ -281,9 +289,23 @@ function buildTracking(spec: SetSpec, rng: Rng, p: ModuleParams): BuiltSet {
       family: curveFamily(rng, 5),
       legs: 2,
     };
-    const m: Motif = { tag: 'slider', steps: [{ off: 0, dist: rng.range(4 * r, 8 * r), turn: rng.sign() * rng.range(0, 180), slider }], beats: 1 };
+    const m: Motif = {
+      tag: 'slider',
+      steps: [{ off: 0, dist: rng.range(4 * r, 8 * r), turn: rng.sign() * rng.range(0, 180), slider }],
+      beats: 1,
+    };
     let res = b.addMotif(m, t, { exact: true });
-    if (!res.ok) res = b.addMotif({ ...m, steps: [{ ...(m.steps[0] as Motif['steps'][number]), dist: 3 * r, turn: 0, slider: { ...slider, shape: 'straight', repeats: 0 } }] }, t, { exact: true });
+    if (!res.ok)
+      res = b.addMotif(
+        {
+          ...m,
+          steps: [
+            { ...(m.steps[0] as Motif['steps'][number]), dist: 3 * r, turn: 0, slider: { ...slider, shape: 'straight', repeats: 0 } },
+          ],
+        },
+        t,
+        { exact: true },
+      );
     if (res.ok) {
       placed++;
       t = b.lastEnd + 450;
@@ -311,7 +333,14 @@ function buildSpinning(spec: SetSpec, _rng: Rng, p: ModuleParams): BuiltSet {
 /* ------------------------------------------------- tap-only module sets */
 
 /** Precision, reading and timing share one loop. They differ in the distance, the gap and the lead-in. */
-function buildTaps(spec: SetSpec, rng: Rng, p: ModuleParams, gapAt: (k: number) => number, widths: [number, number], size: number): BuiltSet {
+function buildTaps(
+  spec: SetSpec,
+  rng: Rng,
+  p: ModuleParams,
+  gapAt: (k: number) => number,
+  widths: [number, number],
+  size: number,
+): BuiltSet {
   const b = new MapBuilder(configFor(p, spec.set), rng.fork('place'));
   if (spec.startPos) b.firstPos = spec.startPos;
   const r = p.radius;
@@ -358,7 +387,14 @@ export function buildSet(spec: SetSpec): BuiltSet {
     case 'timing': {
       const gapRng = rng.fork('rhythm');
       const gaps = [500, 250, 375, 125];
-      return buildTaps(full, rng, p, () => gaps[gapRng.weighted([0.35, 0.35, 0.15, 0.15])] as number, [1.2, 2], spec.size ?? MODES.timing.setSize);
+      return buildTaps(
+        full,
+        rng,
+        p,
+        () => gaps[gapRng.weighted([0.35, 0.35, 0.15, 0.15])] as number,
+        [1.2, 2],
+        spec.size ?? MODES.timing.setSize,
+      );
     }
   }
 }

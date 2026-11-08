@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import { MODE_ORDER, MODULE_IDS } from '../../shared/catalog';
+import { MODE_ORDER, MODS, MODULE_IDS } from '../../shared/catalog';
 import type { ModeId, ModuleId } from '../../shared/types';
 import { ModeCard, PlacementCard, modeLevel } from '../components/ModeCard';
 import { Card, PageHeader } from '../components/ui';
 import { INTRO } from '../copy';
+import { t } from '../i18n';
 import { useAnalysis } from '../state/analysis';
 import { placementLaunch, startPlay } from '../state/launch';
 import { useCurrentLevels } from '../state/levels';
@@ -31,7 +32,7 @@ export function Train() {
 
   return (
     <>
-      <PageHeader title="Train" intro={INTRO.train} />
+      <PageHeader title={t('Train')} intro={INTRO.train} />
       {noProgress && (
         <div className="mb-6">
           <PlacementCard disabled={!levels} error={levelsError} onStart={startPlacement} />
@@ -50,10 +51,16 @@ export function Train() {
       </ul>
       <Card className="mt-6">
         <p className="text-sm text-ink-2">
-          A module's level changes only after plays with no mods, or with Mirror alone. Fade and Spotlight sets are still saved and counted in your stats.
+          {t(
+            "A module's level changes only after plays with no mods, or with {mirror} alone. {fade} and {spotlight} sets are still saved and counted in your stats.",
+            {
+              mirror: MODS.mirror.label,
+              fade: MODS.fade.label,
+              spotlight: MODS.spotlight.label,
+            },
+          )}
         </p>
       </Card>
     </>
   );
 }
-
