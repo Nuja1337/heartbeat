@@ -1,10 +1,11 @@
-# Type check, lint, format check, tests and a production build on every push and pull request.
+# Type check, lint, format check, tests and a production build on every push to main, every pull request, and on request.
 name: Check
 
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: check-${{ github.ref }}
