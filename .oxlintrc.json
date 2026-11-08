@@ -1,0 +1,55 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react", "import"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "rules": {
+    "eqeqeq": [
+      "error",
+      "always",
+      {
+        "null": "ignore"
+      }
+    ],
+    "no-console": [
+      "warn",
+      {
+        "allow": ["warn", "error"]
+      }
+    ],
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "warn",
+    "no-unused-vars": "off",
+    "typescript/no-unused-vars": "off",
+    "typescript/no-non-null-assertion": "off",
+    "import/no-cycle": "error",
+    "react/react-in-jsx-scope": "off",
+    "react/jsx-no-useless-fragment": "off",
+    "react/refs": "off",
+    "react/set-state-in-effect": "off",
+    "react/purity": "off",
+    "react/use-memo": "off",
+    "react/no-did-update-set-state": "off",
+    "import/no-unassigned-import": "off",
+    "no-underscore-dangle": "off",
+    "no-useless-concat": "off",
+    "no-shadow": "warn"
+  },
+  "ignorePatterns": ["dist/", "node_modules/", ".wrangler/", "src/data/fixtures/"],
+  "overrides": [
+    {
+      "files": ["src/**/*.test.ts", "src/game/testing/**", "src/game/dev/**", "src/analytics/fixtures.ts"],
+      "rules": {
+        "no-console": "off"
+      }
+    },
+    {
+      "files": ["scripts/**"],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ]
+}

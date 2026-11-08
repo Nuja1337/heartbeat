@@ -1,0 +1,9 @@
+{
+  "singleQuote": true,
+  "printWidth": 140,
+  "trailingComma": "all",
+  "overrides": [
+    { "files": ["*.css"], "options": { "singleQuote": false } },
+    { "files": ["*.md"], "options": { "printWidth": 120, "proseWrap": "preserve" } }
+  ]
+}

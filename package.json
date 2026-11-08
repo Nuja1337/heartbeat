@@ -1,7 +1,7 @@
 {
   "name": "heartbeat",
   "private": true,
-  "version": "0.1.0",
+  "version": "2.1.0",
   "type": "module",
   "description": "A browser aim trainer with training modes, generated maps and stats that show where your aim needs work.",
   "scripts": {
@@ -9,8 +9,12 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
+    "lint": "oxlint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "i18n": "node scripts/i18n-extract.mjs",
     "test": "vitest run",
-    "check": "tsc -b && vitest run",
+    "check": "tsc -b && oxlint && prettier --check . && vitest run",
     "deploy": "vite build && wrangler deploy"
   },
   "dependencies": {
@@ -26,6 +30,8 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "fake-indexeddb": "^6.2.5",
+    "oxlint": "^1.92.0",
+    "prettier": "^3.9.10",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
@@ -35,5 +41,8 @@
   "allowScripts": {
     "esbuild@0.28.2": true,
     "workerd@1.20261023.1": true
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
