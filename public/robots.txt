@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /session
+Disallow: /results/
+Disallow: /replay/
+Disallow: /s/
+
+Sitemap: https://heartbeat.ajshaham.workers.dev/sitemap.xml
